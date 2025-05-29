@@ -70,19 +70,21 @@ function initAdminMap() {
 async function loadAdminPoints() {
     try {
         const response = await fetch('/api/admin/points', {
+            method: 'GET',
             headers: {
-                'Authorization': currentPassword
+                'Authorization': currentPassword,
+                'Accept': 'application/json'
             }
         });
         
         if (!response.ok) {
             if (response.status === 401) {
-                showNotification('Неверный пароль', 'error');
+                showNotification('Invalid password', 'error');
                 sessionStorage.removeItem('adminPassword');
                 location.reload();
                 return;
             }
-            throw new Error('Ошибка загрузки точек');
+            throw new Error('Failed to load points');
         }
         
         allPoints = await response.json();
@@ -91,8 +93,8 @@ async function loadAdminPoints() {
         updatePointsList();
         
     } catch (error) {
-        console.error('Ошибка загрузки точек:', error);
-        showNotification('Ошибка загрузки данных', 'error');
+        console.error('Error loading points:', error);
+        showNotification('Error loading data', 'error');
     }
 }
 
@@ -258,31 +260,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
+            const requestData = {
+                name: name,
+                coordinates: {
+                    lat: window.tempCoordinates.lat,
+                    lng: window.tempCoordinates.lng
+                },
+                delayMinutes: delayMinutes || 0
+            };
+
             const response = await fetch('/api/admin/points', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json; charset=utf-8',
                     'Authorization': currentPassword
                 },
-                body: JSON.stringify({
-                    name,
-                    coordinates: {
-                        lat: window.tempCoordinates.lat,
-                        lng: window.tempCoordinates.lng
-                    },
-                    delayMinutes: delayMinutes || 0
-                })
+                body: JSON.stringify(requestData)
             });
             
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Ошибка создания точки');
+                throw new Error(error.error || 'Server error');
             }
             
             const newPoint = await response.json();
             
             closeAddModal();
-            showNotification('Точка успешно создана!', 'success');
+            showNotification('Point created successfully!', 'success');
             
             // Показываем QR код для новой точки
             showQRCode(newPoint.id, newPoint.qrCode);
@@ -291,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await loadAdminPoints();
             
         } catch (error) {
-            console.error('Ошибка создания точки:', error);
+            console.error('Error creating point:', error);
             showNotification(error.message, 'error');
         }
     });
@@ -333,7 +337,7 @@ function downloadQR() {
 
 // Удалить точку
 async function deletePoint(pointId) {
-    if (!confirm('Вы уверены, что хотите удалить эту точку?')) {
+    if (!confirm('Are you sure you want to delete this point?')) {
         return;
     }
     
@@ -341,20 +345,21 @@ async function deletePoint(pointId) {
         const response = await fetch(`/api/admin/points/${pointId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': currentPassword
+                'Authorization': currentPassword,
+                'Accept': 'application/json'
             }
         });
         
         if (!response.ok) {
-            throw new Error('Ошибка удаления точки');
+            throw new Error('Failed to delete point');
         }
         
-        showNotification('Точка удалена', 'success');
+        showNotification('Point deleted', 'success');
         await loadAdminPoints();
         
     } catch (error) {
-        console.error('Ошибка удаления:', error);
-        showNotification('Ошибка удаления точки', 'error');
+        console.error('Delete error:', error);
+        showNotification('Error deleting point', 'error');
     }
 }
 
