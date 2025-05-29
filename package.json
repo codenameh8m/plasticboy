@@ -1,11 +1,10 @@
 {
   "name": "plasticboy",
-  "version": "2.0.0",
-  "description": "3D Model Collection App for Almaty - NO FILE LIMITS",
+  "version": "1.0.0",
+  "description": "3D Model Collection App for Almaty",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -16,8 +15,5 @@
   },
   "engines": {
     "node": ">=14.0.0"
-  },
-  "keywords": ["3d", "collection", "qr", "almaty", "no-limits"],
-  "author": "PlasticBoy Team",
-  "license": "MIT"
+  }
 }
