@@ -158,23 +158,29 @@ app.get('/api/collect/:id', async (req, res) => {
     const { id } = req.params;
     const { secret } = req.query;
 
+    console.log('Collect request - ID:', id, 'Secret:', secret);
+
     const point = await ModelPoint.findOne({ id, qrSecret: secret });
     
     if (!point) {
-      return res.status(404).json({ error: 'Точка не найдена или неверный QR код' });
+      console.log('Point not found or invalid secret');
+      return res.status(404).json({ error: 'Point not found or invalid QR code' });
     }
 
     if (point.status === 'collected') {
-      return res.status(400).json({ error: 'Эта модель уже была собрана' });
+      console.log('Point already collected');
+      return res.status(400).json({ error: 'This model has already been collected' });
     }
 
+    console.log('Point found:', point.name);
     res.json({
       id: point.id,
       name: point.name,
       coordinates: point.coordinates
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения информации о точке' });
+    console.error('Error getting collect info:', error);
+    res.status(500).json({ error: 'Error getting point information' });
   }
 });
 
@@ -184,19 +190,24 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     const { id } = req.params;
     const { secret, name, signature } = req.body;
 
+    console.log('Collect submission - ID:', id, 'Name:', name, 'Has selfie:', !!req.file);
+
     const point = await ModelPoint.findOne({ id, qrSecret: secret });
     
     if (!point) {
-      return res.status(404).json({ error: 'Точка не найдена или неверный QR код' });
+      console.log('Point not found for collection');
+      return res.status(404).json({ error: 'Point not found or invalid QR code' });
     }
 
     if (point.status === 'collected') {
-      return res.status(400).json({ error: 'Эта модель уже была собрана' });
+      console.log('Point already collected');
+      return res.status(400).json({ error: 'This model has already been collected' });
     }
 
     // Обработка селфи
     let selfieBase64 = null;
     if (req.file) {
+      console.log('Processing selfie file:', req.file.originalname, req.file.size);
       selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
@@ -204,17 +215,18 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     point.status = 'collected';
     point.collectedAt = new Date();
     point.collectorInfo = {
-      name: name || 'Аноним',
+      name: name || 'Anonymous',
       signature: signature || '',
       selfie: selfieBase64
     };
 
     await point.save();
+    console.log('Point successfully collected by:', name);
     
-    res.json({ success: true, message: 'Модель успешно собрана!' });
+    res.json({ success: true, message: 'Model successfully collected!' });
   } catch (error) {
-    console.error('Ошибка сбора модели:', error);
-    res.status(500).json({ error: 'Ошибка сбора модели' });
+    console.error('Error collecting model:', error);
+    res.status(500).json({ error: 'Error collecting model' });
   }
 });
 
