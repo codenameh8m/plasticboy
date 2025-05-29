@@ -302,6 +302,11 @@
             }
 
             console.log('File size:', file.size, 'bytes');
+            
+            // Показываем размер файла пользователю
+            if (file.size > 5 * 1024 * 1024) { // Больше 5MB
+                showNotification(`Большой файл: ${(file.size / 1024 / 1024).toFixed(1)}MB. Загрузка может занять время.`, 'info');
+            }
 
             // Создаем превью
             const reader = new FileReader();
@@ -337,9 +342,11 @@
             const submitBtn = document.getElementById('submitBtn');
             const originalText = submitBtn.innerHTML;
             
-            // Показываем загрузку
+            // Показываем загрузку с информацией о файле
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>⏳</span> Отправка...';
+            const selfieFile = document.getElementById('selfie').files[0];
+            const fileSize = selfieFile ? (selfieFile.size / 1024 / 1024).toFixed(1) + 'MB' : '';
+            submitBtn.innerHTML = `<span>⏳</span> Отправка${fileSize ? ` (${fileSize})...` : '...'}`;
 
             try {
                 console.log('Creating form data...');
@@ -362,7 +369,7 @@
                 console.log('Sending request...');
 
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 сек для загрузки файла
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 секунд для больших файлов
 
                 const response = await fetch(`/api/collect/${pointId}`, {
                     method: 'POST',
