@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlasticBoy - Карта моделей Алматы</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎯 PlasticBoy</h1>
+            <p>Найди и собери 3D модели в Алматы</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number" id="availableCount">0</span>
+                <span class="stat-label">Доступно</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="collectedCount">0</span>
+                <span class="stat-label">Собрано</span>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot green"></div>
+                    <span>Доступные модели</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot red"></div>
+                    <span>Собранные модели</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="refresh-btn" onclick="loadPoints()">
+            <span>🔄</span>
+        </div>
+    </div>
+
+    <!-- Модальное окно для информации о собранной модели -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Информация о модели</h2>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

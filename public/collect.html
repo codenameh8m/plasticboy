@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlasticBoy - Сбор модели</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container collect-container">
+        <header class="header">
+            <h1>🎉 Отличная находка!</h1>
+            <p>Заполните информацию о себе</p>
+        </header>
+
+        <div id="collectForm" class="form-container">
+            <div class="model-info">
+                <h2 id="modelName">Загрузка...</h2>
+                <p id="modelLocation"></p>
+            </div>
+
+            <form id="submitForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="collectorName">Ваше имя:</label>
+                    <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signature">Подпись/Сообщение:</label>
+                    <textarea id="signature" name="signature" placeholder="Оставьте свою подпись или сообщение (необязательно)" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="selfie">Селфи с места находки:</label>
+                    <input type="file" id="selfie" name="selfie" accept="image/*" capture="user">
+                    <div id="imagePreview"></div>
+                </div>
+
+                <button type="submit" class="collect-btn">
+                    <span>📸</span>
+                    Отметить находку
+                </button>
+            </form>
+        </div>
+
+        <div id="successMessage" class="success-message" style="display: none;">
+            <h2>🎯 Успешно!</h2>
+            <p>Спасибо за участие в PlasticBoy!</p>
+            <p>Ваша находка отмечена на карте.</p>
+            <button onclick="window.location.href='/'">Вернуться к карте</button>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;">
+            <h2>😔 Ошибка</h2>
+            <p id="errorText">Что-то пошло не так...</p>
+            <button onclick="window.location.href='/'">Вернуться к карте</button>
+        </div>
+    </div>
+
+    <script>
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const pointId = urlParams.get('id');
+        const secret = urlParams.get('secret');
+
+        if (!pointId || !secret) {
+            showError('Неверная ссылка QR кода');
+            return;
+        }
+
+        // Загружаем информацию о точке
+        loadPointInfo();
+
+        async function loadPointInfo() {
+            try {
+                const response = await fetch(`/api/collect/${pointId}?secret=${secret}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка загрузки');
+                }
+
+                document.getElementById('modelName').textContent = data.name;
+                document.getElementById('modelLocation').textContent = 
+                    `Координаты: ${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}`;
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // Превью изображения
+        document.getElementById('selfie').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
+            }
+        });
+
+        // Отправка формы
+        document.getElementById('submitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.querySelector('.collect-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>⏳</span> Отправка...';
+
+            try {
+                const formData = new FormData();
+                formData.append('secret', secret);
+                formData.append('name', document.getElementById('collectorName').value);
+                formData.append('signature', document.getElementById('signature').value);
+                
+                const selfieFile = document.getElementById('selfie').files[0];
+                if (selfieFile) {
+                    formData.append('selfie', selfieFile);
+                }
+
+                const response = await fetch(`/api/collect/${pointId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Ошибка отправки');
+                }
+
+                showSuccess();
+
+            } catch (error) {
+                showError(error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>📸</span> Отметить находку';
+            }
+        });
+
+        function showSuccess() {
+            document.getElementById('collectForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('collectForm').style.display = 'none';
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
