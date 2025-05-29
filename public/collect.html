@@ -291,14 +291,8 @@
                 return;
             }
             
-            // Проверка размера (1MB максимум для скорости)
-            if (file.size > 1024 * 1024) {
-                showNotification('Файл слишком большой. Максимум: 1MB', 'error');
-                e.target.value = '';
-                preview.innerHTML = '';
-                return;
-            }
-
+            // Убрали ограничение на размер файла
+            
             // Проверка типа
             if (!file.type.startsWith('image/')) {
                 showNotification('Только изображения разрешены', 'error');
@@ -306,6 +300,8 @@
                 preview.innerHTML = '';
                 return;
             }
+
+            console.log('File size:', file.size, 'bytes');
 
             // Создаем превью
             const reader = new FileReader();
@@ -358,9 +354,9 @@
                 }
                 
                 const selfieFile = document.getElementById('selfie').files[0];
-                if (selfieFile && selfieFile.size <= 1024 * 1024) {
+                if (selfieFile) {
                     formData.append('selfie', selfieFile);
-                    console.log('Added selfie to form data');
+                    console.log('Added selfie to form data, size:', selfieFile.size);
                 }
 
                 console.log('Sending request...');
