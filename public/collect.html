@@ -5,110 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlasticBoy - Сбор модели</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .form-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        input, textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            font-size: 1rem;
-            background: white;
-            transition: border-color 0.2s ease;
-            box-sizing: border-box;
-        }
-        
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .collect-btn {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 15px;
-            transition: transform 0.2s ease;
-        }
-        
-        .collect-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-        
-        .collect-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .model-info {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            color: white;
-        }
-        
-        #imagePreview img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-        
-        .success-message, .error-message {
-            text-align: center;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .success-message h2 { color: #4CAF50; margin-bottom: 15px; }
-        .error-message h2 { color: #f44336; margin-bottom: 15px; }
-        
-        .file-info {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #1976d2;
-        }
-        
-        @media (max-width: 480px) {
-            .form-container { padding: 20px; }
-            input, textarea { padding: 12px; font-size: 16px; }
-        }
-    </style>
 </head>
 <body>
     <div class="container collect-container">
@@ -125,19 +21,18 @@
 
             <div id="collectFormInner">
                 <div class="form-group">
-                    <label for="collectorName">Ваше имя: *</label>
-                    <input type="text" id="collectorName" placeholder="Введите ваше имя" required maxlength="100">
+                    <label for="collectorName">Ваше имя:</label>
+                    <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required>
                 </div>
 
                 <div class="form-group">
                     <label for="signature">Подпись/Сообщение:</label>
-                    <textarea id="signature" placeholder="Оставьте свою подпись (необязательно)" rows="3" maxlength="500"></textarea>
+                    <textarea id="signature" name="signature" placeholder="Оставьте свою подпись или сообщение (необязательно)" rows="3"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="selfie">Селфи с места находки:</label>
-                    <input type="file" id="selfie" accept="image/*,video/*" capture="user">
-                    <div id="fileInfo" class="file-info" style="display: none;"></div>
+                    <input type="file" id="selfie" name="selfie" accept="image/*" capture="user">
                     <div id="imagePreview"></div>
                 </div>
 
@@ -159,245 +54,151 @@
             <h2>😔 Ошибка</h2>
             <p id="errorText">Что-то пошло не так...</p>
             <button onclick="window.location.href='/'">Вернуться к карте</button>
-            <button onclick="location.reload()" style="margin-top: 10px; background: #2196F3;">Попробовать снова</button>
         </div>
     </div>
 
     <script>
-        console.log('=== PlasticBoy Collect Page - NO LIMITS VERSION ===');
-        
+        // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const pointId = urlParams.get('id');
         const secret = urlParams.get('secret');
-        
-        let isSubmitting = false;
-        
-        console.log('URL params:', { pointId, secret: secret ? 'present' : 'missing' });
-        console.log('Current URL:', window.location.href);
-        
-        if (!pointId || !secret) {
-            console.error('Missing required parameters');
-            showError('Неверная ссылка QR кода. Параметры отсутствуют.');
-        } else {
-            console.log('Parameters OK, initializing...');
-            initializePage();
-        }
 
-        function initializePage() {
-            console.log('Initializing page...');
+        console.log('Point ID:', pointId, 'Secret:', secret);
+
+        if (!pointId || !secret) {
+            showError('Неверная ссылка QR кода');
+        } else {
+            // Загружаем информацию о точке
             loadPointInfo();
-            setupEventListeners();
         }
 
         async function loadPointInfo() {
-            console.log('Loading point info...');
             try {
-                const url = `/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`;
-                console.log('Request URL:', url);
-                
-                const response = await fetch(url, {
-                    headers: { 'Accept': 'application/json' }
+                console.log('Loading point info...');
+                const response = await fetch(`/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
 
-                console.log('Response status:', response.status, response.statusText);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Server error response:', errorData);
-                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                    throw new Error(data.error || 'Ошибка загрузки');
                 }
 
-                const data = await response.json();
-                console.log('Point data received:', data);
-                
                 document.getElementById('modelName').textContent = data.name;
                 document.getElementById('modelLocation').textContent = 
-                    `Координаты: ${data.coordinates.lat.toFixed(4)}, ${data.coordinates.lng.toFixed(4)}`;
-
-                console.log('Point info loaded successfully');
+                    `Координаты: ${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}`;
 
             } catch (error) {
                 console.error('Error loading point info:', error);
-                showError(`Ошибка загрузки: ${error.message}`);
+                showError(error.message);
             }
         }
 
-        function setupEventListeners() {
-            console.log('Setting up event listeners...');
-            
-            // Файл
-            const fileInput = document.getElementById('selfie');
-            if (fileInput) {
-                fileInput.addEventListener('change', handleFileChange);
-                console.log('File input listener added');
-            }
-            
-            // Кнопка отправки
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', handleSubmit);
-                console.log('Submit button listener added');
-            }
-            
-            // Enter в имени
-            const nameInput = document.getElementById('collectorName');
-            if (nameInput) {
-                nameInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSubmit();
-                    }
-                });
-                console.log('Name input listener added');
-            }
-            
-            console.log('All event listeners set up');
-        }
-
-        function handleFileChange(e) {
+        // Превью изображения
+        document.getElementById('selfie').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const preview = document.getElementById('imagePreview');
-            const fileInfo = document.getElementById('fileInfo');
             
-            console.log('File selected:', file ? {
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                lastModified: new Date(file.lastModified)
-            } : 'No file');
-            
-            if (!file) {
-                preview.innerHTML = '';
-                fileInfo.style.display = 'none';
-                return;
-            }
-            
-            // Показываем информацию о файле - БЕЗ ОГРАНИЧЕНИЙ!
-            const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
-            fileInfo.innerHTML = `
-                📁 ${file.name}<br>
-                📊 Размер: ${sizeInMB} MB<br>
-                🎭 Тип: ${file.type}<br>
-                ✅ Файл принят (без ограничений размера)
-            `;
-            fileInfo.style.display = 'block';
+            if (file) {
+                // Проверяем размер файла (максимум 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Файл слишком большой. Максимальный размер: 5MB');
+                    this.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
 
-            // Создаем превью для изображений
-            if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью">`;
-                    console.log('Image preview created');
-                };
-                reader.onerror = function(e) {
-                    console.error('FileReader error:', e);
-                    preview.innerHTML = '<p>Ошибка создания превью</p>';
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи" style="max-width: 100%; max-height: 200px; border-radius: 10px;">`;
                 };
                 reader.readAsDataURL(file);
             } else {
-                preview.innerHTML = `<p>📎 Файл готов к загрузке: ${file.name}</p>`;
+                preview.innerHTML = '';
             }
-        }
+        });
 
-        async function handleSubmit() {
-            if (isSubmitting) {
-                console.log('Already submitting, ignoring click');
-                return;
-            }
+        // Обработка кнопки отправки
+        document.getElementById('submitBtn').addEventListener('click', async function(e) {
+            e.preventDefault();
             
-            console.log('=== STARTING SUBMIT PROCESS ===');
-            
-            const nameInput = document.getElementById('collectorName');
-            const name = nameInput.value.trim();
-            
-            console.log('Form data:', {
-                name: name,
-                nameLength: name.length,
-                signature: document.getElementById('signature').value.trim(),
-                hasFile: !!document.getElementById('selfie').files[0]
-            });
-            
+            const name = document.getElementById('collectorName').value.trim();
             if (!name) {
-                console.warn('Name is empty');
-                showNotification('Введите ваше имя', 'error');
-                nameInput.focus();
+                alert('Пожалуйста, введите ваше имя');
+                document.getElementById('collectorName').focus();
                 return;
             }
 
-            isSubmitting = true;
             const submitBtn = document.getElementById('submitBtn');
-            const originalText = submitBtn.innerHTML;
-            
-            const file = document.getElementById('selfie').files[0];
-            const fileSize = file ? (file.size / 1024 / 1024).toFixed(1) + 'MB' : '';
-            
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span>⏳</span> Отправка${fileSize ? ` (${fileSize})...` : '...'}`;
+            submitBtn.innerHTML = '<span>⏳</span> Отправка...';
 
             try {
-                console.log('Creating FormData...');
+                console.log('Submitting form...');
+                
                 const formData = new FormData();
                 formData.append('secret', secret);
                 formData.append('name', name);
+                formData.append('signature', document.getElementById('signature').value.trim());
                 
-                const signature = document.getElementById('signature').value.trim();
-                if (signature) {
-                    formData.append('signature', signature);
-                }
-                
-                if (file) {
-                    console.log('Adding file to FormData:', {
-                        name: file.name,
-                        size: file.size,
-                        type: file.type
-                    });
-                    formData.append('selfie', file);
+                const selfieFile = document.getElementById('selfie').files[0];
+                if (selfieFile) {
+                    console.log('Adding selfie file:', selfieFile.name, selfieFile.size);
+                    formData.append('selfie', selfieFile);
                 }
 
-                // Логируем FormData
-                console.log('FormData contents:');
-                for (let [key, value] of formData.entries()) {
-                    if (value instanceof File) {
-                        console.log(`${key}: File(${value.name}, ${value.size} bytes)`);
-                    } else {
-                        console.log(`${key}: ${value}`);
-                    }
-                }
+                console.log('Sending request to:', `/api/collect/${pointId}`);
 
-                const url = `/api/collect/${pointId}`;
-                console.log('Sending POST request to:', url);
-                console.log('Request starting at:', new Date().toISOString());
-
-                const response = await fetch(url, {
+                const response = await fetch(`/api/collect/${pointId}`, {
                     method: 'POST',
                     body: formData
-                    // НЕ ДОБАВЛЯЕМ Content-Type - пусть браузер сам устанавливает для FormData
                 });
 
-                console.log('Response received:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: Object.fromEntries(response.headers.entries())
-                });
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response result:', result);
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Server error response:', errorData);
-                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(result.error || 'Ошибка отправки');
                 }
 
-                const result = await response.json();
-                console.log('Success response:', result);
-                
+                console.log('Success!');
                 showSuccess();
 
             } catch (error) {
-                console.error('Submit error:', error);
-                console.error('Error stack:', error.stack);
+                console.error('Error submitting form:', error);
+                showError(error.message);
                 
-                let errorMessage = error.message;
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    errorMessage = 'Ошибка сети. Проверьте подключение к интернету.';
-                }
-                
-                showError(errorMessage);
+                // Восстанавливаем кнопку
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>📸</span> Отметить находку';
+            }
+        });
+
+        function showSuccess() {
+            document.getElementById('collectForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('collectForm').style.display = 'none';
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+
+        // Предотвращаем случайную отправку формы
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                document.getElementById('submitBtn').click();
+            }
+        });
+    </script>
+</body>
+</html>
