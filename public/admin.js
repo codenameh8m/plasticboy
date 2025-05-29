@@ -72,8 +72,8 @@ async function loadAdminPoints() {
         const response = await fetch('/api/admin/points', {
             method: 'GET',
             headers: {
-                'Authorization': currentPassword,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Admin-Password': encodeURIComponent(currentPassword)
             }
         });
         
@@ -246,6 +246,31 @@ function closeAddModal() {
     document.getElementById('addPointForm').reset();
 }
 
+// Альтернативная функция для отправки данных через POST body
+async function createPointAlternative(pointData) {
+    try {
+        const response = await fetch('/api/admin/points/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            body: JSON.stringify({
+                ...pointData,
+                adminPassword: currentPassword
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Server error');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+}
+
 // Обработка формы добавления точки
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addPointForm').addEventListener('submit', async function(e) {
@@ -255,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const delayMinutes = document.getElementById('delayMinutes').value;
         
         if (!window.tempCoordinates) {
-            showNotification('Ошибка координат', 'error');
+            showNotification('Coordinate error', 'error');
             return;
         }
         
@@ -269,14 +294,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 delayMinutes: delayMinutes || 0
             };
 
-            const response = await fetch('/api/admin/points', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    'Authorization': currentPassword
-                },
-                body: JSON.stringify(requestData)
-            });
+            // Сначала пробуем основной метод
+            let response;
+            try {
+                response = await fetch('/api/admin/points', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'X-Admin-Password': encodeURIComponent(currentPassword)
+                    },
+                    body: JSON.stringify(requestData)
+                });
+            } catch (fetchError) {
+                // Если основной метод не работает, используем альтернативный
+                console.log('Using alternative method...');
+                const newPoint = await createPointAlternative(requestData);
+                
+                closeAddModal();
+                showNotification('Point created successfully!', 'success');
+                showQRCode(newPoint.id, newPoint.qrCode);
+                await loadAdminPoints();
+                return;
+            }
             
             if (!response.ok) {
                 const error = await response.json();
@@ -345,8 +384,8 @@ async function deletePoint(pointId) {
         const response = await fetch(`/api/admin/points/${pointId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': currentPassword,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Admin-Password': encodeURIComponent(currentPassword)
             }
         });
         
