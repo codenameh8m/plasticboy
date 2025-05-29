@@ -16,10 +16,10 @@ app.use(cors({
 
 // Сжатие JSON ответов
 app.use(express.json({ 
-  limit: '5mb',
+  limit: '15mb', // Увеличили лимит для JSON
   type: ['application/json', 'text/plain']
 }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Агрессивное кэширование статических файлов
 app.use(express.static('public', {
@@ -97,11 +97,11 @@ const clearCache = () => {
   adminCacheTimestamp = 0;
 };
 
-// Оптимизированный multer
+// Оптимизированный multer с увеличенным лимитом
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { 
-    fileSize: 1 * 1024 * 1024, // 1MB для скорости
+    fileSize: 10 * 1024 * 1024, // Увеличили до 10MB
     files: 1
   },
   fileFilter: (req, file, cb) => {
@@ -335,8 +335,9 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     }
 
     let selfieBase64 = null;
-    if (req.file && req.file.size < 1024 * 1024) { // Максимум 1MB
+    if (req.file) { // Убрали ограничение на размер
       selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      console.log('Selfie processed, original size:', req.file.size);
     }
 
     // Атомарное обновление
@@ -424,8 +425,11 @@ app.get('/health', (req, res) => {
 // Обработка ошибок
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
-    return res.status(400).json({ error: 'File upload error' });
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large. Maximum size: 10MB' });
+    }
   }
+  console.error('Server error:', error);
   res.status(500).json({ error: 'Server error' });
 });
 
