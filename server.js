@@ -8,83 +8,164 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static('public'));
+// Оптимизированные middleware
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
-// Устанавливаем правильные заголовки для кириллицы
-app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  next();
-});
+// Сжатие JSON ответов
+app.use(express.json({ 
+  limit: '5mb',
+  type: ['application/json', 'text/plain']
+}));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-// Multer для загрузки файлов
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+// Агрессивное кэширование статических файлов
+app.use(express.static('public', {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  immutable: true
+}));
 
-// MongoDB подключение
+// Оптимизированное подключение к MongoDB
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 3000,
+      socketTimeoutMS: 30000,
+      bufferCommands: false,
+      maxIdleTimeMS: 30000
     });
-    console.log(`MongoDB подключена: ${conn.connection.host}`);
+    console.log(`MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error('Ошибка подключения к MongoDB:', error.message);
+    console.error('MongoDB connection error:', error.message);
     process.exit(1);
   }
 };
 
 connectDB();
 
-// Схема для точек на карте
+// Супероптимизированная схема с индексами
 const ModelPointSchema = new mongoose.Schema({
-  id: { type: String, unique: true, required: true },
-  name: { type: String, required: true },
+  id: { type: String, unique: true, required: true, index: true },
+  name: { type: String, required: true, maxlength: 100 },
   coordinates: {
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true }
+    lat: { type: Number, required: true, min: -90, max: 90 },
+    lng: { type: Number, required: true, min: -180, max: 180 }
   },
-  status: { type: String, enum: ['available', 'collected'], default: 'available' },
+  status: { type: String, enum: ['available', 'collected'], default: 'available', index: true },
   qrCode: { type: String, required: true },
-  qrSecret: { type: String, required: true },
-  scheduledTime: { type: Date, default: Date.now },
+  qrSecret: { type: String, required: true, index: true },
+  scheduledTime: { type: Date, default: Date.now, index: true },
   createdAt: { type: Date, default: Date.now },
-  collectedAt: { type: Date },
+  collectedAt: { type: Date, sparse: true },
   collectorInfo: {
-    name: String,
-    signature: String,
+    name: { type: String, maxlength: 50 },
+    signature: { type: String, maxlength: 200 },
     selfie: String
   }
+}, {
+  collection: 'points',
+  versionKey: false // Убираем __v поле
 });
+
+// Составные индексы для супербыстрого поиска
+ModelPointSchema.index({ id: 1, qrSecret: 1 });
+ModelPointSchema.index({ status: 1, scheduledTime: 1 });
+ModelPointSchema.index({ scheduledTime: 1, status: 1 });
 
 const ModelPoint = mongoose.model('ModelPoint', ModelPointSchema);
 
-// Маршруты
+// Кэш в памяти
+let pointsCache = null;
+let adminPointsCache = null;
+let cacheTimestamp = 0;
+let adminCacheTimestamp = 0;
+const CACHE_DURATION = 20000; // 20 секунд
+const ADMIN_CACHE_DURATION = 10000; // 10 секунд для админа
 
-// Главная страница
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Функции очистки кэша
+const clearCache = () => {
+  pointsCache = null;
+  adminPointsCache = null;
+  cacheTimestamp = 0;
+  adminCacheTimestamp = 0;
+};
 
-// Получить все точки для пользователей (только активные и по времени)
-app.get('/api/points', async (req, res) => {
-  try {
-    const now = new Date();
-    const points = await ModelPoint.find({
-      scheduledTime: { $lte: now }
-    }).select('-qrSecret');
-    
-    res.json(points);
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения точек' });
+// Оптимизированный multer
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { 
+    fileSize: 1 * 1024 * 1024, // 1MB для скорости
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Images only'), false);
+    }
   }
 });
 
-// Получить все точки для админа
+// Роуты с кэшированием
+
+// Главная страница
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/admin.html', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/collect.html', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'collect.html'));
+});
+
+// Супербыстрое получение точек с кэшем
+app.get('/api/points', async (req, res) => {
+  try {
+    const now = Date.now();
+    
+    // Проверяем кэш
+    if (pointsCache && (now - cacheTimestamp) < CACHE_DURATION) {
+      res.setHeader('Cache-Control', 'public, max-age=20');
+      return res.json(pointsCache);
+    }
+    
+    // Получаем только нужные поля
+    const points = await ModelPoint.find({
+      scheduledTime: { $lte: new Date() }
+    }, {
+      id: 1,
+      name: 1,
+      coordinates: 1,
+      status: 1,
+      collectedAt: 1,
+      'collectorInfo.name': 1
+    }).lean().limit(100).exec();
+    
+    pointsCache = points;
+    cacheTimestamp = now;
+    
+    res.setHeader('Cache-Control', 'public, max-age=20');
+    res.json(points);
+  } catch (error) {
+    console.error('Points error:', error);
+    res.status(500).json({ error: 'Failed to load points' });
+  }
+});
+
+// Админ точки с кэшем
 app.get('/api/admin/points', async (req, res) => {
   try {
     const password = req.headers['x-admin-password'] 
@@ -95,14 +176,24 @@ app.get('/api/admin/points', async (req, res) => {
       return res.status(401).json({ error: 'Invalid password' });
     }
     
-    const points = await ModelPoint.find({});
+    const now = Date.now();
+    
+    // Админ кэш
+    if (adminPointsCache && (now - adminCacheTimestamp) < ADMIN_CACHE_DURATION) {
+      return res.json(adminPointsCache);
+    }
+    
+    const points = await ModelPoint.find({}).lean().limit(200).exec();
+    adminPointsCache = points;
+    adminCacheTimestamp = now;
+    
     res.json(points);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to load points' });
+    res.status(500).json({ error: 'Failed to load admin points' });
   }
 });
 
-// Создать новую точку (админ)
+// Супербыстрое создание точки
 app.post('/api/admin/points', async (req, res) => {
   try {
     const password = req.headers['x-admin-password'] 
@@ -114,25 +205,34 @@ app.post('/api/admin/points', async (req, res) => {
     }
 
     const { name, coordinates, delayMinutes } = req.body;
+    
+    // Валидация
+    if (!name || !coordinates || !coordinates.lat || !coordinates.lng) {
+      return res.status(400).json({ error: 'Invalid data' });
+    }
+    
     const pointId = Date.now().toString();
-    const qrSecret = Math.random().toString(36).substring(7);
+    const qrSecret = Math.random().toString(36).substring(2, 8);
     
     const scheduledTime = new Date();
-    if (delayMinutes) {
+    if (delayMinutes && delayMinutes > 0) {
       scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
     }
 
-    // Создаем URL для сканирования QR кода
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || 'https';
     const host = req.get('host');
     const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
     
-    // Генерируем QR код
-    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl);
+    // Быстрая генерация QR
+    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl, {
+      width: 150,
+      margin: 1,
+      errorCorrectionLevel: 'L'
+    });
 
     const newPoint = new ModelPoint({
       id: pointId,
-      name,
+      name: name.substring(0, 100),
       coordinates,
       qrCode: qrCodeDataUrl,
       qrSecret,
@@ -140,113 +240,16 @@ app.post('/api/admin/points', async (req, res) => {
     });
 
     await newPoint.save();
+    clearCache();
+    
     res.json(newPoint);
   } catch (error) {
-    console.error('Error creating point:', error);
+    console.error('Create point error:', error);
     res.status(500).json({ error: 'Failed to create point' });
   }
 });
 
-// Страница сбора модели
-app.get('/collect.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'collect.html'));
-});
-
-// Получить информацию о точке для сбора
-app.get('/api/collect/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { secret } = req.query;
-
-    console.log('Collect request - ID:', id, 'Secret:', secret);
-
-    const point = await ModelPoint.findOne({ id, qrSecret: secret });
-    
-    if (!point) {
-      console.log('Point not found or invalid secret');
-      return res.status(404).json({ error: 'Point not found or invalid QR code' });
-    }
-
-    if (point.status === 'collected') {
-      console.log('Point already collected');
-      return res.status(400).json({ error: 'This model has already been collected' });
-    }
-
-    console.log('Point found:', point.name);
-    res.json({
-      id: point.id,
-      name: point.name,
-      coordinates: point.coordinates
-    });
-  } catch (error) {
-    console.error('Error getting collect info:', error);
-    res.status(500).json({ error: 'Error getting point information' });
-  }
-});
-
-// Собрать модель
-app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { secret, name, signature } = req.body;
-
-    console.log('Collect submission - ID:', id, 'Name:', name, 'Has selfie:', !!req.file);
-
-    const point = await ModelPoint.findOne({ id, qrSecret: secret });
-    
-    if (!point) {
-      console.log('Point not found for collection');
-      return res.status(404).json({ error: 'Point not found or invalid QR code' });
-    }
-
-    if (point.status === 'collected') {
-      console.log('Point already collected');
-      return res.status(400).json({ error: 'This model has already been collected' });
-    }
-
-    // Обработка селфи
-    let selfieBase64 = null;
-    if (req.file) {
-      console.log('Processing selfie file:', req.file.originalname, req.file.size);
-      selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    }
-
-    // Обновляем точку
-    point.status = 'collected';
-    point.collectedAt = new Date();
-    point.collectorInfo = {
-      name: name || 'Anonymous',
-      signature: signature || '',
-      selfie: selfieBase64
-    };
-
-    await point.save();
-    console.log('Point successfully collected by:', name);
-    
-    res.json({ success: true, message: 'Model successfully collected!' });
-  } catch (error) {
-    console.error('Error collecting model:', error);
-    res.status(500).json({ error: 'Error collecting model' });
-  }
-});
-
-// Получить информацию о собранной точке
-app.get('/api/point/:id/info', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const point = await ModelPoint.findOne({ id }).select('-qrSecret');
-    
-    if (!point) {
-      return res.status(404).json({ error: 'Точка не найдена' });
-    }
-
-    res.json(point);
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения информации' });
-  }
-});
-
-// Альтернативный роут для создания точки (через POST body)
+// Альтернативный метод создания
 app.post('/api/admin/points/create', async (req, res) => {
   try {
     const { name, coordinates, delayMinutes, adminPassword } = req.body;
@@ -256,24 +259,26 @@ app.post('/api/admin/points/create', async (req, res) => {
     }
 
     const pointId = Date.now().toString();
-    const qrSecret = Math.random().toString(36).substring(7);
+    const qrSecret = Math.random().toString(36).substring(2, 8);
     
     const scheduledTime = new Date();
-    if (delayMinutes) {
+    if (delayMinutes && delayMinutes > 0) {
       scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
     }
 
-    // Создаем URL для сканирования QR кода
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || 'https';
     const host = req.get('host');
     const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
     
-    // Генерируем QR код
-    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl);
+    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl, {
+      width: 150,
+      margin: 1,
+      errorCorrectionLevel: 'L'
+    });
 
     const newPoint = new ModelPoint({
       id: pointId,
-      name,
+      name: name.substring(0, 100),
       coordinates,
       qrCode: qrCodeDataUrl,
       qrSecret,
@@ -281,14 +286,108 @@ app.post('/api/admin/points/create', async (req, res) => {
     });
 
     await newPoint.save();
+    clearCache();
+    
     res.json(newPoint);
   } catch (error) {
-    console.error('Error creating point:', error);
     res.status(500).json({ error: 'Failed to create point' });
   }
 });
 
-// Удалить точку (админ)
+// Быстрая проверка точки для сбора
+app.get('/api/collect/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { secret } = req.query;
+
+    const point = await ModelPoint.findOne(
+      { id, qrSecret: secret }, 
+      { name: 1, coordinates: 1, status: 1 }
+    ).lean().exec();
+    
+    if (!point) {
+      return res.status(404).json({ error: 'Point not found' });
+    }
+
+    if (point.status === 'collected') {
+      return res.status(400).json({ error: 'Already collected' });
+    }
+
+    res.json({
+      id: point.id,
+      name: point.name,
+      coordinates: point.coordinates
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting point info' });
+  }
+});
+
+// Супербыстрый сбор модели
+app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { secret, name, signature } = req.body;
+
+    // Валидация
+    if (!name || name.length > 50) {
+      return res.status(400).json({ error: 'Invalid name' });
+    }
+
+    let selfieBase64 = null;
+    if (req.file && req.file.size < 1024 * 1024) { // Максимум 1MB
+      selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+
+    // Атомарное обновление
+    const updateResult = await ModelPoint.updateOne(
+      { 
+        id, 
+        qrSecret: secret, 
+        status: 'available' 
+      },
+      {
+        $set: {
+          status: 'collected',
+          collectedAt: new Date(),
+          collectorInfo: {
+            name: name.substring(0, 50),
+            signature: signature ? signature.substring(0, 200) : '',
+            selfie: selfieBase64
+          }
+        }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(400).json({ error: 'Point not available' });
+    }
+
+    clearCache();
+    res.json({ success: true, message: 'Collected successfully!' });
+  } catch (error) {
+    console.error('Collect error:', error);
+    res.status(500).json({ error: 'Collection failed' });
+  }
+});
+
+// Быстрая информация о точке
+app.get('/api/point/:id/info', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const point = await ModelPoint.findOne({ id }, { qrSecret: 0 }).lean().exec();
+    
+    if (!point) {
+      return res.status(404).json({ error: 'Point not found' });
+    }
+
+    res.json(point);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting info' });
+  }
+});
+
+// Быстрое удаление точки
 app.delete('/api/admin/points/:id', async (req, res) => {
   try {
     const password = req.headers['x-admin-password'] 
@@ -300,24 +399,48 @@ app.delete('/api/admin/points/:id', async (req, res) => {
     }
 
     const { id } = req.params;
-    const deletedPoint = await ModelPoint.findOneAndDelete({ id });
+    const result = await ModelPoint.deleteOne({ id });
     
-    if (!deletedPoint) {
+    if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Point not found' });
     }
 
-    res.json({ success: true, message: 'Point deleted' });
+    clearCache();
+    res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting point:', error);
-    res.status(500).json({ error: 'Failed to delete point' });
+    res.status(500).json({ error: 'Delete failed' });
   }
 });
 
-// Проверка работоспособности
+// Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    uptime: Math.floor(process.uptime()),
+    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+  });
+});
+
+// Обработка ошибок
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    return res.status(400).json({ error: 'File upload error' });
+  }
+  res.status(500).json({ error: 'Server error' });
+});
+
+// 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down...');
+  mongoose.connection.close();
+  process.exit(0);
 });
 
 app.listen(PORT, () => {
-  console.log(`PlasticBoy сервер запущен на порту ${PORT}`);
+  console.log(`PlasticBoy optimized server running on port ${PORT}`);
 });
