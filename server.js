@@ -97,11 +97,11 @@ const clearCache = () => {
   adminCacheTimestamp = 0;
 };
 
-// Оптимизированный multer с увеличенным лимитом
+// Убираем все ограничения на размер файлов
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { 
-    fileSize: 10 * 1024 * 1024, // Увеличили до 10MB
+    fileSize: 50 * 1024 * 1024, // 50MB - очень большой лимит
     files: 1
   },
   fileFilter: (req, file, cb) => {
@@ -422,12 +422,13 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Обработка ошибок
+// Обработка ошибок без ограничений размера
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large. Maximum size: 10MB' });
+      return res.status(400).json({ error: 'File is extremely large. Please try a smaller image.' });
     }
+    return res.status(400).json({ error: 'File upload error: ' + error.message });
   }
   console.error('Server error:', error);
   res.status(500).json({ error: 'Server error' });
