@@ -6,7 +6,134 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>PlasticBoy - Сбор модели</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <style>
+        /* Критические стили для collect.html */
+        body.loading .collect-container > *:not(.header) { opacity: 0; }
+        body.loaded .collect-container > * { opacity: 1; transition: opacity 0.3s ease; }
+        
+        .form-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: white;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .collect-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            transition: transform 0.2s ease;
+        }
+        
+        .collect-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        
+        .collect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .model-info {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+        }
+        
+        .model-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .model-info p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        #imagePreview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 10px;
+        }
+        
+        .success-message, .error-message {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .success-message h2 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        
+        .error-message h2 {
+            color: #f44336;
+            margin-bottom: 15px;
+        }
+        
+        /* Мобильная адаптация */
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 20px;
+            }
+            
+            input, textarea {
+                padding: 12px;
+                font-size: 16px; /* Предотвращает зум на iOS */
+            }
+            
+            .collect-btn {
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body class="loading">
     <div class="container collect-container">
@@ -67,24 +194,29 @@
         
         let isSubmitting = false;
         
+        console.log('Point ID:', pointId, 'Secret:', secret ? 'present' : 'missing');
+        
         // Проверяем параметры сразу
         if (!pointId || !secret) {
+            console.error('Missing parameters');
             showError('Неверная ссылка QR кода');
         } else {
-            document.addEventListener('DOMContentLoaded', initCollectPage);
-        }
-
-        async function initCollectPage() {
+            // Убираем класс loading сразу для отображения формы
+            document.body.classList.remove('loading');
             document.body.classList.add('loaded');
-            await loadPointInfo();
+            
+            // Загружаем данные
+            loadPointInfo();
             setupEventListeners();
         }
 
         // Быстрая загрузка информации о точке
         async function loadPointInfo() {
             try {
+                console.log('Loading point info...');
+                
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
                 
                 const response = await fetch(`/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`, {
                     signal: controller.signal,
@@ -92,18 +224,23 @@
                 });
 
                 clearTimeout(timeoutId);
+                console.log('Response status:', response.status);
 
                 if (!response.ok) {
                     const data = await response.json();
+                    console.error('Server error:', data);
                     throw new Error(data.error || 'Ошибка загрузки');
                 }
 
                 const data = await response.json();
+                console.log('Point data:', data);
+                
                 document.getElementById('modelName').textContent = data.name;
                 document.getElementById('modelLocation').textContent = 
                     `Координаты: ${data.coordinates.lat.toFixed(4)}, ${data.coordinates.lng.toFixed(4)}`;
 
             } catch (error) {
+                console.error('Load error:', error);
                 if (error.name === 'AbortError') {
                     showError('Время ожидания истекло');
                 } else {
@@ -114,23 +251,38 @@
 
         // Настройка обработчиков событий
         function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            
             // Превью изображения
-            document.getElementById('selfie').addEventListener('change', handleFileChange);
+            const selfieInput = document.getElementById('selfie');
+            if (selfieInput) {
+                selfieInput.addEventListener('change', handleFileChange);
+            }
             
             // Отправка формы
-            document.getElementById('submitBtn').addEventListener('click', handleSubmit);
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', handleSubmit);
+            }
             
             // Enter в поле имени
-            document.getElementById('collectorName').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit();
-                }
-            });
+            const nameInput = document.getElementById('collectorName');
+            if (nameInput) {
+                nameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSubmit();
+                    }
+                });
+            }
+            
+            console.log('Event listeners set up');
         }
 
         // Обработка выбора файла
         function handleFileChange(e) {
+            console.log('File selected:', e.target.files[0]?.name);
+            
             const file = e.target.files[0];
             const preview = document.getElementById('imagePreview');
             
@@ -158,19 +310,25 @@
             // Создаем превью
             const reader = new FileReader();
             reader.onload = function(e) {
-                preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи" style="max-width: 100%; max-height: 200px; border-radius: 10px; margin-top: 10px;">`;
+                preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи">`;
             };
             reader.readAsDataURL(file);
         }
 
         // Обработка отправки
         async function handleSubmit() {
+            console.log('Submit clicked, isSubmitting:', isSubmitting);
+            
             if (isSubmitting) return;
             
-            const name = document.getElementById('collectorName').value.trim();
+            const nameInput = document.getElementById('collectorName');
+            const name = nameInput.value.trim();
+            
+            console.log('Name:', name);
+            
             if (!name) {
                 showNotification('Введите ваше имя', 'error');
-                document.getElementById('collectorName').focus();
+                nameInput.focus();
                 return;
             }
 
@@ -188,6 +346,8 @@
             submitBtn.innerHTML = '<span>⏳</span> Отправка...';
 
             try {
+                console.log('Creating form data...');
+                
                 const formData = new FormData();
                 formData.append('secret', secret);
                 formData.append('name', name);
@@ -200,10 +360,13 @@
                 const selfieFile = document.getElementById('selfie').files[0];
                 if (selfieFile && selfieFile.size <= 1024 * 1024) {
                     formData.append('selfie', selfieFile);
+                    console.log('Added selfie to form data');
                 }
 
+                console.log('Sending request...');
+
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек для загрузки файла
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 сек для загрузки файла
 
                 const response = await fetch(`/api/collect/${pointId}`, {
                     method: 'POST',
@@ -212,15 +375,22 @@
                 });
 
                 clearTimeout(timeoutId);
+                console.log('Response received:', response.status);
 
                 if (!response.ok) {
                     const result = await response.json();
+                    console.error('Server error:', result);
                     throw new Error(result.error || 'Ошибка отправки');
                 }
 
+                const result = await response.json();
+                console.log('Success:', result);
+                
                 showSuccess();
 
             } catch (error) {
+                console.error('Submit error:', error);
+                
                 if (error.name === 'AbortError') {
                     showError('Время ожидания истекло. Попробуйте еще раз.');
                 } else {
@@ -235,11 +405,13 @@
         }
 
         function showSuccess() {
+            console.log('Showing success message');
             document.getElementById('collectForm').style.display = 'none';
             document.getElementById('successMessage').style.display = 'block';
         }
 
         function showError(message) {
+            console.log('Showing error:', message);
             document.getElementById('collectForm').style.display = 'none';
             document.getElementById('errorText').textContent = message;
             document.getElementById('errorMessage').style.display = 'block';
@@ -247,6 +419,8 @@
 
         // Мини-уведомления
         function showNotification(message, type = 'info') {
+            console.log('Notification:', message, type);
+            
             const notification = document.createElement('div');
             notification.className = `mini-notification ${type}`;
             notification.textContent = message;
@@ -259,6 +433,16 @@
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2); max-width: 300px;
                 animation: slideIn 0.3s ease-out;
             `;
+            
+            // Добавляем анимацию
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
             
             document.body.appendChild(notification);
             
@@ -275,6 +459,10 @@
                 e.returnValue = '';
             }
         });
+
+        // Отладочная информация
+        console.log('Collect page initialized');
+        console.log('Current URL:', window.location.href);
     </script>
 </body>
 </html>
