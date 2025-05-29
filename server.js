@@ -87,24 +87,30 @@ app.get('/api/points', async (req, res) => {
 // Получить все точки для админа
 app.get('/api/admin/points', async (req, res) => {
   try {
-    const password = req.headers.authorization;
+    const password = req.headers['x-admin-password'] 
+      ? decodeURIComponent(req.headers['x-admin-password'])
+      : req.headers.authorization;
+      
     if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Неверный пароль' });
+      return res.status(401).json({ error: 'Invalid password' });
     }
     
     const points = await ModelPoint.find({});
     res.json(points);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения точек' });
+    res.status(500).json({ error: 'Failed to load points' });
   }
 });
 
 // Создать новую точку (админ)
 app.post('/api/admin/points', async (req, res) => {
   try {
-    const password = req.headers.authorization;
+    const password = req.headers['x-admin-password'] 
+      ? decodeURIComponent(req.headers['x-admin-password'])
+      : req.headers.authorization;
+      
     if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Неверный пароль' });
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     const { name, coordinates, delayMinutes } = req.body;
@@ -117,8 +123,9 @@ app.post('/api/admin/points', async (req, res) => {
     }
 
     // Создаем URL для сканирования QR кода
-    const baseUrl = req.get('host');
-    const collectUrl = `https://${baseUrl}/collect.html?id=${pointId}&secret=${qrSecret}`;
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const host = req.get('host');
+    const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
     
     // Генерируем QR код
     const qrCodeDataUrl = await QRCode.toDataURL(collectUrl);
@@ -135,8 +142,8 @@ app.post('/api/admin/points', async (req, res) => {
     await newPoint.save();
     res.json(newPoint);
   } catch (error) {
-    console.error('Ошибка создания точки:', error);
-    res.status(500).json({ error: 'Ошибка создания точки' });
+    console.error('Error creating point:', error);
+    res.status(500).json({ error: 'Failed to create point' });
   }
 });
 
@@ -227,25 +234,70 @@ app.get('/api/point/:id/info', async (req, res) => {
   }
 });
 
+// Альтернативный роут для создания точки (через POST body)
+app.post('/api/admin/points/create', async (req, res) => {
+  try {
+    const { name, coordinates, delayMinutes, adminPassword } = req.body;
+    
+    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    const pointId = Date.now().toString();
+    const qrSecret = Math.random().toString(36).substring(7);
+    
+    const scheduledTime = new Date();
+    if (delayMinutes) {
+      scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
+    }
+
+    // Создаем URL для сканирования QR кода
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const host = req.get('host');
+    const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
+    
+    // Генерируем QR код
+    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl);
+
+    const newPoint = new ModelPoint({
+      id: pointId,
+      name,
+      coordinates,
+      qrCode: qrCodeDataUrl,
+      qrSecret,
+      scheduledTime
+    });
+
+    await newPoint.save();
+    res.json(newPoint);
+  } catch (error) {
+    console.error('Error creating point:', error);
+    res.status(500).json({ error: 'Failed to create point' });
+  }
+});
+
 // Удалить точку (админ)
 app.delete('/api/admin/points/:id', async (req, res) => {
   try {
-    const password = req.headers.authorization;
+    const password = req.headers['x-admin-password'] 
+      ? decodeURIComponent(req.headers['x-admin-password'])
+      : req.headers.authorization;
+      
     if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Неверный пароль' });
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     const { id } = req.params;
     const deletedPoint = await ModelPoint.findOneAndDelete({ id });
     
     if (!deletedPoint) {
-      return res.status(404).json({ error: 'Точка не найдена' });
+      return res.status(404).json({ error: 'Point not found' });
     }
 
-    res.json({ success: true, message: 'Точка удалена' });
+    res.json({ success: true, message: 'Point deleted' });
   } catch (error) {
-    console.error('Ошибка удаления точки:', error);
-    res.status(500).json({ error: 'Ошибка удаления точки' });
+    console.error('Error deleting point:', error);
+    res.status(500).json({ error: 'Failed to delete point' });
   }
 });
 
