@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlasticBoy - Сбор модели</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Preload критически важных ресурсов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 </head>
 <body>
     <div class="container collect-container">
@@ -22,7 +24,7 @@
             <div id="collectFormInner">
                 <div class="form-group">
                     <label for="collectorName">Ваше имя:</label>
-                    <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required>
+                    <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required autocomplete="name">
                 </div>
 
                 <div class="form-group">
@@ -33,6 +35,9 @@
                 <div class="form-group">
                     <label for="selfie">Селфи с места находки:</label>
                     <input type="file" id="selfie" name="selfie" accept="image/*" capture="user">
+                    <div id="compressionInfo" style="display: none; color: #666; font-size: 0.9rem; margin-top: 5px;">
+                        Сжимаем изображение для быстрой загрузки...
+                    </div>
                     <div id="imagePreview"></div>
                 </div>
 
@@ -58,6 +63,65 @@
     </div>
 
     <script>
+        // Оптимизированная функция сжатия изображений
+        function compressImage(file, maxWidth = 1920, quality = 0.8) {
+            return new Promise((resolve, reject) => {
+                // Показываем индикатор сжатия
+                document.getElementById('compressionInfo').style.display = 'block';
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    try {
+                        // Вычисляем новые размеры с сохранением пропорций
+                        let { width, height } = img;
+                        
+                        // Только сжимаем, если изображение больше maxWidth
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // Рисуем изображение с оптимизацией
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Конвертируем в base64 с оптимальным качеством
+                        canvas.toBlob((blob) => {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                document.getElementById('compressionInfo').style.display = 'none';
+                                resolve(reader.result);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        }, 'image/jpeg', quality);
+                        
+                        // Освобождаем память
+                        URL.revokeObjectURL(img.src);
+                        
+                    } catch (error) {
+                        document.getElementById('compressionInfo').style.display = 'none';
+                        reject(error);
+                    }
+                };
+                
+                img.onerror = () => {
+                    document.getElementById('compressionInfo').style.display = 'none';
+                    reject(new Error('Ошибка загрузки изображения'));
+                };
+                
+                // Используем createObjectURL для лучшей производительности
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
         // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const pointId = urlParams.get('id');
@@ -72,16 +136,25 @@
             loadPointInfo();
         }
 
+        // Оптимизированная загрузка информации о точке
         async function loadPointInfo() {
             try {
                 console.log('Loading point info...');
+                
+                // Добавляем контроллер для отмены запроса при необходимости
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд таймаут
+                
                 const response = await fetch(`/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 });
 
+                clearTimeout(timeoutId);
+                
                 console.log('Response status:', response.status);
                 const data = await response.json();
                 console.log('Response data:', data);
@@ -96,35 +169,65 @@
 
             } catch (error) {
                 console.error('Error loading point info:', error);
-                showError(error.message);
+                if (error.name === 'AbortError') {
+                    showError('Время ожидания истекло. Проверьте интернет-соединение.');
+                } else {
+                    showError(error.message);
+                }
             }
         }
 
-        // Превью изображения
-        document.getElementById('selfie').addEventListener('change', function(e) {
+        // Оптимизированная обработка выбора файла с ленивым сжатием
+        let originalFile = null;
+        let compressedDataUrl = null;
+
+        document.getElementById('selfie').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             const preview = document.getElementById('imagePreview');
             
             if (file) {
-                // Проверяем размер файла (максимум 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Файл слишком большой. Максимальный размер: 5MB');
+                // Сохраняем оригинальный файл
+                originalFile = file;
+                compressedDataUrl = null;
+                
+                // Проверяем тип файла
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(file.type.toLowerCase())) {
+                    alert('Поддерживаются только форматы: JPEG, PNG, WebP');
                     this.value = '';
                     preview.innerHTML = '';
+                    originalFile = null;
                     return;
                 }
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи" style="max-width: 100%; max-height: 200px; border-radius: 10px;">`;
-                };
-                reader.readAsDataURL(file);
+                console.log(`Выбран файл: ${file.name}, размер: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
+                try {
+                    // Показываем превью немедленно без сжатия для UX
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const sizeInfo = file.size > 1024 * 1024 ? 
+                            `<p style="color: #666; font-size: 0.8rem;">Размер: ${(file.size / 1024 / 1024).toFixed(2)}MB</p>` : '';
+                        
+                        preview.innerHTML = `
+                            <img src="${e.target.result}" alt="Превью селфи" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+                            ${sizeInfo}
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                    
+                } catch (error) {
+                    console.error('Ошибка обработки изображения:', error);
+                    alert('Ошибка при обработке изображения');
+                }
             } else {
                 preview.innerHTML = '';
+                originalFile = null;
+                compressedDataUrl = null;
             }
         });
 
-        // Обработка кнопки отправки
+        // Оптимизированная обработка отправки с ленивым сжатием
         document.getElementById('submitBtn').addEventListener('click', async function(e) {
             e.preventDefault();
             
@@ -137,7 +240,7 @@
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>⏳</span> Отправка...';
+            submitBtn.innerHTML = '<span>⏳</span> Подготовка...';
 
             try {
                 console.log('Submitting form...');
@@ -147,18 +250,48 @@
                 formData.append('name', name);
                 formData.append('signature', document.getElementById('signature').value.trim());
                 
-                const selfieFile = document.getElementById('selfie').files[0];
-                if (selfieFile) {
-                    console.log('Adding selfie file:', selfieFile.name, selfieFile.size);
-                    formData.append('selfie', selfieFile);
+                // Обрабатываем селфи только при отправке
+                if (originalFile) {
+                    console.log('Processing selfie for upload...');
+                    submitBtn.innerHTML = '<span>🔄</span> Обработка фото...';
+                    
+                    try {
+                        // Сжимаем только большие файлы (> 2MB)
+                        if (originalFile.size > 2 * 1024 * 1024) {
+                            console.log('Compressing large image...');
+                            compressedDataUrl = await compressImage(originalFile, 1920, 0.85);
+                            
+                            // Конвертируем data URL обратно в Blob для FormData
+                            const response = await fetch(compressedDataUrl);
+                            const blob = await response.blob();
+                            formData.append('selfie', blob, 'compressed_selfie.jpg');
+                            
+                            console.log(`Image compressed: ${(originalFile.size / 1024 / 1024).toFixed(2)}MB -> ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+                        } else {
+                            // Для небольших файлов используем оригинал
+                            console.log('Using original file (small size)');
+                            formData.append('selfie', originalFile);
+                        }
+                    } catch (compressionError) {
+                        console.warn('Compression failed, using original:', compressionError);
+                        formData.append('selfie', originalFile);
+                    }
                 }
 
+                submitBtn.innerHTML = '<span>📤</span> Отправка...';
                 console.log('Sending request to:', `/api/collect/${pointId}`);
+
+                // Добавляем контроллер для отмены длинных запросов
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 секунд для загрузки
 
                 const response = await fetch(`/api/collect/${pointId}`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 console.log('Response status:', response.status);
                 const result = await response.json();
@@ -173,7 +306,12 @@
 
             } catch (error) {
                 console.error('Error submitting form:', error);
-                showError(error.message);
+                
+                if (error.name === 'AbortError') {
+                    showError('Время ожидания загрузки истекло. Попробуйте еще раз.');
+                } else {
+                    showError(error.message);
+                }
                 
                 // Восстанавливаем кнопку
                 submitBtn.disabled = false;
@@ -198,6 +336,28 @@
                 e.preventDefault();
                 document.getElementById('submitBtn').click();
             }
+        });
+
+        // Оптимизация: освобождаем память при выходе со страницы
+        window.addEventListener('beforeunload', function() {
+            if (originalFile && compressedDataUrl) {
+                URL.revokeObjectURL(compressedDataUrl);
+            }
+        });
+
+        // Оптимизация: предотвращаем повторную отправку
+        let isSubmitting = false;
+        document.getElementById('submitBtn').addEventListener('click', function(e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            isSubmitting = true;
+            
+            // Сбрасываем флаг через 2 секунды на случай ошибки
+            setTimeout(() => {
+                isSubmitting = false;
+            }, 2000);
         });
     </script>
 </body>
