@@ -271,7 +271,20 @@ async function createPointAlternative(pointData) {
     }
 }
 
-// Обработка формы добавления точки
+// НОВАЯ ФУНКЦИЯ: Показать QR код для только что созданной точки
+function showQRCodeForNewPoint(point) {
+    currentQRCode = point.qrCode;
+    
+    document.getElementById('qrCodeDisplay').innerHTML = `
+        <img src="${point.qrCode}" alt="QR код для ${point.name}">
+        <p><strong>${point.name}</strong></p>
+        <p>ID: ${point.id}</p>
+    `;
+    
+    document.getElementById('qrModal').style.display = 'block';
+}
+
+// Обработка формы добавления точки - ИСПРАВЛЕННАЯ ВЕРСИЯ
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addPointForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -296,6 +309,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Сначала пробуем основной метод
             let response;
+            let newPoint;
+            
             try {
                 response = await fetch('/api/admin/points', {
                     method: 'POST',
@@ -305,30 +320,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify(requestData)
                 });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Server error');
+                }
+                
+                newPoint = await response.json();
+                
             } catch (fetchError) {
                 // Если основной метод не работает, используем альтернативный
                 console.log('Using alternative method...');
-                const newPoint = await createPointAlternative(requestData);
-                
-                closeAddModal();
-                showNotification('Point created successfully!', 'success');
-                showQRCode(newPoint.id, newPoint.qrCode);
-                await loadAdminPoints();
-                return;
+                newPoint = await createPointAlternative(requestData);
             }
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Server error');
-            }
-            
-            const newPoint = await response.json();
             
             closeAddModal();
             showNotification('Point created successfully!', 'success');
             
-            // Показываем QR код для новой точки
-            showQRCode(newPoint.id, newPoint.qrCode);
+            // ИСПРАВЛЕНИЕ: Показываем QR код для новой точки БЕЗ попытки найти её в старом списке
+            showQRCodeForNewPoint(newPoint);
             
             // Обновляем данные
             await loadAdminPoints();
@@ -340,18 +350,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Показать QR код
+// ИСПРАВЛЕННАЯ функция показа QR кода для существующих точек
 function showQRCode(pointId, qrCodeData = null) {
+    // Если передан готовый QR код (для новых точек), используем его
+    if (qrCodeData) {
+        currentQRCode = qrCodeData;
+        document.getElementById('qrCodeDisplay').innerHTML = `
+            <img src="${qrCodeData}" alt="QR код">
+            <p>ID: ${pointId}</p>
+        `;
+        document.getElementById('qrModal').style.display = 'block';
+        return;
+    }
+    
+    // Для существующих точек ищем в списке
     const point = allPoints.find(p => p.id === pointId);
     if (!point) {
         showNotification('Точка не найдена', 'error');
         return;
     }
     
-    currentQRCode = qrCodeData || point.qrCode;
+    currentQRCode = point.qrCode;
     
     document.getElementById('qrCodeDisplay').innerHTML = `
-        <img src="${currentQRCode}" alt="QR код для ${point.name}">
+        <img src="${point.qrCode}" alt="QR код для ${point.name}">
         <p><strong>${point.name}</strong></p>
         <p>ID: ${pointId}</p>
     `;
