@@ -19,7 +19,7 @@
                 <p id="modelLocation"></p>
             </div>
 
-            <form id="submitForm" enctype="multipart/form-data">
+            <div id="collectFormInner">
                 <div class="form-group">
                     <label for="collectorName">Ваше имя:</label>
                     <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required>
@@ -36,11 +36,11 @@
                     <div id="imagePreview"></div>
                 </div>
 
-                <button type="submit" class="collect-btn">
+                <button type="button" id="submitBtn" class="collect-btn">
                     <span>📸</span>
                     Отметить находку
                 </button>
-            </form>
+            </div>
         </div>
 
         <div id="successMessage" class="success-message" style="display: none;">
@@ -63,18 +63,28 @@
         const pointId = urlParams.get('id');
         const secret = urlParams.get('secret');
 
+        console.log('Point ID:', pointId, 'Secret:', secret);
+
         if (!pointId || !secret) {
             showError('Неверная ссылка QR кода');
-            return;
+        } else {
+            // Загружаем информацию о точке
+            loadPointInfo();
         }
-
-        // Загружаем информацию о точке
-        loadPointInfo();
 
         async function loadPointInfo() {
             try {
-                const response = await fetch(`/api/collect/${pointId}?secret=${secret}`);
+                console.log('Loading point info...');
+                const response = await fetch(`/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
 
                 if (!response.ok) {
                     throw new Error(data.error || 'Ошибка загрузки');
@@ -85,6 +95,7 @@
                     `Координаты: ${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}`;
 
             } catch (error) {
+                console.error('Error loading point info:', error);
                 showError(error.message);
             }
         }
@@ -95,9 +106,17 @@
             const preview = document.getElementById('imagePreview');
             
             if (file) {
+                // Проверяем размер файла (максимум 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Файл слишком большой. Максимальный размер: 5MB');
+                    this.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи">`;
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи" style="max-width: 100%; max-height: 200px; border-radius: 10px;">`;
                 };
                 reader.readAsDataURL(file);
             } else {
@@ -105,40 +124,58 @@
             }
         });
 
-        // Отправка формы
-        document.getElementById('submitForm').addEventListener('submit', async function(e) {
+        // Обработка кнопки отправки
+        document.getElementById('submitBtn').addEventListener('click', async function(e) {
             e.preventDefault();
             
-            const submitBtn = document.querySelector('.collect-btn');
+            const name = document.getElementById('collectorName').value.trim();
+            if (!name) {
+                alert('Пожалуйста, введите ваше имя');
+                document.getElementById('collectorName').focus();
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span>⏳</span> Отправка...';
 
             try {
+                console.log('Submitting form...');
+                
                 const formData = new FormData();
                 formData.append('secret', secret);
-                formData.append('name', document.getElementById('collectorName').value);
-                formData.append('signature', document.getElementById('signature').value);
+                formData.append('name', name);
+                formData.append('signature', document.getElementById('signature').value.trim());
                 
                 const selfieFile = document.getElementById('selfie').files[0];
                 if (selfieFile) {
+                    console.log('Adding selfie file:', selfieFile.name, selfieFile.size);
                     formData.append('selfie', selfieFile);
                 }
+
+                console.log('Sending request to:', `/api/collect/${pointId}`);
 
                 const response = await fetch(`/api/collect/${pointId}`, {
                     method: 'POST',
                     body: formData
                 });
 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response result:', result);
 
                 if (!response.ok) {
                     throw new Error(result.error || 'Ошибка отправки');
                 }
 
+                console.log('Success!');
                 showSuccess();
 
             } catch (error) {
+                console.error('Error submitting form:', error);
                 showError(error.message);
+                
+                // Восстанавливаем кнопку
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<span>📸</span> Отметить находку';
             }
@@ -154,6 +191,14 @@
             document.getElementById('errorText').textContent = message;
             document.getElementById('errorMessage').style.display = 'block';
         }
+
+        // Предотвращаем случайную отправку формы
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                document.getElementById('submitBtn').click();
+            }
+        });
     </script>
 </body>
 </html>
