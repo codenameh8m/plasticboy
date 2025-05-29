@@ -1,443 +1,391 @@
-// Оптимизированные переменные
+// Инициализация карты
 let map;
 let markers = [];
-let lastUpdateTime = 0;
-let isUpdating = false;
-let pointsData = [];
 
-// Константы
+// Координаты Алматы
 const ALMATY_CENTER = [43.2220, 76.8512];
-const UPDATE_INTERVAL = 12000; // 12 секунд
-const FAST_UPDATE_INTERVAL = 5000; // 5 секунд при активности
 
-// Супербыстрая инициализация
+// Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    // Добавляем класс для предотвращения FOUC
-    document.body.classList.add('loading');
+    initMap();
+    loadPoints();
     
-    // Инициализируем карту асинхронно
-    requestAnimationFrame(() => {
-        initMap();
-        loadPoints();
-        setupAutoUpdate();
-        document.body.classList.remove('loading');
-        document.body.classList.add('loaded');
-    });
+    // Автообновление каждые 30 секунд
+    setInterval(loadPoints, 30000);
 });
 
-// Оптимизированная инициализация карты
+// Инициализация карты
 function initMap() {
-    map = L.map('map', {
-        preferCanvas: true,
-        zoomControl: true,
-        attributionControl: false,
-        zoomAnimation: false, // Отключаем анимацию для скорости
-        fadeAnimation: false,
-        markerZoomAnimation: false
-    }).setView(ALMATY_CENTER, 12);
+    map = L.map('map').setView(ALMATY_CENTER, 12);
     
-    // Быстрый тайловый сервер
+    // Используем минималистичную карту
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 17, // Ограничиваем для скорости
-        tileSize: 256,
-        updateWhenZooming: false,
-        updateWhenIdle: true,
-        keepBuffer: 1, // Уменьшили буфер
-        attribution: '© OSM'
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
     }).addTo(map);
+    
+    // Стилизация карты
+    map.getContainer().style.filter = 'grayscale(20%) contrast(1.1)';
 }
 
-// Умная система обновления
-function setupAutoUpdate() {
-    let interval = UPDATE_INTERVAL;
-    
-    // Адаптивный интервал
-    if (navigator.connection) {
-        const connection = navigator.connection;
-        if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
-            interval = 30000; // 30 сек для медленного интернета
-        } else if (connection.effectiveType === '4g' || connection.effectiveType === '5g') {
-            interval = FAST_UPDATE_INTERVAL; // 5 сек для быстрого интернета
-        }
-    }
-    
-    // Основной таймер
-    setInterval(() => {
-        if (!document.hidden && !isUpdating && Date.now() - lastUpdateTime > interval) {
-            loadPoints();
-        }
-    }, interval);
-    
-    // Обновление при возвращении
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && Date.now() - lastUpdateTime > 10000) {
-            loadPoints();
-        }
-    });
-}
-
-// Супербыстрая загрузка точек
+// Загрузка точек с сервера
 async function loadPoints() {
-    if (isUpdating) return;
-    isUpdating = true;
-    
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 сек таймаут
-        
         const response = await fetch('/api/points', {
-            signal: controller.signal,
+            method: 'GET',
             headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'max-age=20'
+                'Accept': 'application/json'
             }
         });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const newData = await response.json();
-        lastUpdateTime = Date.now();
-        
-        // Проверяем, нужно ли обновлять карту
-        if (JSON.stringify(newData) !== JSON.stringify(pointsData)) {
-            pointsData = newData;
-            updateMapFast(newData);
-            updateStatsAnimated(newData);
+        if (!response.ok) {
+            throw new Error('Failed to load points');
         }
+        
+        const points = await response.json();
+        updateMap(points);
+        updateStats(points);
         
     } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.warn('Load error:', error.message);
-            // Показываем ошибку только если давно не обновлялись
-            if (Date.now() - lastUpdateTime > 60000) {
-                showNotification('Connection issue', 'error');
-            }
-        }
-    } finally {
-        isUpdating = false;
+        console.error('Error loading points:', error);
+        showNotification('Error loading data', 'error');
     }
 }
 
-// Супербыстрое обновление карты
-function updateMapFast(points) {
-    // Получаем текущие ID точек
-    const newIds = new Set(points.map(p => p.id));
-    const currentIds = new Set(markers.map(m => m.pointId));
-    
-    // Удаляем исчезнувшие маркеры
-    markers = markers.filter(markerObj => {
-        if (!newIds.has(markerObj.pointId)) {
-            map.removeLayer(markerObj.marker);
-            return false;
-        }
-        return true;
-    });
-    
-    // Добавляем новые маркеры батчами
-    const newPoints = points.filter(p => !currentIds.has(p.id));
-    if (newPoints.length > 0) {
-        addMarkersBatch(newPoints);
-    }
-    
-    // Обновляем существующие маркеры если нужно
-    updateExistingMarkers(points);
-}
-
-// Батчевое добавление маркеров
-function addMarkersBatch(points) {
-    const fragment = document.createDocumentFragment();
+// Обновление карты
+function updateMap(points) {
+    // Очищаем существующие маркеры
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
     
     points.forEach(point => {
         const isAvailable = point.status === 'available';
         
-        // Минимальная иконка для скорости
+        // Создаем кастомную иконку
         const icon = L.divIcon({
-            className: 'fast-marker',
-            html: `<div class="dot ${isAvailable ? 'available' : 'collected'}"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
+            className: 'custom-marker',
+            html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}">
+                     <div class="marker-pulse ${isAvailable ? 'pulse' : ''}"></div>
+                   </div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
         });
         
         const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
             .addTo(map);
         
-        // Ленивый popup
-        marker.on('click', () => {
-            createPopup(marker, point);
-        });
+        // Добавляем popup
+        let popupContent = `
+            <div class="popup-content">
+                <h3>${point.name}</h3>
+                <p class="status ${point.status}">
+                    ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
+                </p>
+        `;
         
-        markers.push({ marker, pointId: point.id, point });
+        if (!isAvailable && point.collectorInfo) {
+            popupContent += `
+                <div class="collector-info">
+                    <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>
+                    ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
+                    <p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+                </div>
+            `;
+            
+            // Добавляем кнопку для просмотра подробностей
+            popupContent += `<button onclick="showPointDetails('${point.id}')" class="details-btn">Подробнее</button>`;
+        }
+        
+        popupContent += '</div>';
+        marker.bindPopup(popupContent);
+        markers.push(marker);
     });
     
-    // Добавляем стили если нужно
-    addFastMarkerStyles();
+    // Добавляем стили для маркеров
+    addMarkerStyles();
 }
 
-// Обновление существующих маркеров
-function updateExistingMarkers(points) {
-    const pointsMap = new Map(points.map(p => [p.id, p]));
-    
-    markers.forEach(markerObj => {
-        const point = pointsMap.get(markerObj.pointId);
-        if (point && point.status !== markerObj.point?.status) {
-            // Обновляем только изменившиеся маркеры
-            const isAvailable = point.status === 'available';
-            const dotElement = markerObj.marker.getElement()?.querySelector('.dot');
-            if (dotElement) {
-                dotElement.className = `dot ${isAvailable ? 'available' : 'collected'}`;
+// Добавление стилей для маркеров
+function addMarkerStyles() {
+    if (!document.getElementById('marker-styles')) {
+        const style = document.createElement('style');
+        style.id = 'marker-styles';
+        style.textContent = `
+            .custom-marker {
+                background: none !important;
+                border: none !important;
             }
-            markerObj.point = point;
-        }
-    });
-}
-
-// Ленивое создание popup
-function createPopup(marker, point) {
-    const isAvailable = point.status === 'available';
-    
-    let content = `<div class="popup-content">
-        <h3>${point.name}</h3>
-        <p class="status ${point.status}">
-            ${isAvailable ? '🟢 Available' : '🔴 Collected'}
-        </p>`;
-    
-    if (!isAvailable && point.collectorInfo) {
-        content += `<p><strong>By:</strong> ${point.collectorInfo.name}</p>`;
-        if (point.collectedAt) {
-            content += `<p><strong>Time:</strong> ${new Date(point.collectedAt).toLocaleDateString()}</p>`;
-        }
-        content += `<button onclick="showDetails('${point.id}')" class="details-btn">Details</button>`;
+            
+            .marker-dot {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                position: relative;
+                border: 3px solid white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            }
+            
+            .marker-dot.available {
+                background: #4CAF50;
+            }
+            
+            .marker-dot.collected {
+                background: #f44336;
+            }
+            
+            .marker-pulse {
+                position: absolute;
+                top: -3px;
+                left: -3px;
+                right: -3px;
+                bottom: -3px;
+                border-radius: 50%;
+                border: 2px solid #4CAF50;
+                opacity: 0;
+            }
+            
+            .marker-pulse.pulse {
+                animation: pulse 2s infinite;
+            }
+            
+            @keyframes pulse {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.3;
+                }
+                100% {
+                    transform: scale(1.5);
+                    opacity: 0;
+                }
+            }
+            
+            .popup-content {
+                min-width: 200px;
+            }
+            
+            .popup-content h3 {
+                margin: 0 0 10px 0;
+                color: #333;
+                font-size: 1.1rem;
+            }
+            
+            .status {
+                margin: 10px 0;
+                font-weight: 600;
+            }
+            
+            .status.available {
+                color: #4CAF50;
+            }
+            
+            .status.collected {
+                color: #f44336;
+            }
+            
+            .collector-info {
+                background: #f8f9fa;
+                padding: 10px;
+                border-radius: 8px;
+                margin: 10px 0;
+                font-size: 0.9rem;
+            }
+            
+            .collector-info p {
+                margin: 5px 0;
+            }
+            
+            .details-btn {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                margin-top: 10px;
+                width: 100%;
+            }
+            
+            .details-btn:hover {
+                background: #5a67d8;
+            }
+        `;
+        document.head.appendChild(style);
     }
-    
-    content += '</div>';
-    marker.bindPopup(content).openPopup();
 }
 
-// Быстрые стили маркеров
-function addFastMarkerStyles() {
-    if (document.getElementById('fast-marker-styles')) return;
-    
-    const style = document.createElement('style');
-    style.id = 'fast-marker-styles';
-    style.textContent = `
-        .fast-marker { background: none !important; border: none !important; }
-        .dot {
-            width: 14px; height: 14px; border-radius: 50%;
-            border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        }
-        .dot.available { background: #4CAF50; }
-        .dot.collected { background: #f44336; }
-        .popup-content { min-width: 160px; font-size: 0.85rem; }
-        .popup-content h3 { margin: 0 0 6px 0; font-size: 0.95rem; }
-        .status { margin: 6px 0; font-weight: 600; font-size: 0.8rem; }
-        .status.available { color: #4CAF50; }
-        .status.collected { color: #f44336; }
-        .details-btn {
-            background: #667eea; color: white; border: none;
-            padding: 4px 8px; border-radius: 3px; cursor: pointer;
-            width: 100%; margin-top: 6px; font-size: 0.75rem;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// Анимированная статистика
-function updateStatsAnimated(points) {
+// Обновление статистики
+function updateStats(points) {
     const available = points.filter(p => p.status === 'available').length;
-    const collected = points.length - available;
+    const collected = points.filter(p => p.status === 'collected').length;
     
-    animateNumber('availableCount', available);
-    animateNumber('collectedCount', collected);
+    document.getElementById('availableCount').textContent = available;
+    document.getElementById('collectedCount').textContent = collected;
 }
 
-// Оптимизированная анимация чисел
-function animateNumber(elementId, targetValue) {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    
-    const currentValue = parseInt(element.textContent) || 0;
-    if (currentValue === targetValue) return;
-    
-    const diff = targetValue - currentValue;
-    const duration = Math.min(Math.abs(diff) * 30, 500); // Максимум 500мс
-    const startTime = performance.now();
-    
-    function animate(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        const current = Math.round(currentValue + diff * progress);
-        element.textContent = current;
-        
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        }
-    }
-    
-    requestAnimationFrame(animate);
-}
-
-// Быстрое отображение деталей
-async function showDetails(pointId) {
-    const modal = document.getElementById('infoModal');
-    const title = document.getElementById('modalTitle');
-    const body = document.getElementById('modalBody');
-    
-    // Показываем загрузку
-    title.textContent = 'Loading...';
-    body.innerHTML = '<div style="text-align:center;padding:15px;">⏳</div>';
-    modal.style.display = 'block';
-    
+// Показать подробности точки
+async function showPointDetails(pointId) {
     try {
-        const response = await fetch(`/api/point/${pointId}/info`, {
-            headers: { 'Accept': 'application/json' }
-        });
-        
-        if (!response.ok) throw new Error('Load failed');
+        const response = await fetch(`/api/point/${pointId}/info`);
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки информации');
+        }
         
         const point = await response.json();
         
-        title.textContent = 'Point Info';
-        body.innerHTML = createDetailsHTML(point);
-        
-    } catch (error) {
-        body.innerHTML = '<p style="color:#f44336;text-align:center;">Failed to load</p>';
-    }
-}
-
-// Создание HTML для деталей
-function createDetailsHTML(point) {
-    let html = `
-        <h3>${point.name}</h3>
-        <p><strong>Status:</strong> ${point.status === 'collected' ? 'Collected' : 'Available'}</p>
-        <p><strong>Coordinates:</strong> ${point.coordinates.lat.toFixed(4)}, ${point.coordinates.lng.toFixed(4)}</p>
-    `;
-    
-    if (point.status === 'collected' && point.collectorInfo) {
-        html += `
-            <hr style="margin: 10px 0;">
-            <h4>Collector Info:</h4>
-            <p><strong>Name:</strong> ${point.collectorInfo.name}</p>
-            ${point.collectorInfo.signature ? `<p><strong>Message:</strong> ${point.collectorInfo.signature}</p>` : ''}
-            <p><strong>Collected:</strong> ${new Date(point.collectedAt).toLocaleDateString()}</p>
+        let modalContent = `
+            <h3>${point.name}</h3>
+            <p><strong>Статус:</strong> ${point.status === 'collected' ? 'Собрана' : 'Доступна'}</p>
+            <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
         `;
         
-        if (point.collectorInfo.selfie) {
-            html += `
-                <div style="margin-top: 10px;">
-                    <strong>Photo:</strong><br>
-                    <img src="${point.collectorInfo.selfie}" 
-                         style="max-width: 100%; max-height: 150px; border-radius: 6px; margin-top: 8px; cursor: pointer;"
-                         onclick="this.style.maxHeight=this.style.maxHeight==='150px'?'none':'150px'">
-                </div>
+        if (point.status === 'collected' && point.collectorInfo) {
+            modalContent += `
+                <hr style="margin: 15px 0;">
+                <h4>Информация о сборщике:</h4>
+                <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
+                ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
+                <p><strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
             `;
+            
+            if (point.collectorInfo.selfie) {
+                modalContent += `
+                    <div style="margin-top: 15px;">
+                        <strong>Селфи с места находки:</strong><br>
+                        <img src="${point.collectorInfo.selfie}" 
+                             style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-top: 10px;"
+                             alt="Селфи сборщика">
+                    </div>
+                `;
+            }
         }
+        
+        document.getElementById('modalTitle').innerHTML = 'Информация о модели';
+        document.getElementById('modalBody').innerHTML = modalContent;
+        document.getElementById('infoModal').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Ошибка загрузки информации:', error);
+        showNotification('Ошибка загрузки информации', 'error');
     }
-    
-    return html;
 }
 
-// Закрытие модального окна
+// Закрыть модальное окно
 function closeModal() {
     document.getElementById('infoModal').style.display = 'none';
 }
 
-// Оптимизированные уведомления
-let notificationTimeout;
+// Показать уведомление
 function showNotification(message, type = 'info') {
-    // Убираем предыдущее
-    if (notificationTimeout) {
-        clearTimeout(notificationTimeout);
-        const existing = document.querySelector('.notification');
-        if (existing) existing.remove();
-    }
-    
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
-        <span>${message}</span>
-        <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:1rem;cursor:pointer;color:#999;margin-left:8px;">×</button>
+        <div class="notification-content">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
     `;
     
-    // Мини стили
+    // Добавляем стили для уведомлений если их нет
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
         style.id = 'notification-styles';
         style.textContent = `
             .notification {
-                position: fixed; top: 15px; right: 15px; z-index: 2000;
-                background: white; border-radius: 6px; padding: 10px;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.2); font-size: 0.85rem;
-                display: flex; align-items: center; max-width: 250px;
-                animation: slideIn 0.2s ease-out;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 2000;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                padding: 15px;
+                min-width: 250px;
+                max-width: 350px;
+                animation: slideIn 0.3s ease-out;
             }
-            .notification.error { border-left: 3px solid #f44336; }
-            .notification.success { border-left: 3px solid #4CAF50; }
-            .notification.info { border-left: 3px solid #2196F3; }
-            @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            
+            .notification.error {
+                border-left: 4px solid #f44336;
+            }
+            
+            .notification.success {
+                border-left: 4px solid #4CAF50;
+            }
+            
+            .notification.info {
+                border-left: 4px solid #2196F3;
+            }
+            
+            .notification-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .notification-content button {
+                background: none;
+                border: none;
+                font-size: 1.2rem;
+                cursor: pointer;
+                color: #999;
+                padding: 0;
+                margin: 0;
+                width: auto;
+                margin-left: 10px;
+            }
+            
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
         `;
         document.head.appendChild(style);
     }
     
     document.body.appendChild(notification);
     
-    notificationTimeout = setTimeout(() => {
+    // Автоматически удаляем через 5 секунд
+    setTimeout(() => {
         if (notification.parentElement) {
-            notification.style.animation = 'slideIn 0.2s ease-out reverse';
-            setTimeout(() => notification.remove(), 200);
+            notification.remove();
         }
-    }, 2500);
+    }, 5000);
 }
 
-// Глобальные обработчики событий
+// Закрытие модального окна при клике вне его
 window.addEventListener('click', function(event) {
-    if (event.target.id === 'infoModal') {
+    const modal = document.getElementById('infoModal');
+    if (event.target === modal) {
         closeModal();
     }
 });
 
-// Оптимизированная кнопка обновления
+// Обработка ошибок загрузки карты
+window.addEventListener('error', function(e) {
+    if (e.target.tagName === 'IMG' && e.target.src.includes('openstreetmap')) {
+        console.warn('Ошибка загрузки тайлов карты');
+        showNotification('Проблемы с загрузкой карты. Проверьте интернет-соединение.', 'error');
+    }
+});
+
+// Добавляем обработчик для кнопки обновления
 document.addEventListener('DOMContentLoaded', function() {
     const refreshBtn = document.querySelector('.refresh-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
-            if (isUpdating) return;
-            
-            this.style.transform = 'rotate(360deg) scale(0.9)';
-            this.style.transition = 'transform 0.4s ease';
-            
-            loadPoints();
-            
+            this.style.transform = 'rotate(360deg)';
             setTimeout(() => {
                 this.style.transform = '';
-                this.style.transition = '';
-            }, 400);
+            }, 500);
         });
     }
 });
-
-// Предзагрузка критических ресурсов
-if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-        // Предзагружаем админ панель если пользователь долго на сайте
-        if (performance.now() > 30000) { // Через 30 сек
-            const link = document.createElement('link');
-            link.rel = 'prefetch';
-            link.href = '/admin.html';
-            document.head.appendChild(link);
-        }
-    });
-}
-
-// Оптимизация для медленных устройств
-if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) {
-    // Для слабых устройств увеличиваем интервалы
-    UPDATE_INTERVAL *= 1.5;
-    FAST_UPDATE_INTERVAL *= 1.5;
-}
-
-// Экспорт функций для глобального доступа
-window.showDetails = showDetails;
-window.closeModal = closeModal;
