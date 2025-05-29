@@ -31,9 +31,14 @@ function initMap() {
 // Загрузка точек с сервера
 async function loadPoints() {
     try {
-        const response = await fetch('/api/points');
+        const response = await fetch('/api/points', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
         if (!response.ok) {
-            throw new Error('Ошибка загрузки точек');
+            throw new Error('Failed to load points');
         }
         
         const points = await response.json();
@@ -41,8 +46,8 @@ async function loadPoints() {
         updateStats(points);
         
     } catch (error) {
-        console.error('Ошибка загрузки точек:', error);
-        showNotification('Ошибка загрузки данных', 'error');
+        console.error('Error loading points:', error);
+        showNotification('Error loading data', 'error');
     }
 }
 
