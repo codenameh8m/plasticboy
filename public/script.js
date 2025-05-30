@@ -519,9 +519,6 @@ function updateStats(points) {
             animateNumber(totalElement, parseInt(totalElement.textContent) || 0, total);
         }
     }
-    
-    // Обновляем список моделей
-    updateModelsList(points);
 }
 
 // Улучшенная анимация изменения числа
