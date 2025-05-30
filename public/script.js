@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Автообновление каждые 30 секунд
     setInterval(loadPoints, 30000);
     
-    // Инициализация кнопок с улучшенными эффектами
+    // Инициализация кнопки с улучшенными эффектами
     initControlButtons();
 });
 
@@ -37,10 +37,9 @@ function initMap() {
     }, 100);
 }
 
-// Инициализация кнопок управления
+// Инициализация кнопки управления
 function initControlButtons() {
     const locationBtn = document.querySelector('.location-btn');
-    const refreshBtn = document.querySelector('.refresh-btn');
     
     // Добавляем улучшенные обработчики событий
     if (locationBtn) {
@@ -49,16 +48,6 @@ function initControlButtons() {
         });
         
         locationBtn.addEventListener('mouseup', function() {
-            this.style.transform = '';
-        });
-    }
-    
-    if (refreshBtn) {
-        refreshBtn.addEventListener('mousedown', function() {
-            this.style.transform = 'translateY(-1px)';
-        });
-        
-        refreshBtn.addEventListener('mouseup', function() {
             this.style.transform = '';
         });
     }
@@ -99,34 +88,6 @@ function addGrayscaleMapStyles() {
         `;
         document.head.appendChild(style);
     }
-}
-
-// Функция обновления карты с улучшенной анимацией
-function refreshMap() {
-    const refreshBtn = document.querySelector('.refresh-btn');
-    
-    // Добавляем анимацию вращения и блокируем кнопку
-    refreshBtn.classList.add('spinning');
-    refreshBtn.disabled = true;
-    refreshBtn.style.opacity = '0.8';
-    
-    // Загружаем точки
-    loadPoints().then(() => {
-        showNotification('Карта обновлена', 'success');
-        
-        // Убираем анимацию через время анимации
-        setTimeout(() => {
-            refreshBtn.classList.remove('spinning');
-            refreshBtn.disabled = false;
-            refreshBtn.style.opacity = '';
-        }, 600);
-    }).catch(error => {
-        console.error('Ошибка обновления:', error);
-        showNotification('Ошибка обновления карты', 'error');
-        refreshBtn.classList.remove('spinning');
-        refreshBtn.disabled = false;
-        refreshBtn.style.opacity = '';
-    });
 }
 
 // Функция получения геолокации с улучшенными эффектами
@@ -776,12 +737,6 @@ document.addEventListener('keydown', function(event) {
         closeModal();
     }
     
-    // Обновление карты по F5 или Ctrl+R
-    if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
-        event.preventDefault();
-        refreshMap();
-    }
-    
     // Определение местоположения по Ctrl+L
     if (event.ctrlKey && event.key === 'l') {
         event.preventDefault();
@@ -909,7 +864,6 @@ window.PlasticBoy = {
     loadPoints,
     showNotification,
     getCurrentLocation,
-    refreshMap,
     showPointDetails,
     closeModal,
     focusOnModel,
