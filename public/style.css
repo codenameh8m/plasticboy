@@ -212,24 +212,22 @@ body {
 /* КНОПКИ УПРАВЛЕНИЯ КАРТОЙ */
 .map-controls {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
     padding: 20px;
-    margin: 20px auto;
+    margin: 20px 0;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    gap: 20px;
-    max-width: 600px;
+    gap: 15px;
     width: 100%;
 }
 
 /* КНОПКИ - БАЗОВЫЕ СТИЛИ */
 .control-btn {
-    flex: 1;
-    max-width: 280px;
+    width: 100%;
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
     color: white !important;
     border: none !important;
@@ -871,9 +869,8 @@ button:not(.control-btn):disabled {
         margin-bottom: 0;
     }
     
-    /* ПЛАНШЕТЫ - КНОПКИ ОСТАЮТСЯ ГОРИЗОНТАЛЬНО */
+    /* ПЛАНШЕТЫ - КНОПКИ УЖЕ ВЕРТИКАЛЬНО */
     .map-controls {
-        max-width: 500px;
         gap: 15px;
         padding: 18px;
     }
@@ -905,20 +902,13 @@ button:not(.control-btn):disabled {
         min-height: 800px !important;
     }
     
-    /* СМАРТФОНЫ - КНОПКИ В СТОЛБЕЦ И ПОЛНАЯ ШИРИНА */
+    /* СМАРТФОНЫ - КНОПКИ УЖЕ ВЕРТИКАЛЬНО */
     .map-controls {
-        flex-direction: column !important;
-        max-width: none !important;
-        width: calc(100% - 20px) !important;
-        margin: 20px 10px !important;
         gap: 15px !important;
         padding: 20px !important;
     }
     
     .control-btn {
-        flex: none !important;
-        max-width: none !important;
-        width: 100% !important;
         font-size: 1.1rem !important;
         padding: 18px 24px !important;
         min-height: 60px !important;
@@ -936,20 +926,13 @@ button:not(.control-btn):disabled {
         padding: 5px;
     }
     
-    /* МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКИ ПОЛНАЯ ШИРИНА */
+    /* МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКИ УЖЕ ВЕРТИКАЛЬНО */
     .map-controls {
-        flex-direction: column !important;
-        max-width: none !important;
-        width: calc(100% - 10px) !important;
-        margin: 15px 5px !important;
         gap: 12px !important;
         padding: 16px !important;
     }
     
     .control-btn {
-        flex: none !important;
-        max-width: none !important;
-        width: 100% !important;
         font-size: 1rem !important;
         padding: 16px 20px !important;
         min-height: 55px !important;
