@@ -8,13 +8,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
-    <!-- Предзагрузка критических ресурсов -->
-    <link rel="prefetch" href="/api/points">
-    <link rel="preconnect" href="https://unpkg.com">
-    <link rel="dns-prefetch" href="//tile.openstreetmap.org">
-    
     <style>
-        /* УЛЬТРА-БЫСТРЫЕ стили загрузочного экрана */
+        /* Стили для загрузочного экрана */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -27,80 +22,19 @@
             justify-content: center;
             align-items: center;
             z-index: 10000;
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
             font-family: 'Press Start 2P', monospace;
             color: #00ff00;
             overflow: hidden;
-            
-            /* CRT эффекты */
-            filter: contrast(1.2) brightness(1.1);
-            
-            /* Lens distortion */
-            transform: perspective(1000px) rotateX(1deg);
-            transform-style: preserve-3d;
-        }
-        
-        .loading-screen::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            
-            /* CRT barrel distortion */
-            background: radial-gradient(ellipse at center, 
-                transparent 0%, 
-                transparent 40%, 
-                rgba(0, 0, 0, 0.02) 60%, 
-                rgba(0, 0, 0, 0.05) 80%, 
-                rgba(0, 0, 0, 0.1) 100%);
-            
-            /* Subtle lens distortion */
-            border-radius: 0 0 5% 5% / 0 0 2% 2%;
-            
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .loading-screen::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            
-            /* CRT scanlines */
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 255, 0, 0.03) 2px,
-                rgba(0, 255, 0, 0.03) 4px
-            );
-            
-            /* Flickering effect */
-            animation: crtFlicker 0.15s infinite linear alternate;
-            
-            pointer-events: none;
-            z-index: 2;
-        }
-        
-        @keyframes crtFlicker {
-            0% { opacity: 1; }
-            98% { opacity: 1; }
-            99% { opacity: 0.98; }
-            100% { opacity: 0.995; }
         }
         
         .loading-screen.fade-out {
             opacity: 0;
-            transform: perspective(1000px) rotateX(1deg) scale(1.02);
+            transform: scale(1.05);
             pointer-events: none;
         }
         
-        /* Минимальный матричный фон для производительности */
+        /* Анимированный фон с точками */
         .matrix-bg {
             position: absolute;
             top: 0;
@@ -108,27 +42,27 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            opacity: 0.2;
+            opacity: 0.3;
         }
         
         .matrix-dot {
             position: absolute;
-            width: 1px;
-            height: 1px;
+            width: 2px;
+            height: 2px;
             background: #00ff00;
             border-radius: 50%;
-            animation: matrixFall 1.5s linear infinite;
+            animation: matrixFall 2s linear infinite;
         }
         
         @keyframes matrixFall {
             0% {
-                transform: translateY(-5px);
+                transform: translateY(-10px);
                 opacity: 0;
             }
-            20% {
+            15% {
                 opacity: 1;
             }
-            80% {
+            85% {
                 opacity: 1;
             }
             100% {
@@ -137,42 +71,31 @@
             }
         }
         
-        /* Компактный логотип */
+        /* Логотип и заголовок */
         .logo-container {
             text-align: center;
-            margin-bottom: 40px;
-            animation: logoGlow 1.5s ease-in-out infinite alternate;
-            position: relative;
-            z-index: 10;
-            
-            /* CRT глубина */
-            transform: translateZ(20px);
+            margin-bottom: 50px;
+            animation: logoGlow 1.8s ease-in-out infinite alternate;
         }
         
         .logo-title {
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: #00ff00;
             text-shadow: 
                 0 0 5px #00ff00,
                 0 0 10px #00ff00,
                 0 0 15px #00ff00,
                 0 0 20px #00ff00;
-            margin-bottom: 10px;
-            letter-spacing: 3px;
-            
-            /* CRT эффект свечения */
-            filter: blur(0.5px);
+            margin-bottom: 15px;
+            letter-spacing: 4px;
         }
         
         .logo-subtitle {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             color: #00cccc;
             text-shadow: 0 0 5px #00cccc;
-            opacity: 0.7;
-            letter-spacing: 1px;
-            
-            /* CRT эффект */
-            filter: blur(0.3px);
+            opacity: 0.8;
+            letter-spacing: 2px;
         }
         
         @keyframes logoGlow {
@@ -182,7 +105,6 @@
                     0 0 10px #00ff00,
                     0 0 15px #00ff00,
                     0 0 20px #00ff00;
-                filter: blur(0.5px);
             }
             100% {
                 text-shadow: 
@@ -190,34 +112,28 @@
                     0 0 16px #00ff00,
                     0 0 24px #00ff00,
                     0 0 32px #00ff00;
-                filter: blur(0.3px);
             }
         }
         
         /* Быстрый прогресс бар */
         .progress-container {
-            width: 320px;
+            width: 380px;
             background: #000;
-            border: 2px solid #00ff00;
+            border: 3px solid #00ff00;
             border-radius: 0;
-            padding: 4px;
+            padding: 6px;
             box-shadow: 
-                inset 0 0 6px rgba(0, 255, 0, 0.3),
-                0 0 12px rgba(0, 255, 0, 0.2);
-            margin-bottom: 25px;
+                inset 0 0 8px rgba(0, 255, 0, 0.3),
+                0 0 16px rgba(0, 255, 0, 0.2);
+            margin-bottom: 35px;
             position: relative;
-            z-index: 10;
-            
-            /* CRT эффект */
-            filter: contrast(1.1);
-            transform: translateZ(10px);
         }
         
         .progress-bar {
-            height: 14px;
+            height: 18px;
             background: linear-gradient(90deg, #003300 0%, #00ff00 100%);
             width: 0%;
-            transition: width 0.1s ease;
+            transition: width 0.2s ease;
             position: relative;
             overflow: hidden;
             border-radius: 0;
@@ -232,9 +148,9 @@
             height: 100%;
             background: linear-gradient(90deg, 
                 transparent 0%, 
-                rgba(255, 255, 255, 0.3) 50%, 
+                rgba(255, 255, 255, 0.4) 50%, 
                 transparent 100%);
-            animation: progressShine 0.8s infinite;
+            animation: progressShine 1s infinite;
         }
         
         @keyframes progressShine {
@@ -247,7 +163,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 0.6rem;
+            font-size: 0.7rem;
             color: #ffffff;
             text-shadow: 1px 1px 0px #000;
             z-index: 1;
@@ -256,60 +172,48 @@
         
         /* Статус загрузки */
         .loading-status {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             color: #00cccc;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: center;
-            min-height: 20px;
-            animation: textBlink 1s infinite;
+            min-height: 25px;
+            animation: textBlink 1.2s infinite;
             letter-spacing: 1px;
-            position: relative;
-            z-index: 10;
-            
-            /* CRT эффект */
-            filter: blur(0.3px);
-            text-shadow: 0 0 3px #00cccc;
         }
         
         @keyframes textBlink {
-            0%, 70% { opacity: 1; }
-            71%, 100% { opacity: 0.6; }
+            0%, 60% { opacity: 1; }
+            61%, 100% { opacity: 0.7; }
         }
         
         /* Быстрая пиксельная анимация */
         .pixel-loader {
             display: flex;
-            gap: 2px;
-            margin-bottom: 15px;
-            position: relative;
-            z-index: 10;
-            
-            /* CRT эффект */
-            filter: contrast(1.2);
+            gap: 3px;
+            margin-bottom: 18px;
         }
         
         .pixel-dot {
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             background: #00ff00;
             border-radius: 0;
-            animation: pixelPulse 0.8s infinite;
-            box-shadow: 0 0 2px #00ff00;
+            animation: pixelPulse 1s infinite;
         }
         
-        .pixel-dot:nth-child(2) { animation-delay: 0.1s; }
-        .pixel-dot:nth-child(3) { animation-delay: 0.2s; }
-        .pixel-dot:nth-child(4) { animation-delay: 0.3s; }
-        .pixel-dot:nth-child(5) { animation-delay: 0.4s; }
+        .pixel-dot:nth-child(2) { animation-delay: 0.15s; }
+        .pixel-dot:nth-child(3) { animation-delay: 0.3s; }
+        .pixel-dot:nth-child(4) { animation-delay: 0.45s; }
+        .pixel-dot:nth-child(5) { animation-delay: 0.6s; }
         
         @keyframes pixelPulse {
-            0%, 60%, 100% {
+            0%, 70%, 100% {
                 background: #003300;
                 box-shadow: none;
             }
-            30% {
+            35% {
                 background: #00ff00;
-                box-shadow: 0 0 6px #00ff00;
+                box-shadow: 0 0 8px #00ff00;
             }
         }
         
@@ -324,24 +228,45 @@
                 transparent 50%, 
                 rgba(0, 255, 0, 0.02) 50%
             );
-            background-size: 100% 2px;
+            background-size: 100% 3px;
             pointer-events: none;
-            animation: scanlineMove 0.06s linear infinite;
-            z-index: 3;
-            
-            /* CRT depth */
-            transform: translateZ(5px);
+            animation: scanlineMove 0.08s linear infinite;
         }
         
         @keyframes scanlineMove {
             0% { transform: translateY(0); }
-            100% { transform: translateY(2px); }
+            100% { transform: translateY(3px); }
         }
         
-        /* Основной контент скрыт до загрузки */
+        /* Эффект ЭЛТ монитора */
+        .crt-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.25) 100%);
+            pointer-events: none;
+        }
+        
+        .loading-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 50%, rgba(0,255,0,0.015) 50%),
+                linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,.2) 50%);
+            background-size: 2px 2px, 100% 2px;
+            pointer-events: none;
+        }
+        
+        /* Скрываем основной контент во время загрузки */
         .main-content {
             opacity: 0;
-            transition: opacity 0.3s ease-in;
+            transition: opacity 0.6s ease-in;
         }
         
         .main-content.loaded {
@@ -351,55 +276,56 @@
         /* Адаптивность */
         @media (max-width: 768px) {
             .logo-title {
-                font-size: 1.8rem;
+                font-size: 2rem;
                 letter-spacing: 2px;
             }
             
             .progress-container {
-                width: 260px;
+                width: 280px;
             }
             
             .loading-status {
-                font-size: 0.7rem;
+                font-size: 0.75rem;
             }
         }
         
         @media (max-width: 480px) {
             .logo-title {
-                font-size: 1.5rem;
+                font-size: 1.6rem;
                 letter-spacing: 1px;
             }
             
             .logo-subtitle {
-                font-size: 0.7rem;
+                font-size: 0.75rem;
             }
             
             .progress-container {
-                width: 220px;
+                width: 240px;
             }
             
             .loading-status {
-                font-size: 0.6rem;
+                font-size: 0.65rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- УЛЬТРА-БЫСТРЫЙ ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
     <div class="loading-screen" id="loadingScreen">
-        <!-- Минимальный матричный фон -->
+        <!-- Анимированный фон матрицы -->
         <div class="matrix-bg" id="matrixBg"></div>
         
-        <!-- Быстрые сканлинии -->
+        <!-- Сканлинии для эффекта ЭЛТ монитора -->
         <div class="scanlines"></div>
+        <div class="crt-effect"></div>
         
-        <!-- Компактный логотип -->
+        <!-- Логотип -->
         <div class="logo-container">
             <div class="logo-title">PLASTICBOY</div>
-            <div class="logo-subtitle">Almighty Fast</div>
+            <div class="logo-subtitle">Almighty Edition</div>
         </div>
         
-        <!-- Быстрая пиксельная анимация -->
+        <!-- Пиксельная анимация загрузки -->
         <div class="pixel-loader">
             <div class="pixel-dot"></div>
             <div class="pixel-dot"></div>
@@ -409,17 +335,17 @@
         </div>
         
         <!-- Статус загрузки -->
-        <div class="loading-status" id="loadingStatus">INIT...</div>
+        <div class="loading-status" id="loadingStatus">INITIALIZING...</div>
         
-        <!-- Быстрый прогресс бар -->
+        <!-- Прогресс бар -->
         <div class="progress-container">
             <div class="progress-bar" id="progressBar"></div>
             <div class="progress-text" id="progressText">0%</div>
         </div>
         
-        <!-- Быстрая подсказка -->
-        <div style="position: absolute; bottom: 20px; text-align: center; color: #00cccc; font-size: 0.5rem; opacity: 0.5;">
-            <div>click for speed boost</div>
+        <!-- Подсказка для пользователя -->
+        <div style="position: absolute; bottom: 25px; text-align: center; color: #00cccc; font-size: 0.6rem; opacity: 0.6;">
+            <div>тык тык</div>
         </div>
     </div>
 
@@ -474,53 +400,44 @@
         </div>
     </div>
 
-    <!-- Предзагрузка Leaflet -->
-    <script>
-        // Предзагружаем Leaflet для ускорения
-        const leafletScript = document.createElement('script');
-        leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        leafletScript.async = true;
-        document.head.appendChild(leafletScript);
-    </script>
+    <!-- Подключение библиотек -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- УЛЬТРА-БЫСТРАЯ СИСТЕМА ЗАГРУЗКИ -->
+    <!-- Оптимизированная система загрузки -->
     <script>
-        // МГНОВЕННАЯ СИСТЕМА ЗАГРУЗКИ PlasticBoy v3.0
-        // Максимально оптимизирована для ультра-быстрой подгрузки точек
+        // БЫСТРАЯ СИСТЕМА ЗАГРУЗКИ PlasticBoy
+        // Оптимизирована для быстрой синхронизации с точками карты
 
         // Флаги состояния загрузки
         let isMapReady = false;
         let arePointsLoaded = false;
         let isLeafletReady = false;
         let loadingTimeout;
-        let ultraFastInterval;
 
-        // Счетчики производительности
-        let loadStartTime = performance.now();
-        let pointsLoadStartTime = 0;
-
-        // Создание минимального матричного фона
-        function createMinimalMatrixDots() {
+        // Создание матричного фона (уменьшенное количество)
+        function createMatrixDots() {
             const matrixBg = document.getElementById('matrixBg');
-            const numberOfDots = 12; // Минимум для производительности
+            const numberOfDots = 30; // Уменьшено для производительности
             
             for (let i = 0; i < numberOfDots; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'matrix-dot';
                 dot.style.left = Math.random() * 100 + '%';
-                dot.style.animationDelay = Math.random() * 0.8 + 's';
-                dot.style.animationDuration = (Math.random() * 0.8 + 0.8) + 's';
+                dot.style.animationDelay = Math.random() * 2 + 's';
+                dot.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
                 matrixBg.appendChild(dot);
             }
         }
 
-        // Ультра-быстрые статусы
-        const ultraFastSteps = [
-            "INIT...",
-            "LOAD...", 
-            "LEAFLET...",
-            "MAP...",
-            "POINTS...",
+        // Быстрые статусы загрузки
+        const loadingSteps = [
+            "INITIALIZING...",
+            "LOADING ASSETS...", 
+            "CONNECTING...",
+            "PREPARING MAP...",
+            "LOADING LEAFLET...",
+            "SCANNING POINTS...",
+            "SYNCING DATA...",
             "READY!"
         ];
 
@@ -528,22 +445,22 @@
         let progress = 0;
         let loadingInterval;
 
-        function ultraFastUpdateScreen() {
+        function updateLoadingScreen() {
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const loadingStatus = document.getElementById('loadingStatus');
             
-            // Агрессивное увеличение прогресса
+            // Быстрое увеличение прогресса
             if (!arePointsLoaded) {
-                if (isLeafletReady && progress < 40) {
-                    progress += Math.random() * 30 + 20; // Очень быстро до 40%
-                } else if (isMapReady && progress < 70) {
-                    progress += Math.random() * 25 + 20; // Очень быстро до 70%
+                if (isLeafletReady && progress < 60) {
+                    progress += Math.random() * 15 + 10; // Быстрее до 60%
+                } else if (isMapReady && progress < 80) {
+                    progress += Math.random() * 12 + 8; // Быстрее до 80%
                 } else if (progress < 95) {
-                    progress += Math.random() * 20 + 15; // Быстро до 95%
+                    progress += Math.random() * 8 + 5; // Быстрее до 95%
                 }
             } else {
-                progress = 100; // Мгновенно до 100%
+                progress = 100; // Мгновенно до 100% при загрузке точек
             }
             
             if (progress > 100) progress = 100;
@@ -551,31 +468,31 @@
             progressBar.style.width = progress + '%';
             progressText.textContent = Math.floor(progress) + '%';
             
-            // Быстрое обновление статуса
-            updateUltraFastStatus(loadingStatus);
+            // Обновляем статус быстрее
+            updateLoadingStatus(loadingStatus);
             
-            // Мгновенное завершение при загрузке точек
+            // Быстрое завершение
             if (arePointsLoaded && progress >= 100) {
-                loadingStatus.textContent = ultraFastSteps[ultraFastSteps.length - 1];
+                loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
                 setTimeout(() => {
-                    finishUltraFastLoading();
-                }, 100); // Минимальная задержка
+                    finishLoading();
+                }, 300); // Уменьшена задержка
                 clearInterval(loadingInterval);
                 return;
             }
         }
 
-        function updateUltraFastStatus(loadingStatus) {
-            let targetStep = Math.floor(progress / 20); // Быстрое переключение
+        function updateLoadingStatus(loadingStatus) {
+            let targetStep = Math.floor(progress / 14); // Быстрее переключение статусов
             
-            if (targetStep > currentStep && currentStep < ultraFastSteps.length - 1) {
+            if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
                 currentStep = targetStep;
-                loadingStatus.textContent = ultraFastSteps[currentStep];
-                playMicroSound();
+                loadingStatus.textContent = loadingSteps[currentStep];
+                playLoadingSound();
             }
         }
 
-        function playMicroSound() {
+        function playLoadingSound() {
             try {
                 if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -585,55 +502,44 @@
                     oscillator.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     
-                    oscillator.frequency.setValueAtTime(1100, audioContext.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(700, audioContext.currentTime + 0.02);
+                    oscillator.frequency.setValueAtTime(900, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(500, audioContext.currentTime + 0.05);
                     
-                    gainNode.gain.setValueAtTime(0.04, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.02);
+                    gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
                     
                     oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.02);
+                    oscillator.stop(audioContext.currentTime + 0.05);
                 }
             } catch (e) {
-                // Игнорируем ошибки аудио
+                // Игнорируем ошибки аудио для производительности
             }
         }
 
-        // Ультра-быстрая проверка готовности
-        function ultraFastCheck() {
-            // Проверяем Leaflet
+        // Быстрая проверка готовности
+        function checkMapAndPointsReady() {
+            // Проверяем готовность Leaflet
             if (typeof L !== 'undefined' && !isLeafletReady) {
                 isLeafletReady = true;
-                console.log('⚡ Leaflet готов МГНОВЕННО');
-                progress = Math.max(progress, 30);
+                console.log('✅ Leaflet готов (быстро)');
             }
             
-            // Проверяем карту
+            // Проверяем готовность карты
             if (window.map && !isMapReady) {
                 isMapReady = true;
-                console.log('⚡ Карта готова МГНОВЕННО');
-                progress = Math.max(progress, 60);
+                console.log('✅ Карта готова (быстро)');
             }
             
-            // Мгновенная проверка точек - все возможные способы
+            // Быстрая проверка точек - несколько способов
             if (!arePointsLoaded) {
-                // Способ 1: маркеры
+                // Способ 1: проверяем маркеры
                 if (window.markers && window.markers.length > 0) {
                     arePointsLoaded = true;
-                    console.log('⚡ Точки загружены МГНОВЕННО через маркеры');
-                    progress = 100;
+                    console.log('✅ Точки загружены через маркеры');
                     return;
                 }
                 
-                // Способ 2: слой маркеров
-                if (window.markersLayer && window.markersLayer.getLayers && window.markersLayer.getLayers().length > 0) {
-                    arePointsLoaded = true;
-                    console.log('⚡ Точки загружены МГНОВЕННО через слой');
-                    progress = 100;
-                    return;
-                }
-                
-                // Способ 3: статистика
+                // Способ 2: проверяем статистику
                 const availableElement = document.getElementById('availableCount');
                 const collectedElement = document.getElementById('collectedCount');
                 if (availableElement && collectedElement) {
@@ -641,86 +547,58 @@
                     const collected = parseInt(collectedElement.textContent) || 0;
                     if (available > 0 || collected > 0) {
                         arePointsLoaded = true;
-                        console.log('⚡ Точки загружены МГНОВЕННО через статистику');
-                        progress = 100;
+                        console.log('✅ Точки загружены через статистику');
                         return;
                     }
                 }
                 
-                // Способ 4: DOM проверка
+                // Способ 3: проверяем DOM карты на наличие маркеров
                 const mapElement = document.getElementById('map');
-                if (mapElement) {
-                    const markers = mapElement.querySelectorAll('.ultra-fast-marker, .fast-marker-dot, .leaflet-marker-icon');
-                    if (markers.length > 0) {
-                        arePointsLoaded = true;
-                        console.log('⚡ Точки загружены МГНОВЕННО через DOM');
-                        progress = 100;
-                        return;
-                    }
-                }
-                
-                // Способ 5: проверка через PlasticBoy объект
-                if (window.PlasticBoy && window.PlasticBoy.pointsCache && window.PlasticBoy.pointsCache.length > 0) {
+                if (mapElement && mapElement.querySelector('.leaflet-marker-pane .leaflet-marker-icon')) {
                     arePointsLoaded = true;
-                    console.log('⚡ Точки загружены МГНОВЕННО через кэш');
-                    progress = 100;
+                    console.log('✅ Точки загружены через DOM');
                     return;
                 }
             }
         }
 
-        function finishUltraFastLoading() {
+        function finishLoading() {
             const loadingScreen = document.getElementById('loadingScreen');
             const mainContent = document.getElementById('mainContent');
             
-            const totalTime = performance.now() - loadStartTime;
-            console.log(`🚀 УЛЬТРА-БЫСТРОЕ завершение за ${Math.round(totalTime)}ms!`);
+            console.log('🚀 Быстрое завершение загрузки!');
             
-            // Мгновенное скрытие
+            // Быстрое скрытие загрузочного экрана
             loadingScreen.classList.add('fade-out');
             
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
                 mainContent.classList.add('loaded');
                 
-                // Мгновенное уведомление
+                // Быстрое уведомление
                 setTimeout(() => {
-                    if (typeof showFastNotification === 'function') {
-                        showFastNotification('PlasticBoy готов! ⚡', 'success');
-                    } else if (typeof showNotification === 'function') {
+                    if (typeof showNotification === 'function') {
                         showNotification('PlasticBoy готов! ⚡', 'success');
                     }
-                }, 50);
-            }, 300);
-            
-            // Очистка ресурсов
-            clearInterval(ultraFastInterval);
-            clearTimeout(loadingTimeout);
+                }, 200);
+            }, 600); // Уменьшена задержка
         }
 
-        // Мгновенное уведомление о загрузке точек
-        function onPointsLoadedInstantly() {
+        // Быстрое уведомление о загрузке точек
+        function onPointsLoaded() {
             if (!arePointsLoaded) {
                 arePointsLoaded = true;
-                const pointsTime = performance.now() - pointsLoadStartTime;
-                console.log(`⚡ Точки загружены за ${Math.round(pointsTime)}ms!`);
-                progress = 100;
+                console.log('⚡ Точки загружены мгновенно!');
             }
         }
 
-        // Принудительная быстрая загрузка точек
-        function forceLoadPoints() {
-            if (pointsLoadStartTime === 0) {
-                pointsLoadStartTime = performance.now();
-            }
-            
+        // Быстрая загрузка точек
+        function fastLoadPoints() {
             return fetch('/api/points', {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache'
-                },
-                signal: AbortSignal.timeout(1500) // Очень быстрый таймаут
+                    'Accept': 'application/json'
+                }
             })
             .then(response => {
                 if (!response.ok) {
@@ -729,72 +607,58 @@
                 return response.json();
             })
             .then(points => {
-                console.log(`⚡ ПРИНУДИТЕЛЬНО загружено ${points.length} точек`);
+                console.log(`⚡ Быстро загружено ${points.length} точек`);
                 
-                // Мгновенное обновление если функции доступны
-                if (typeof window.PlasticBoy !== 'undefined') {
-                    if (typeof window.PlasticBoy.ultraFastUpdateMap === 'function') {
-                        window.PlasticBoy.ultraFastUpdateMap(points);
-                    }
-                    if (typeof window.PlasticBoy.instantUpdateStats === 'function') {
-                        window.PlasticBoy.instantUpdateStats(points);
-                    }
-                } else if (typeof updateMap === 'function' && typeof updateStats === 'function') {
-                    updateMap(points);
-                    updateStats(points);
-                }
+                // Быстрое обновление карты и статистики
+                if (typeof updateMap === 'function') updateMap(points);
+                if (typeof updateStats === 'function') updateStats(points);
                 
-                onPointsLoadedInstantly();
+                // Мгновенное уведомление
+                onPointsLoaded();
                 return points;
             })
             .catch(error => {
-                console.error('Error force loading points:', error);
-                onPointsLoadedInstantly(); // Помечаем как загруженные даже при ошибке
+                console.error('Error loading points:', error);
+                // Помечаем как загруженные даже при ошибке
+                onPointsLoaded();
             });
         }
 
-        // Ультра-быстрый запуск системы
+        // Быстрый запуск системы
         document.addEventListener('DOMContentLoaded', function() {
-            loadStartTime = performance.now();
-            console.log('⚡ УЛЬТРА-БЫСТРЫЙ запуск PlasticBoy v3.0');
+            console.log('⚡ Быстрый запуск PlasticBoy');
             
-            createMinimalMatrixDots();
+            createMatrixDots();
             
-            // Переопределяем функции загрузки для максимальной скорости
+            // Переопределяем функцию загрузки точек
             if (typeof loadPoints === 'function') {
                 window.originalLoadPoints = loadPoints;
-                window.loadPoints = forceLoadPoints;
+                window.loadPoints = fastLoadPoints;
             }
             
-            // Ультра-быстрая проверка состояния каждые 25ms
-            ultraFastInterval = setInterval(ultraFastCheck, 25);
+            // Быстрая проверка состояния
+            const quickCheck = setInterval(checkMapAndPointsReady, 100); // Увеличена частота
             
-            // Аварийный таймаут - принудительно завершаем через 3 секунды
+            // Таймаут безопасности - принудительно завершаем через 8 секунд
             loadingTimeout = setTimeout(() => {
-                console.log('⏰ АВАРИЙНЫЙ таймаут - принудительное завершение');
+                console.log('⏰ Таймаут загрузки - принудительное завершение');
                 arePointsLoaded = true;
                 progress = 100;
-            }, 3000);
+            }, 8000);
             
-            // Ультра-быстрая инициализация
-            Promise.race([
-                // Ждем Leaflet с быстрым таймаутом
+            // Быстрая инициализация
+            Promise.all([
+                // Ждем Leaflet (быстрее)
                 new Promise((resolve) => {
                     const checkLeaflet = () => {
                         if (typeof L !== 'undefined') {
                             isLeafletReady = true;
                             resolve();
                         } else {
-                            setTimeout(checkLeaflet, 5); // Очень частая проверка
+                            setTimeout(checkLeaflet, 25); // Увеличена частота проверки
                         }
                     };
                     checkLeaflet();
-                    
-                    // Быстрый таймаут для Leaflet
-                    setTimeout(() => {
-                        console.warn('Leaflet загружается долго, продолжаем...');
-                        resolve();
-                    }, 500);
                 }),
                 
                 // Ждем DOM
@@ -803,70 +667,74 @@
                         resolve();
                     } else {
                         window.addEventListener('load', resolve);
-                        // Быстрый таймаут для DOM
-                        setTimeout(resolve, 200);
                     }
                 })
             ]).then(() => {
-                console.log('⚡ Ресурсы готовы, МГНОВЕННЫЙ запуск');
+                console.log('⚡ Ресурсы готовы, запуск');
                 
-                // Мгновенный запуск анимации
+                // Быстрый запуск анимации
                 setTimeout(() => {
-                    loadingInterval = setInterval(ultraFastUpdateScreen, 25); // Очень частое обновление
-                }, 25);
+                    loadingInterval = setInterval(updateLoadingScreen, 100); // Увеличена частота
+                }, 100);
                 
-                // Мгновенная инициализация приложения
+                // Быстрая инициализация приложения
                 setTimeout(() => {
-                    initUltraFastApp();
-                }, 50);
+                    initFastApp();
+                }, 200);
             });
+            
+            // Очистка интервалов при завершении
+            const cleanup = () => {
+                clearInterval(quickCheck);
+                clearTimeout(loadingTimeout);
+            };
+            
+            // Автоочистка через 10 секунд
+            setTimeout(cleanup, 10000);
         });
 
-        // Ультра-быстрая инициализация приложения
-        function initUltraFastApp() {
-            console.log('⚡ УЛЬТРА-БЫСТРАЯ инициализация карты');
+        // Быстрая инициализация приложения
+        function initFastApp() {
+            console.log('⚡ Быстрая инициализация карты');
             
             // Инициализируем карту
             if (typeof initMap === 'function') {
                 initMap();
                 
-                // Очень быстрая проверка карты
-                const ultraQuickMapCheck = setInterval(() => {
+                // Быстрая проверка карты
+                const quickMapCheck = setInterval(() => {
                     if (window.map && !isMapReady) {
                         isMapReady = true;
-                        clearInterval(ultraQuickMapCheck);
-                        console.log('⚡ Карта готова, МГНОВЕННАЯ загрузка точек');
+                        clearInterval(quickMapCheck);
+                        console.log('⚡ Карта готова, быстрая загрузка точек');
                         
-                        // Мгновенная загрузка точек
-                        pointsLoadStartTime = performance.now();
+                        // Быстрая загрузка точек
                         setTimeout(() => {
-                            if (typeof forceLoadPoints === 'function') {
-                                forceLoadPoints();
-                            } else if (typeof window.PlasticBoy !== 'undefined' && typeof window.PlasticBoy.loadPoints === 'function') {
-                                window.PlasticBoy.loadPoints();
+                            if (typeof fastLoadPoints === 'function') {
+                                fastLoadPoints();
                             }
-                        }, 10);
+                        }, 100);
                     }
-                }, 10); // Очень быстрая проверка
+                }, 50); // Очень быстрая проверка
                 
-                // Быстрый таймаут
-                setTimeout(() => clearInterval(ultraQuickMapCheck), 500);
+                // Таймаут для быстрой проверки
+                setTimeout(() => clearInterval(quickMapCheck), 2000);
             }
         }
 
-        // Ультра-быстрая интерактивность
+        // Быстрая интерактивность
         document.addEventListener('keydown', function(e) {
             if (!arePointsLoaded) {
                 switch(e.key) {
                     case 'Enter':
-                        progress += 40; // Большое ускорение
-                        playMicroSound();
+                        progress += 20; // Большее ускорение
+                        playLoadingSound();
                         break;
                     case ' ':
-                        progress += 25;
+                        progress += 15;
                         break;
                     case 'Escape':
-                        if (e.ctrlKey && e.shiftKey) {
+                        if (e.ctrlKey) {
                             arePointsLoaded = true;
                             progress = 100;
                         }
@@ -875,29 +743,25 @@
             }
         });
 
-        // Ультра-быстрый клик
+        // Быстрый клик
         document.addEventListener('click', function(e) {
             if (!arePointsLoaded && e.target.closest('.loading-screen')) {
-                progress += 20;
-                playMicroSound();
+                progress += 10;
+                playLoadingSound();
             }
         });
 
         // Экспорт для внешнего использования
-        window.UltraFastLoader = {
-            onPointsLoadedInstantly,
-            ultraFastCheck,
-            forceLoadPoints,
+        window.PlasticBoyLoader = {
+            onPointsLoaded,
+            checkMapAndPointsReady,
+            fastLoadPoints,
             isMapReady: () => isMapReady,
             arePointsLoaded: () => arePointsLoaded,
-            isLeafletReady: () => isLeafletReady,
-            progress: () => progress
+            isLeafletReady: () => isLeafletReady
         };
 
-        // Обратная совместимость
-        window.PlasticBoyLoader = window.UltraFastLoader;
-
-        console.log('⚡ УЛЬТРА-БЫСТРАЯ система загрузки v3.0 готова');
+        console.log('⚡ Быстрая система загрузки готова');
     </script>
     
     <!-- Основной скрипт приложения -->
