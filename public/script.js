@@ -5,20 +5,24 @@ let markers = [];
 // Координаты Алматы
 const ALMATY_CENTER = [43.2220, 76.8512];
 
+// Флаги для системы загрузки
+let isAppInitialized = false;
+
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    initMap();
-    loadPoints();
+    // Не запускаем автоматически - ждем сигнала от системы загрузки
+    console.log('📱 DOM готов, ожидаем инициализации от системы загрузки');
     
-    // Автообновление каждые 30 секунд
-    setInterval(loadPoints, 30000);
-    
-    // Инициализация кнопок
+    // Инициализация кнопок (можно делать сразу)
     initControlButtons();
 });
 
-// Инициализация карты
+// Инициализация карты (вызывается системой загрузки)
 function initMap() {
+    if (isAppInitialized) return;
+    
+    console.log('🗺️ Инициализация карты PlasticBoy');
+    
     map = L.map('map').setView(ALMATY_CENTER, 13);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -31,8 +35,26 @@ function initMap() {
     
     // Принудительно обновляем размер карты после инициализации
     setTimeout(() => {
-        map.invalidateSize();
+        if (map) {
+            map.invalidateSize();
+            
+            // Уведомляем систему загрузки о готовности карты
+            window.map = map;
+            console.log('✅ Карта инициализирована и готова');
+        }
     }, 100);
+    
+    // Автообновление каждые 30 секунд (только после полной загрузки)
+    setTimeout(() => {
+        setInterval(() => {
+            if (typeof window.PlasticBoyLoader === 'undefined' || 
+                window.PlasticBoyLoader.arePointsLoaded()) {
+                loadPoints();
+            }
+        }, 30000);
+    }, 5000);
+    
+    isAppInitialized = true;
 }
 
 // Инициализация кнопок управления
@@ -224,34 +246,62 @@ function getCurrentLocation() {
     );
 }
 
-// Загрузка точек с сервера
+// Загрузка точек с сервера (интегрированная с системой загрузки)
 async function loadPoints() {
     try {
+        console.log('📍 Загрузка точек с сервера...');
+        
         const response = await fetch('/api/points', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json'
             }
         });
+        
         if (!response.ok) {
             throw new Error('Failed to load points');
         }
         
         const points = await response.json();
+        console.log(`📍 Загружено ${points.length} точек`);
+        
         updateMap(points);
         updateStats(points);
+        
+        // Уведомляем систему загрузки о завершении загрузки точек
+        if (typeof window.PlasticBoyLoader !== 'undefined' && 
+            typeof window.PlasticBoyLoader.onPointsLoaded === 'function') {
+            window.PlasticBoyLoader.onPointsLoaded();
+        }
+        
+        return points;
         
     } catch (error) {
         console.error('Error loading points:', error);
         showNotification('Ошибка загрузки данных', 'error');
+        
+        // Даже при ошибке уведомляем систему загрузки
+        if (typeof window.PlasticBoyLoader !== 'undefined' && 
+            typeof window.PlasticBoyLoader.onPointsLoaded === 'function') {
+            window.PlasticBoyLoader.onPointsLoaded();
+        }
+        
+        throw error;
     }
 }
 
 // Обновление карты с цветными маркерами
 function updateMap(points) {
+    if (!map) {
+        console.warn('Карта не готова для обновления маркеров');
+        return;
+    }
+    
     // Очищаем существующие маркеры (кроме пользовательского)
     markers.forEach(marker => map.removeLayer(marker));
     markers = [];
+    
+    console.log(`🎯 Обновление карты с ${points.length} точками`);
     
     points.forEach(point => {
         const isAvailable = point.status === 'available';
@@ -294,6 +344,9 @@ function updateMap(points) {
         marker.bindPopup(popupContent);
         markers.push(marker);
     });
+    
+    // Делаем маркеры доступными глобально для системы загрузки
+    window.markers = markers;
     
     // Добавляем стили для маркеров
     addEnhancedMarkerStyles();
@@ -461,6 +514,8 @@ function updateStats(points) {
         animateNumber(availableElement, parseInt(availableElement.textContent) || 0, available);
         animateNumber(collectedElement, parseInt(collectedElement.textContent) || 0, collected);
     }
+    
+    console.log(`📊 Статистика обновлена: ${available} доступно, ${collected} собрано`);
 }
 
 // Анимация изменения числа
@@ -698,7 +753,9 @@ window.addEventListener('resize', function() {
 // Обработка состояния сети
 window.addEventListener('online', function() {
     showNotification('Соединение восстановлено', 'success');
-    loadPoints();
+    if (isAppInitialized) {
+        loadPoints();
+    }
 });
 
 window.addEventListener('offline', function() {
@@ -720,9 +777,15 @@ document.addEventListener('keydown', function(event) {
 // Экспорт функций для глобального доступа
 window.PlasticBoy = {
     map,
+    markers,
     loadPoints,
     showNotification,
     getCurrentLocation,
     showPointDetails,
-    closeModal
+    closeModal,
+    initMap,
+    updateMap,
+    updateStats
 };
+
+console.log('📱 PlasticBoy script.js загружен и готов к работе');
