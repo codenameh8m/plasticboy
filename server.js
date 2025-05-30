@@ -59,20 +59,15 @@ const upload = multer({
     }
 });
 
-// Оптимизированное подключение к MongoDB
+// Исправленное подключение к MongoDB (совместимые опции)
 const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            // Оптимизации для быстрой работы
+            // Только совместимые опции
             maxPoolSize: 10,
-            minPoolSize: 2,
-            maxIdleTimeMS: 30000,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
-            bufferCommands: false,
-            bufferMaxEntries: 0
+            maxIdleTimeMS: 30000
         });
         
         console.log(`MongoDB подключена БЫСТРО: ${conn.connection.host}`);
@@ -620,4 +615,5 @@ app.listen(PORT, () => {
     console.log(`🚀 PlasticBoy БЫСТРЫЙ сервер запущен на порту ${PORT}`);
     console.log(`⚡ Оптимизации: кэширование, индексы, lean queries`);
     console.log(`💾 Кэш точек обновляется каждые 30 секунд`);
+    console.log(`📊 Мониторинг производительности включен`);
 });
