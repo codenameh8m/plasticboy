@@ -93,7 +93,7 @@ body {
 
 /* ОСНОВНЫЕ РАЗМЕРЫ КАРТ - ЗНАЧИТЕЛЬНО УВЕЛИЧЕНЫ */
 #map, #adminMap {
-    height: 700px !important;
+    height: 400px !important;
     width: 100% !important;
     min-height: 700px !important;
 }
