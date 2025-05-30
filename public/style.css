@@ -7,7 +7,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     color: #333;
 }
@@ -28,14 +28,13 @@ body {
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .header h1 {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 10px;
-    background: linear-gradient(45deg, #495057, #6c757d);
+    background: linear-gradient(45deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -43,7 +42,7 @@ body {
 
 .header p {
     font-size: 1.1rem;
-    color: #6c757d;
+    color: #666;
     font-weight: 500;
 }
 
@@ -57,7 +56,6 @@ body {
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .admin-stats {
@@ -73,36 +71,41 @@ body {
     display: block;
     font-size: 2rem;
     font-weight: 700;
-    color: #495057;
+    color: #667eea;
     margin-bottom: 5px;
 }
 
 .stat-label {
     font-size: 0.9rem;
-    color: #6c757d;
+    color: #666;
     font-weight: 500;
 }
 
-/* Карта - УЛУЧШЕННАЯ СЕРО-БЕЛАЯ ПАЛИТРА */
+/* Карта - СЕРО-БЕЛАЯ С ЦВЕТНЫМИ ИКОНКАМИ */
 .map-container {
     position: relative;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: white;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.15),
-        0 4px 20px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 #map, #adminMap {
     height: 450px;
     width: 100%;
-    border-radius: 18px;
-    /* Серо-белая палитра для карты */
-    filter: grayscale(100%) contrast(1.2) brightness(1.1);
+}
+
+/* СЕРО-БЕЛЫЕ ТАЙЛЫ КАРТЫ */
+.leaflet-tile-pane {
+    filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
+}
+
+/* Остальные элементы карты остаются цветными */
+.leaflet-marker-pane,
+.leaflet-popup-pane,
+.leaflet-control-container {
+    filter: none !important;
 }
 
 /* Кастомные стили для Leaflet карты */
@@ -111,22 +114,20 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
-.leaflet-tile {
-    filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
-}
-
 .leaflet-control-zoom a {
     background-color: rgba(255, 255, 255, 0.95) !important;
     color: #495057 !important;
     border: 1px solid rgba(108, 117, 125, 0.2) !important;
     backdrop-filter: blur(10px) !important;
     transition: all 0.3s !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 .leaflet-control-zoom a:hover {
     background-color: #f8f9fa !important;
     color: #343a40 !important;
     transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
 .leaflet-control-attribution {
@@ -136,6 +137,7 @@ body {
     border-radius: 8px !important;
     backdrop-filter: blur(10px) !important;
     border: 1px solid rgba(108, 117, 125, 0.1) !important;
+    padding: 2px 5px !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -156,6 +158,7 @@ body {
     font-size: 18px !important;
     padding: 8px !important;
     transition: color 0.3s !important;
+    font-weight: bold !important;
 }
 
 .leaflet-popup-close-button:hover {
@@ -163,29 +166,24 @@ body {
     background: none !important;
 }
 
-/* Улучшенная легенда карты */
+/* Легенда карты */
 .legend {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 12px 16px;
-    backdrop-filter: blur(15px);
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.15),
-        0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
     font-size: 0.9rem;
-    font-weight: 500;
-    color: #495057;
 }
 
 .legend-item:last-child {
@@ -193,56 +191,142 @@ body {
 }
 
 .legend-dot {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    margin-right: 10px;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    margin-right: 8px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .legend-dot.green {
-    background: linear-gradient(45deg, #28a745, #20c997);
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+    background: #4CAF50;
 }
 
 .legend-dot.red {
-    background: linear-gradient(45deg, #dc3545, #e74c3c);
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    background: #f44336;
+}
+
+/* КРАСИВЫЕ КНОПКИ УПРАВЛЕНИЯ */
+.map-controls {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.15),
+        0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2));
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.control-btn:hover::before {
+    opacity: 1;
+}
+
+.control-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 35px rgba(0, 0, 0, 0.2),
+        0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.control-btn:active {
+    transform: translateY(-1px) scale(0.98);
 }
 
 /* Кнопка обновления */
 .refresh-btn {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 65px;
-    height: 65px;
-    background: linear-gradient(45deg, #495057, #6c757d);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    font-size: 1.6rem;
-    cursor: pointer;
-    box-shadow: 
-        0 8px 32px rgba(73, 80, 87, 0.4),
-        0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1000;
-    border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .refresh-btn:hover {
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: 
-        0 12px 40px rgba(73, 80, 87, 0.5),
-        0 4px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #5a67d8, #6b46c1);
 }
 
-.refresh-btn:active {
-    transform: scale(0.95);
+/* Кнопка геолокации */
+.location-btn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.location-btn:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+}
+
+/* Анимация вращения для кнопки обновления */
+.refresh-btn.spinning {
+    animation: spin 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes spin {
+    from { transform: translateY(-3px) scale(1.05) rotate(0deg); }
+    to { transform: translateY(-3px) scale(1.05) rotate(360deg); }
+}
+
+/* Подсказки для кнопок */
+.control-tooltip {
+    position: absolute;
+    right: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.control-btn:hover .control-tooltip {
+    opacity: 1;
+}
+
+/* Анимация пульса для пользователя */
+@keyframes userPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.2;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
 }
 
 /* Формы */
@@ -253,7 +337,6 @@ body {
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .form-group {
@@ -264,29 +347,27 @@ body {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #495057;
+    color: #333;
 }
 
 input, textarea, select {
     width: 100%;
     padding: 15px;
-    border: 2px solid #e9ecef;
+    border: 2px solid #ddd;
     border-radius: 12px;
     font-size: 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.3s, box-shadow 0.3s;
     background: white;
-    color: #495057;
 }
 
 input:focus, textarea:focus, select:focus {
     outline: none;
-    border-color: #6c757d;
-    box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.1);
-    transform: translateY(-1px);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 button {
-    background: linear-gradient(45deg, #495057, #6c757d);
+    background: linear-gradient(45deg, #667eea, #764ba2);
     color: white;
     border: none;
     padding: 15px 30px;
@@ -294,15 +375,14 @@ button {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s;
     width: 100%;
     margin-top: 10px;
-    box-shadow: 0 4px 16px rgba(73, 80, 87, 0.2);
 }
 
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(73, 80, 87, 0.3);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
 button:active {
@@ -323,27 +403,26 @@ button:disabled {
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .admin-controls h3 {
     margin-bottom: 10px;
-    color: #495057;
+    color: #333;
 }
 
 .admin-controls p {
-    color: #6c757d;
+    color: #666;
     margin-bottom: 15px;
 }
 
 #addModeBtn {
-    background: linear-gradient(45deg, #28a745, #20c997);
+    background: #4CAF50;
     width: auto;
     margin: 0;
 }
 
 #addModeBtn.active {
-    background: linear-gradient(45deg, #dc3545, #e74c3c);
+    background: #f44336;
 }
 
 /* Список точек */
@@ -353,7 +432,6 @@ button:disabled {
     padding: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .point-item {
@@ -361,20 +439,19 @@ button:disabled {
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 10px;
-    border-left: 4px solid #6c757d;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #667eea;
 }
 
 .point-item.collected {
-    border-left-color: #dc3545;
+    border-left-color: #f44336;
 }
 
 .point-item.scheduled {
-    border-left-color: #ffc107;
+    border-left-color: #ff9800;
 }
 
 .point-item.available {
-    border-left-color: #28a745;
+    border-left-color: #4CAF50;
 }
 
 .point-header {
@@ -386,7 +463,7 @@ button:disabled {
 
 .point-header h4 {
     margin: 0;
-    color: #495057;
+    color: #333;
 }
 
 .point-status {
@@ -397,7 +474,7 @@ button:disabled {
 .point-actions {
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid #eee;
 }
 
 /* Модальные окна */
@@ -424,11 +501,10 @@ button:disabled {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     max-height: 80vh;
     overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .close {
-    color: #6c757d;
+    color: #aaa;
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -436,11 +512,10 @@ button:disabled {
     position: absolute;
     top: 15px;
     right: 20px;
-    transition: color 0.3s;
 }
 
 .close:hover {
-    color: #495057;
+    color: #000;
 }
 
 /* Сбор модели */
@@ -452,10 +527,9 @@ button:disabled {
     text-align: center;
     margin-bottom: 30px;
     padding: 20px;
-    background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 15px;
     color: white;
-    box-shadow: 0 8px 32px rgba(73, 80, 87, 0.3);
 }
 
 .model-info h2 {
@@ -469,7 +543,7 @@ button:disabled {
 }
 
 .collect-btn {
-    background: linear-gradient(45deg, #28a745, #20c997);
+    background: linear-gradient(45deg, #4CAF50, #45a049);
     font-size: 1.1rem;
     padding: 18px;
 }
@@ -494,22 +568,21 @@ button:disabled {
     border-radius: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .success-message h2 {
-    color: #28a745;
+    color: #4CAF50;
     margin-bottom: 15px;
 }
 
 .error-message h2 {
-    color: #dc3545;
+    color: #f44336;
     margin-bottom: 15px;
 }
 
 .success-message p, .error-message p {
     margin-bottom: 10px;
-    color: #6c757d;
+    color: #666;
 }
 
 /* QR код */
@@ -524,48 +597,33 @@ button:disabled {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Кастомные стили маркеров */
+/* ЦВЕТНЫЕ ИКОНКИ МОДЕЛЕЙ */
 .custom-marker {
     background: none !important;
     border: none !important;
 }
 
 .marker-dot {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     position: relative;
-    border: 3px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 
-        0 4px 16px rgba(0, 0, 0, 0.25),
-        0 2px 8px rgba(0, 0, 0, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
 }
 
 .marker-dot:hover {
-    transform: scale(1.1);
-    box-shadow: 
-        0 6px 20px rgba(0, 0, 0, 0.3),
-        0 3px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(1.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
 .marker-dot.available {
-    background: linear-gradient(45deg, #28a745, #20c997);
+    background: linear-gradient(45deg, #4CAF50, #45a049);
 }
 
 .marker-dot.collected {
-    background: linear-gradient(45deg, #dc3545, #e74c3c);
-}
-
-.marker-inner {
-    font-size: 10px;
-    color: white;
-    font-weight: bold;
-    z-index: 2;
-    position: relative;
+    background: linear-gradient(45deg, #f44336, #e53935);
 }
 
 .marker-pulse {
@@ -575,7 +633,7 @@ button:disabled {
     right: -3px;
     bottom: -3px;
     border-radius: 50%;
-    border: 2px solid #28a745;
+    border: 2px solid #4CAF50;
     opacity: 0;
 }
 
@@ -598,63 +656,56 @@ button:disabled {
 }
 
 .popup-content {
-    min-width: 220px;
+    min-width: 200px;
 }
 
 .popup-content h3 {
-    margin: 0 0 12px 0;
-    color: #495057;
+    margin: 0 0 10px 0;
+    color: #333;
     font-size: 1.1rem;
-    font-weight: 700;
 }
 
 .status {
-    margin: 12px 0;
+    margin: 10px 0;
     font-weight: 600;
-    font-size: 0.95rem;
 }
 
 .status.available {
-    color: #28a745;
+    color: #4CAF50;
 }
 
 .status.collected {
-    color: #dc3545;
+    color: #f44336;
 }
 
 .collector-info {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    padding: 12px;
-    border-radius: 10px;
-    margin: 12px 0;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px 0;
     font-size: 0.9rem;
-    border: 1px solid rgba(108, 117, 125, 0.1);
 }
 
 .collector-info p {
-    margin: 6px 0;
-    color: #495057;
+    margin: 5px 0;
 }
 
 .details-btn {
-    background: linear-gradient(45deg, #495057, #6c757d);
+    background: linear-gradient(45deg, #667eea, #764ba2);
     color: white;
     border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
-    font-weight: 600;
-    margin-top: 12px;
+    margin-top: 10px;
     width: 100%;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(73, 80, 87, 0.2);
+    transition: all 0.3s;
 }
 
 .details-btn:hover {
-    background: linear-gradient(45deg, #343a40, #495057);
+    background: linear-gradient(45deg, #5a67d8, #6b46c1);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(73, 80, 87, 0.3);
 }
 
 /* Админ маркеры */
@@ -683,17 +734,16 @@ button:disabled {
 
 .admin-popup h3 {
     margin: 0 0 10px 0;
-    color: #495057;
+    color: #333;
 }
 
 .admin-popup p {
     margin: 5px 0;
     font-size: 0.9rem;
-    color: #6c757d;
 }
 
 .admin-btn {
-    background: #495057;
+    background: #667eea;
     color: white;
     border: none;
     padding: 8px 12px;
@@ -702,19 +752,18 @@ button:disabled {
     font-size: 0.8rem;
     margin: 5px 5px 0 0;
     min-width: 80px;
-    transition: background 0.3s;
 }
 
 .admin-btn:hover {
-    background: #343a40;
+    background: #5a67d8;
 }
 
 .delete-btn {
-    background: #dc3545 !important;
+    background: #f44336 !important;
 }
 
 .delete-btn:hover {
-    background: #c82333 !important;
+    background: #d32f2f !important;
 }
 
 /* Уведомления */
@@ -723,58 +772,47 @@ button:disabled {
     top: 20px;
     right: 20px;
     z-index: 2000;
-    background: rgba(255, 255, 255, 0.98);
-    border-radius: 12px;
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.15),
-        0 4px 16px rgba(0, 0, 0, 0.1);
-    padding: 16px 20px;
-    min-width: 280px;
-    max-width: 380px;
-    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 15px;
+    min-width: 250px;
+    max-width: 350px;
+    animation: slideIn 0.3s ease-out;
 }
 
 .notification.error {
-    border-left: 4px solid #dc3545;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 215, 218, 0.3));
+    border-left: 4px solid #f44336;
 }
 
 .notification.success {
-    border-left: 4px solid #28a745;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(212, 237, 218, 0.3));
+    border-left: 4px solid #4CAF50;
 }
 
 .notification.info {
-    border-left: 4px solid #495057;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.3));
+    border-left: 4px solid #2196F3;
+}
+
+.notification.warning {
+    border-left: 4px solid #ff9800;
 }
 
 .notification-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #495057;
-    font-weight: 500;
 }
 
 .notification-content button {
     background: none;
     border: none;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    color: #6c757d;
+    color: #999;
     padding: 0;
     margin: 0;
     width: auto;
-    margin-left: 12px;
-    transition: color 0.3s;
-    line-height: 1;
-}
-
-.notification-content button:hover {
-    color: #495057;
+    margin-left: 10px;
 }
 
 @keyframes slideIn {
@@ -799,10 +837,10 @@ button:disabled {
     }
 }
 
-/* УЛУЧШЕННАЯ АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ */
+/* Адаптивность */
 @media (max-width: 768px) {
     .container {
-        padding: 8px;
+        padding: 10px;
     }
     
     .header h1 {
@@ -815,7 +853,7 @@ button:disabled {
     
     /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
-        height: 500px; /* Увеличено с 450px до 500px */
+        height: 500px;
     }
     
     .modal-content {
@@ -840,30 +878,20 @@ button:disabled {
         margin-bottom: 0;
     }
     
-    /* Улучшенная легенда для планшетов */
-    .legend {
-        top: 10px;
-        right: 10px;
-        padding: 10px 12px;
-    }
-    
-    .legend-item {
-        margin-bottom: 6px;
-        font-size: 0.85rem;
-    }
-    
-    .legend-dot {
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-    }
-    
-    .refresh-btn {
-        width: 60px;
-        height: 60px;
+    .map-controls {
         bottom: 20px;
         right: 20px;
-        font-size: 1.4rem;
+        gap: 12px;
+    }
+    
+    .control-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 1.3rem;
+    }
+    
+    .control-tooltip {
+        right: 65px;
     }
 }
 
@@ -881,68 +909,48 @@ button:disabled {
         padding: 20px;
     }
     
-    .refresh-btn {
-        width: 55px;
-        height: 55px;
-        bottom: 15px;
-        right: 15px;
-        font-size: 1.3rem;
-    }
-    
     /* МАКСИМАЛЬНО УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ */
     #map, #adminMap {
-        height: 550px; /* Увеличено ещё больше для смартфонов */
+        height: 550px;
     }
     
-    /* Компактная легенда для смартфонов */
-    .legend {
-        top: 8px;
-        right: 8px;
-        padding: 8px 10px;
+    .map-controls {
+        bottom: 15px;
+        right: 15px;
+        gap: 10px;
     }
     
-    .legend-item {
-        font-size: 0.8rem;
-        margin-bottom: 4px;
+    .control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
     }
     
-    .notification {
-        right: 10px;
-        top: 10px;
-        max-width: calc(100vw - 20px);
-        min-width: auto;
+    .control-tooltip {
+        right: 60px;
+        font-size: 0.7rem;
+        padding: 6px 10px;
     }
 }
 
-/* Дополнительные улучшения для очень маленьких экранов */
 @media (max-width: 360px) {
     /* МАКСИМАЛЬНЫЙ РАЗМЕР КАРТЫ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
-        height: 600px; /* Максимальный размер карты */
+        height: 600px;
     }
     
     .container {
         padding: 5px;
     }
     
-    .header {
-        padding: 12px;
-        margin-bottom: 12px;
-    }
-    
-    .header h1 {
-        font-size: 1.6rem;
-    }
-    
-    .stats, .form-container, .admin-controls, .points-list {
-        margin-bottom: 12px;
-    }
-    
-    .refresh-btn {
-        width: 50px;
-        height: 50px;
+    .map-controls {
         bottom: 10px;
         right: 10px;
-        font-size: 1.2rem;
+    }
+    
+    .control-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
     }
 }
