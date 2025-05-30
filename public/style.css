@@ -93,7 +93,7 @@ body {
 
 /* ОСНОВНЫЕ РАЗМЕРЫ КАРТ - ЗНАЧИТЕЛЬНО УВЕЛИЧЕНЫ */
 #map, #adminMap {
-    height: 700px !important; /* Увеличено с 450px до 700px */
+    height: 700px !important;
     width: 100% !important;
     min-height: 700px !important;
 }
@@ -209,10 +209,10 @@ body {
     background: #f44336;
 }
 
-/* КНОПКИ УПРАВЛЕНИЯ КАРТОЙ - ЦЕНТРИРОВАННЫЕ ПОД КАРТОЙ */
+/* КНОПКИ УПРАВЛЕНИЯ КАРТОЙ */
 .map-controls {
     display: flex;
-    flex-direction: row; /* Горизонтальное расположение на десктопе */
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     background: rgba(255, 255, 255, 0.95);
@@ -221,32 +221,32 @@ body {
     margin: 20px auto;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    gap: 20px; /* Расстояние между кнопками */
-    max-width: 600px; /* Увеличена ширина контейнера */
+    gap: 20px;
+    max-width: 600px;
     width: 100%;
 }
 
-/* ЕДИНООБРАЗНЫЕ КНОПКИ ДЛЯ ДЕСКТОПА */
+/* КНОПКИ - БАЗОВЫЕ СТИЛИ */
 .control-btn {
-    flex: 1; /* Равная ширина для обеих кнопок на десктопе */
-    max-width: 280px; /* Максимальная ширина кнопки на десктопе */
+    flex: 1;
+    max-width: 280px;
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
     color: white !important;
     border: none !important;
-    padding: 18px 24px !important; /* Увеличенные отступы */
+    padding: 18px 24px !important;
     border-radius: 12px !important;
-    font-size: 1.1rem !important; /* Увеличенный шрифт */
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important; /* Расстояние между иконкой и текстом */
+    gap: 10px !important;
     position: relative !important;
     overflow: hidden !important;
-    margin: 0 !important; /* Убираем внешние отступы */
-    min-height: 60px; /* Минимальная высота для единообразия */
+    margin: 0 !important;
+    min-height: 60px;
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
 }
 
@@ -586,99 +586,7 @@ button:not(.control-btn):disabled {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* СПИСОК МОДЕЛЕЙ НА ГЛАВНОЙ СТРАНИЦЕ В СТИЛЕ АДМИНКИ */
-.models-list {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 20px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
-}
-
-.models-list h3 {
-    margin-bottom: 15px;
-    color: #333;
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.model-item {
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    background: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.model-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-}
-
-.model-item.available {
-    border-left: 4px solid #4CAF50;
-}
-
-.model-item.collected {
-    border-left: 4px solid #f44336;
-}
-
-.model-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.model-header h4 {
-    margin: 0;
-    color: #333;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.model-status {
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.8);
-}
-
-.model-info p {
-    margin: 6px 0;
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.model-actions {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #eee;
-}
-
-.model-btn {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    margin: 6px 6px 0 0;
-    min-width: 90px;
-    transition: all 0.3s;
-    font-weight: 500;
-}
-
-.model-btn:hover {
-    background: linear-gradient(45deg, #5a67d8, #6b46c1);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
+/* ЦВЕТНЫЕ ИКОНКИ МОДЕЛЕЙ */
 .custom-marker {
     background: none !important;
     border: none !important;
@@ -918,8 +826,12 @@ button:not(.control-btn):disabled {
     }
 }
 
-/* АДАПТИВНОСТЬ С УВЕЛИЧЕННЫМИ КАРТАМИ */
-@media (max-width: 768px) {
+/* =============================================== */
+/* МОБИЛЬНАЯ АДАПТИВНОСТЬ - ИСПРАВЛЕННАЯ ВЕРСИЯ */
+/* =============================================== */
+
+/* Планшеты */
+@media screen and (max-width: 768px) {
     .container {
         padding: 10px;
     }
@@ -932,7 +844,6 @@ button:not(.control-btn):disabled {
         font-size: 1rem;
     }
     
-    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
         height: 750px !important;
         min-height: 750px !important;
@@ -960,7 +871,41 @@ button:not(.control-btn):disabled {
         margin-bottom: 0;
     }
     
-    /* МОБИЛЬНЫЕ КНОПКИ - ПОЛНОШИРИННЫЕ В СТОЛБЕЦ */
+    /* ПЛАНШЕТЫ - КНОПКИ ОСТАЮТСЯ ГОРИЗОНТАЛЬНО */
+    .map-controls {
+        max-width: 500px;
+        gap: 15px;
+        padding: 18px;
+    }
+    
+    .control-btn {
+        font-size: 1rem !important;
+        padding: 16px 20px !important;
+        min-height: 55px;
+    }
+}
+
+/* Смартфоны */
+@media screen and (max-width: 480px) {
+    .header {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .form-container {
+        padding: 20px;
+    }
+    
+    #map, #adminMap {
+        height: 800px !important;
+        min-height: 800px !important;
+    }
+    
+    /* СМАРТФОНЫ - КНОПКИ В СТОЛБЕЦ И ПОЛНАЯ ШИРИНА */
     .map-controls {
         flex-direction: column !important;
         max-width: none !important;
@@ -980,32 +925,23 @@ button:not(.control-btn):disabled {
     }
 }
 
-@media (max-width: 480px) {
-    .header {
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-    
-    .header h1 {
-        font-size: 1.8rem;
-    }
-    
-    .form-container {
-        padding: 20px;
-    }
-    
-    /* МАКСИМАЛЬНО УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ */
+/* Очень маленькие экраны */
+@media screen and (max-width: 360px) {
     #map, #adminMap {
-        height: 800px !important;
-        min-height: 800px !important;
+        height: 850px !important;
+        min-height: 850px !important;
     }
     
-    /* СМАРТФОНЫ - КНОПКИ ПОЛНОЙ ШИРИНЫ */
+    .container {
+        padding: 5px;
+    }
+    
+    /* МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКИ ПОЛНАЯ ШИРИНА */
     .map-controls {
         flex-direction: column !important;
         max-width: none !important;
         width: calc(100% - 10px) !important;
-        margin: 20px 5px !important;
+        margin: 15px 5px !important;
         gap: 12px !important;
         padding: 16px !important;
     }
@@ -1017,36 +953,5 @@ button:not(.control-btn):disabled {
         font-size: 1rem !important;
         padding: 16px 20px !important;
         min-height: 55px !important;
-    }
-}
-
-@media (max-width: 360px) {
-    /* МАКСИМАЛЬНЫЙ РАЗМЕР КАРТЫ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
-    #map, #adminMap {
-        height: 850px !important;
-        min-height: 850px !important;
-    }
-    
-    .container {
-        padding: 5px;
-    }
-    
-    /* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКИ ПОЛНОЙ ШИРИНЫ */
-    .map-controls {
-        flex-direction: column !important;
-        max-width: none !important;
-        width: calc(100% - 10px) !important;
-        margin: 15px 5px !important;
-        gap: 10px !important;
-        padding: 14px !important;
-    }
-    
-    .control-btn {
-        flex: none !important;
-        max-width: none !important;
-        width: 100% !important;
-        font-size: 0.95rem !important;
-        padding: 14px 18px !important;
-        min-height: 50px !important;
     }
 }
