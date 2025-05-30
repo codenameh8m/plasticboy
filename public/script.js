@@ -499,19 +499,29 @@ function addEnhancedMarkerStyles() {
     }
 }
 
-// Обновление статистики с анимацией
+// Обновление статистики с анимацией (добавляем общее количество)
 function updateStats(points) {
     const available = points.filter(p => p.status === 'available').length;
     const collected = points.filter(p => p.status === 'collected').length;
+    const total = points.length;
     
     const availableElement = document.getElementById('availableCount');
     const collectedElement = document.getElementById('collectedCount');
+    const totalElement = document.getElementById('totalCount');
     
     if (availableElement && collectedElement) {
         // Анимированное обновление цифр
         animateNumber(availableElement, parseInt(availableElement.textContent) || 0, available);
         animateNumber(collectedElement, parseInt(collectedElement.textContent) || 0, collected);
+        
+        // Обновляем общее количество если элемент существует
+        if (totalElement) {
+            animateNumber(totalElement, parseInt(totalElement.textContent) || 0, total);
+        }
     }
+    
+    // Обновляем список моделей
+    updateModelsList(points);
 }
 
 // Улучшенная анимация изменения числа
@@ -782,6 +792,120 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
+// Новая функция обновления списка моделей в стиле админки
+function updateModelsList(points) {
+    const container = document.getElementById('modelsList');
+    
+    if (!container) return;
+    
+    if (points.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Нет моделей на карте</p>';
+        return;
+    }
+    
+    // Сортируем: сначала доступные, потом собранные, по времени создания
+    const sortedPoints = [...points].sort((a, b) => {
+        if (a.status !== b.status) {
+            return a.status === 'available' ? -1 : 1;
+        }
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    
+    container.innerHTML = sortedPoints.map(point => {
+        const isAvailable = point.status === 'available';
+        const statusClass = isAvailable ? 'available' : 'collected';
+        const statusText = isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана';
+        
+        let modelContent = `
+            <div class="model-item ${statusClass}" onclick="focusOnModel('${point.id}', ${point.coordinates.lat}, ${point.coordinates.lng})">
+                <div class="model-header">
+                    <h4>${point.name}</h4>
+                    <span class="model-status">${statusText}</span>
+                </div>
+                <div class="model-info">
+                    <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
+        `;
+        
+        if (!isAvailable && point.collectorInfo) {
+            modelContent += `
+                    <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>
+                    <p><strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+            `;
+        }
+        
+        modelContent += `
+                </div>
+                <div class="model-actions">
+                    <button onclick="event.stopPropagation(); focusOnModel('${point.id}', ${point.coordinates.lat}, ${point.coordinates.lng})" class="model-btn">Показать на карте</button>
+        `;
+        
+        if (!isAvailable) {
+            modelContent += `
+                    <button onclick="event.stopPropagation(); showPointDetails('${point.id}')" class="model-btn">Подробнее</button>
+            `;
+        }
+        
+        modelContent += `
+                </div>
+            </div>
+        `;
+        
+        return modelContent;
+    }).join('');
+}
+
+// Новая функция фокусировки на модели
+function focusOnModel(pointId, lat, lng) {
+    // Центрируем карту на модели с анимацией
+    map.flyTo([lat, lng], 17, {
+        duration: 1.5,
+        easeLinearity: 0.5
+    });
+    
+    // Находим маркер и открываем его popup
+    setTimeout(() => {
+        markers.forEach(marker => {
+            const markerLatLng = marker.getLatLng();
+            if (Math.abs(markerLatLng.lat - lat) < 0.00001 && Math.abs(markerLatLng.lng - lng) < 0.00001) {
+                marker.openPopup();
+                
+                // Добавляем временную анимацию маркера
+                const markerElement = marker.getElement();
+                if (markerElement) {
+                    markerElement.style.animation = 'bounce 1s ease-in-out 3';
+                    setTimeout(() => {
+                        markerElement.style.animation = '';
+                    }, 3000);
+                }
+            }
+        });
+    }, 1000);
+    
+    showNotification(`Показываю модель на карте`, 'info');
+}
+
+// Добавляем CSS анимацию bounce
+function addBounceAnimation() {
+    if (!document.getElementById('bounce-animation')) {
+        const style = document.createElement('style');
+        style.id = 'bounce-animation';
+        style.textContent = `
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% {
+                    transform: translateY(0);
+                }
+                40% {
+                    transform: translateY(-10px);
+                }
+                60% {
+                    transform: translateY(-5px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
 // Экспорт функций для глобального доступа
 window.PlasticBoy = {
     map,
@@ -790,5 +914,7 @@ window.PlasticBoy = {
     getCurrentLocation,
     refreshMap,
     showPointDetails,
-    closeModal
+    closeModal,
+    focusOnModel,
+    updateModelsList
 };
