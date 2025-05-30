@@ -1,85 +1,93 @@
-// Инициализация карты
+// БЫСТРЫЙ SCRIPT.JS для PlasticBoy
+// Оптимизирован для быстрой загрузки и отзывчивости
+
 let map;
 let markers = [];
 
 // Координаты Алматы
 const ALMATY_CENTER = [43.2220, 76.8512];
 
-// Флаги для системы загрузки
+// Флаги для быстрой работы
 let isAppInitialized = false;
+let pointsCache = null;
+let lastUpdateTime = 0;
 
-// Инициализация приложения
+// Быстрая инициализация
 document.addEventListener('DOMContentLoaded', function() {
-    // Не запускаем автоматически - ждем сигнала от системы загрузки
-    console.log('📱 DOM готов, ожидаем инициализации от системы загрузки');
-    
-    // Инициализация кнопок (можно делать сразу)
+    console.log('⚡ Быстрая инициализация PlasticBoy script');
     initControlButtons();
 });
 
-// Инициализация карты (вызывается системой загрузки)
+// Быстрая инициализация карты
 function initMap() {
     if (isAppInitialized) return;
     
-    console.log('🗺️ Инициализация карты PlasticBoy');
+    console.log('⚡ Быстрая инициализация карты');
     
-    map = L.map('map').setView(ALMATY_CENTER, 13);
+    map = L.map('map', {
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true, // Ускоряет рендеринг
+        maxZoom: 18
+    }).setView(ALMATY_CENTER, 13);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
+        maxZoom: 18,
+        keepBuffer: 2, // Ускоряет загрузку тайлов
+        updateWhenIdle: false
     }).addTo(map);
     
-    // Добавляем CSS для серо-белых тайлов
-    addGrayscaleMapStyles();
+    // Быстрые стили
+    addFastGrayscaleMapStyles();
     
-    // Принудительно обновляем размер карты после инициализации
+    // Быстрое обновление размера карты
     setTimeout(() => {
         if (map) {
             map.invalidateSize();
-            
-            // Уведомляем систему загрузки о готовности карты
             window.map = map;
-            console.log('✅ Карта инициализирована и готова');
+            console.log('⚡ Карта готова для быстрой загрузки точек');
         }
-    }, 100);
+    }, 50); // Уменьшена задержка
     
-    // Автообновление каждые 30 секунд (только после полной загрузки)
+    // Быстрое автообновление (только после полной загрузки)
     setTimeout(() => {
         setInterval(() => {
             if (typeof window.PlasticBoyLoader === 'undefined' || 
                 window.PlasticBoyLoader.arePointsLoaded()) {
-                loadPoints();
+                fastLoadPoints();
             }
         }, 30000);
-    }, 5000);
+    }, 2000);
     
     isAppInitialized = true;
 }
 
-// Инициализация кнопок управления
+// Быстрая инициализация кнопок
 function initControlButtons() {
     const locationBtn = document.querySelector('.location-btn');
     
     if (locationBtn) {
+        // Оптимизированные обработчики событий
         locationBtn.addEventListener('mousedown', function() {
             this.style.transform = 'translateY(-1px)';
-        });
+        }, { passive: true });
         
         locationBtn.addEventListener('mouseup', function() {
             this.style.transform = '';
-        });
+        }, { passive: true });
     }
 }
 
-// Добавление стилей для серо-белой карты
-function addGrayscaleMapStyles() {
-    if (!document.getElementById('grayscale-map-styles')) {
+// Быстрые стили для карты
+function addFastGrayscaleMapStyles() {
+    if (!document.getElementById('fast-grayscale-styles')) {
         const style = document.createElement('style');
-        style.id = 'grayscale-map-styles';
+        style.id = 'fast-grayscale-styles';
         style.textContent = `
             .leaflet-tile-pane {
                 filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
+                will-change: transform;
             }
             
             .leaflet-marker-pane,
@@ -93,134 +101,103 @@ function addGrayscaleMapStyles() {
             }
             
             .leaflet-control-zoom {
-                margin-top: 20px !important;
-                margin-left: 20px !important;
+                margin-top: 15px !important;
+                margin-left: 15px !important;
             }
             
             .leaflet-control-attribution {
-                margin-bottom: 10px !important;
-                margin-right: 10px !important;
+                margin-bottom: 8px !important;
+                margin-right: 8px !important;
             }
         `;
         document.head.appendChild(style);
     }
 }
 
-// Функция получения геолокации
+// Быстрая геолокация
 function getCurrentLocation() {
     const locationBtn = document.querySelector('.location-btn');
     
     if (!navigator.geolocation) {
-        showNotification('Геолокация не поддерживается', 'error');
+        showFastNotification('Геолокация не поддерживается', 'error');
         return;
     }
     
-    // Анимация загрузки
     const originalText = locationBtn.innerHTML;
-    locationBtn.innerHTML = '⏳ Определение...';
+    locationBtn.innerHTML = '⚡ Определение...';
     locationBtn.disabled = true;
     locationBtn.style.opacity = '0.8';
-    locationBtn.style.animation = 'pulse 1.5s infinite';
     
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            // Создаем маркер пользователя
+            // Быстрая иконка пользователя
             const userIcon = L.divIcon({
-                className: 'user-location-marker',
+                className: 'fast-user-marker',
                 html: `<div style="
                     background: linear-gradient(45deg, #007bff, #0056b3);
-                    width: 24px; 
-                    height: 24px; 
+                    width: 22px; 
+                    height: 22px; 
                     border-radius: 50%; 
-                    border: 3px solid white; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                    position: relative;
-                    transition: all 0.3s ease;
-                ">
-                    <div style="
-                        position: absolute;
-                        top: -6px;
-                        left: -6px;
-                        right: -6px;
-                        bottom: -6px;
-                        border-radius: 50%;
-                        border: 2px solid #007bff;
-                        opacity: 0.3;
-                        animation: userPulse 2s infinite;
-                    "></div>
-                </div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                    border: 2px solid white; 
+                    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+                    transition: transform 0.2s ease;
+                "></div>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11]
             });
             
-            // Добавляем стили для анимации пульса
-            if (!document.getElementById('user-pulse-styles')) {
+            // Быстрые стили для пользователя
+            if (!document.getElementById('fast-user-styles')) {
                 const style = document.createElement('style');
-                style.id = 'user-pulse-styles';
+                style.id = 'fast-user-styles';
                 style.textContent = `
-                    @keyframes userPulse {
-                        0% {
-                            transform: scale(1);
-                            opacity: 0.7;
-                        }
-                        50% {
-                            opacity: 0.2;
-                        }
-                        100% {
-                            transform: scale(2.2);
-                            opacity: 0;
-                        }
-                    }
-                    
-                    .user-location-marker:hover > div {
+                    .fast-user-marker:hover > div {
                         transform: scale(1.1);
-                        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
                     }
                 `;
                 document.head.appendChild(style);
             }
             
-            // Удаляем предыдущий маркер пользователя если есть
+            // Удаляем предыдущий маркер
             if (window.userMarker) {
                 map.removeLayer(window.userMarker);
             }
             
-            // Добавляем новый маркер
+            // Быстрое добавление маркера
             window.userMarker = L.marker([lat, lng], { icon: userIcon })
                 .addTo(map)
                 .bindPopup(`
-                    <div style="text-align: center; min-width: 150px;">
+                    <div style="text-align: center; min-width: 140px;">
                         <strong>📍 Ваше местоположение</strong><br>
                         <small style="color: #666;">
-                            ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                            ${lat.toFixed(4)}, ${lng.toFixed(4)}
                         </small>
                     </div>
                 `);
             
-            // Плавно центрируем карту на пользователе
+            // Быстрое центрирование
             map.flyTo([lat, lng], 16, {
-                duration: 1.5,
+                duration: 1,
                 easeLinearity: 0.5
             });
             
-            showNotification('Местоположение определено', 'success');
+            showFastNotification('Местоположение найдено ⚡', 'success');
             
-            // Восстанавливаем кнопку
+            // Быстрое восстановление кнопки
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
             locationBtn.style.opacity = '';
-            locationBtn.style.animation = '';
         },
         function(error) {
             console.error('Ошибка геолокации:', error);
-            let errorMessage = 'Не удалось определить местоположение';
+            let errorMessage = 'Не удалось найти местоположение';
             
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    errorMessage = 'Доступ к геолокации запрещен';
+                    errorMessage = 'Доступ запрещен';
                     break;
                 case error.POSITION_UNAVAILABLE:
                     errorMessage = 'Местоположение недоступно';
@@ -230,26 +207,26 @@ function getCurrentLocation() {
                     break;
             }
             
-            showNotification(errorMessage, 'error');
+            showFastNotification(errorMessage, 'error');
             
-            // Восстанавливаем кнопку
+            // Быстрое восстановление
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
             locationBtn.style.opacity = '';
-            locationBtn.style.animation = '';
         },
         {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 8000, // Уменьшен таймаут
             maximumAge: 300000
         }
     );
 }
 
-// Загрузка точек с сервера (интегрированная с системой загрузки)
+// Быстрая загрузка точек
 async function loadPoints() {
     try {
-        console.log('📍 Загрузка точек с сервера...');
+        const startTime = Date.now();
+        console.log('⚡ Быстрая загрузка точек...');
         
         const response = await fetch('/api/points', {
             method: 'GET',
@@ -263,12 +240,17 @@ async function loadPoints() {
         }
         
         const points = await response.json();
-        console.log(`📍 Загружено ${points.length} точек`);
+        const loadTime = Date.now() - startTime;
+        console.log(`⚡ Загружено ${points.length} точек за ${loadTime}ms`);
         
-        updateMap(points);
-        updateStats(points);
+        // Кэшируем результат
+        pointsCache = points;
+        lastUpdateTime = Date.now();
         
-        // Уведомляем систему загрузки о завершении загрузки точек
+        fastUpdateMap(points);
+        fastUpdateStats(points);
+        
+        // Уведомляем систему загрузки
         if (typeof window.PlasticBoyLoader !== 'undefined' && 
             typeof window.PlasticBoyLoader.onPointsLoaded === 'function') {
             window.PlasticBoyLoader.onPointsLoaded();
@@ -278,9 +260,9 @@ async function loadPoints() {
         
     } catch (error) {
         console.error('Error loading points:', error);
-        showNotification('Ошибка загрузки данных', 'error');
+        showFastNotification('Ошибка загрузки ⚠️', 'error');
         
-        // Даже при ошибке уведомляем систему загрузки
+        // Уведомляем даже при ошибке
         if (typeof window.PlasticBoyLoader !== 'undefined' && 
             typeof window.PlasticBoyLoader.onPointsLoaded === 'function') {
             window.PlasticBoyLoader.onPointsLoaded();
@@ -290,42 +272,41 @@ async function loadPoints() {
     }
 }
 
-// Обновление карты с цветными маркерами
-function updateMap(points) {
+// Быстрое обновление карты
+function fastUpdateMap(points) {
     if (!map) {
-        console.warn('Карта не готова для обновления маркеров');
+        console.warn('Карта не готова для быстрого обновления');
         return;
     }
     
-    // Очищаем существующие маркеры (кроме пользовательского)
-    markers.forEach(marker => map.removeLayer(marker));
-    markers = [];
+    console.log(`⚡ Быстрое обновление ${points.length} маркеров`);
     
-    console.log(`🎯 Обновление карты с ${points.length} точками`);
+    // Быстрая очистка маркеров
+    markers.forEach(marker => map.removeLayer(marker));
+    markers.length = 0; // Быстрая очистка массива
+    
+    // Пакетное добавление маркеров
+    const markersToAdd = [];
     
     points.forEach(point => {
         const isAvailable = point.status === 'available';
         
-        // Создаем цветную иконку
+        // Простая быстрая иконка
         const icon = L.divIcon({
-            className: 'custom-marker',
-            html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}">
-                     <div class="marker-pulse ${isAvailable ? 'pulse' : ''}"></div>
-                     <div class="marker-glow"></div>
-                   </div>`,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
+            className: 'fast-marker',
+            html: `<div class="fast-marker-dot ${isAvailable ? 'available' : 'collected'}"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
         });
         
-        const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
-            .addTo(map);
+        const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon });
         
-        // Улучшенный popup
+        // Быстрый popup
         let popupContent = `
-            <div class="popup-content">
+            <div class="fast-popup">
                 <h3>${point.name}</h3>
                 <p class="status ${point.status}">
-                    ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
+                    ${isAvailable ? '🟢 Доступна' : '🔴 Собрана'}
                 </p>
         `;
         
@@ -336,125 +317,77 @@ function updateMap(points) {
                     ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
                     <p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
                 </div>
-                <button onclick="showPointDetails('${point.id}')" class="details-btn">Подробнее</button>
+                <button onclick="showPointDetails('${point.id}')" class="fast-details-btn">Подробнее</button>
             `;
         }
         
         popupContent += '</div>';
         marker.bindPopup(popupContent);
+        markersToAdd.push(marker);
+    });
+    
+    // Быстрое пакетное добавление
+    markersToAdd.forEach(marker => {
+        marker.addTo(map);
         markers.push(marker);
     });
     
-    // Делаем маркеры доступными глобально для системы загрузки
+    // Глобальный доступ для системы загрузки
     window.markers = markers;
     
-    // Добавляем стили для маркеров
-    addEnhancedMarkerStyles();
+    // Быстрые стили для маркеров
+    addFastMarkerStyles();
 }
 
-// Добавление стилей для цветных маркеров
-function addEnhancedMarkerStyles() {
-    if (!document.getElementById('enhanced-marker-styles')) {
+// Быстрые стили для маркеров
+function addFastMarkerStyles() {
+    if (!document.getElementById('fast-marker-styles')) {
         const style = document.createElement('style');
-        style.id = 'enhanced-marker-styles';
+        style.id = 'fast-marker-styles';
         style.textContent = `
-            .custom-marker {
+            .fast-marker {
                 background: none !important;
                 border: none !important;
             }
             
-            .marker-dot {
-                width: 22px;
-                height: 22px;
+            .fast-marker-dot {
+                width: 20px;
+                height: 20px;
                 border-radius: 50%;
-                position: relative;
-                border: 3px solid white;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-                transition: all 0.3s ease;
+                border: 2px solid white;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+                transition: transform 0.2s ease;
                 cursor: pointer;
             }
             
-            .marker-dot::before {
-                content: '';
-                position: absolute;
-                top: -2px;
-                left: -2px;
-                right: -2px;
-                bottom: -2px;
-                border-radius: 50%;
-                background: linear-gradient(45deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
-                z-index: 1;
-                pointer-events: none;
+            .fast-marker-dot:hover {
+                transform: scale(1.1);
             }
             
-            .marker-dot:hover {
-                transform: scale(1.15);
-                box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-            }
-            
-            .marker-dot.available {
+            .fast-marker-dot.available {
                 background: linear-gradient(45deg, #4CAF50, #45a049);
-                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
             }
             
-            .marker-dot.available:hover {
-                box-shadow: 0 6px 18px rgba(76, 175, 80, 0.4);
-            }
-            
-            .marker-dot.collected {
+            .fast-marker-dot.collected {
                 background: linear-gradient(45deg, #f44336, #e53935);
-                box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
             }
             
-            .marker-dot.collected:hover {
-                box-shadow: 0 6px 18px rgba(244, 67, 54, 0.4);
-            }
-            
-            .marker-pulse {
-                position: absolute;
-                top: -4px;
-                left: -4px;
-                right: -4px;
-                bottom: -4px;
-                border-radius: 50%;
-                border: 2px solid #4CAF50;
-                opacity: 0;
-            }
-            
-            .marker-pulse.pulse {
-                animation: markerPulse 2s infinite;
-            }
-            
-            @keyframes markerPulse {
-                0% {
-                    transform: scale(1);
-                    opacity: 0.8;
-                }
-                50% {
-                    opacity: 0.3;
-                }
-                100% {
-                    transform: scale(1.6);
-                    opacity: 0;
-                }
-            }
-            
-            .popup-content {
-                min-width: 220px;
+            .fast-popup {
+                min-width: 200px;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
             
-            .popup-content h3 {
-                margin: 0 0 12px 0;
+            .fast-popup h3 {
+                margin: 0 0 10px 0;
                 color: #333;
-                font-size: 1.1rem;
+                font-size: 1rem;
                 font-weight: 600;
             }
             
             .status {
-                margin: 12px 0;
+                margin: 8px 0;
                 font-weight: 600;
-                font-size: 0.95rem;
+                font-size: 0.9rem;
             }
             
             .status.available {
@@ -466,44 +399,40 @@ function addEnhancedMarkerStyles() {
             }
             
             .collector-info {
-                background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-                padding: 12px;
-                border-radius: 8px;
-                margin: 12px 0;
-                font-size: 0.9rem;
-                border-left: 3px solid #667eea;
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 6px;
+                margin: 8px 0;
+                font-size: 0.85rem;
             }
             
             .collector-info p {
-                margin: 6px 0;
+                margin: 4px 0;
             }
             
-            .details-btn {
+            .fast-details-btn {
                 background: linear-gradient(45deg, #667eea, #764ba2);
                 color: white;
                 border: none;
-                padding: 10px 16px;
-                border-radius: 8px;
+                padding: 8px 12px;
+                border-radius: 6px;
                 cursor: pointer;
-                font-size: 0.9rem;
-                margin-top: 12px;
+                font-size: 0.85rem;
+                margin-top: 8px;
                 width: 100%;
-                transition: all 0.3s;
-                font-weight: 500;
+                transition: background 0.2s;
             }
             
-            .details-btn:hover {
+            .fast-details-btn:hover {
                 background: linear-gradient(45deg, #5a67d8, #6b46c1);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
             }
         `;
         document.head.appendChild(style);
     }
 }
 
-// Обновление статистики с анимацией
-function updateStats(points) {
+// Быстрое обновление статистики
+function fastUpdateStats(points) {
     const available = points.filter(p => p.status === 'available').length;
     const collected = points.filter(p => p.status === 'collected').length;
     
@@ -511,27 +440,27 @@ function updateStats(points) {
     const collectedElement = document.getElementById('collectedCount');
     
     if (availableElement && collectedElement) {
-        animateNumber(availableElement, parseInt(availableElement.textContent) || 0, available);
-        animateNumber(collectedElement, parseInt(collectedElement.textContent) || 0, collected);
+        fastAnimateNumber(availableElement, parseInt(availableElement.textContent) || 0, available);
+        fastAnimateNumber(collectedElement, parseInt(collectedElement.textContent) || 0, collected);
     }
     
-    console.log(`📊 Статистика обновлена: ${available} доступно, ${collected} собрано`);
+    console.log(`⚡ Статистика: ${available} доступно, ${collected} собрано`);
 }
 
-// Анимация изменения числа
-function animateNumber(element, from, to) {
+// Быстрая анимация чисел
+function fastAnimateNumber(element, from, to) {
     if (from === to) return;
     
-    const duration = 800;
-    const steps = 30;
+    const duration = 400; // Уменьшена продолжительность
+    const steps = 20; // Меньше шагов
     const stepValue = (to - from) / steps;
     const stepDuration = duration / steps;
     
     let current = from;
     let step = 0;
     
-    element.style.transform = 'scale(1.1)';
-    element.style.transition = 'transform 0.3s ease';
+    element.style.transform = 'scale(1.05)';
+    element.style.transition = 'transform 0.2s ease';
     
     const timer = setInterval(() => {
         step++;
@@ -547,40 +476,40 @@ function animateNumber(element, from, to) {
     }, stepDuration);
 }
 
-// Показать подробности точки
+// Быстрые детали точки
 async function showPointDetails(pointId) {
     try {
         const response = await fetch(`/api/point/${pointId}/info`);
         if (!response.ok) {
-            throw new Error('Ошибка загрузки информации');
+            throw new Error('Ошибка загрузки');
         }
         
         const point = await response.json();
         
         let modalContent = `
-            <h3 style="color: #667eea; margin-bottom: 15px;">${point.name}</h3>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <h3 style="color: #667eea; margin-bottom: 12px;">${point.name}</h3>
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                 <p><strong>Статус:</strong> <span style="color: ${point.status === 'collected' ? '#f44336' : '#4CAF50'}">${point.status === 'collected' ? 'Собрана' : 'Доступна'}</span></p>
-                <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
+                <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(4)}, ${point.coordinates.lng.toFixed(4)}</p>
             </div>
         `;
         
         if (point.status === 'collected' && point.collectorInfo) {
             modalContent += `
-                <div style="border-left: 4px solid #667eea; padding-left: 15px; margin: 15px 0;">
-                    <h4 style="color: #333; margin-bottom: 10px;">Информация о сборщике:</h4>
+                <div style="border-left: 3px solid #667eea; padding-left: 12px; margin: 12px 0;">
+                    <h4 style="color: #333; margin-bottom: 8px;">Сборщик:</h4>
                     <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
                     ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> <em>"${point.collectorInfo.signature}"</em></p>` : ''}
-                    <p><strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+                    <p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
                 </div>
             `;
             
             if (point.collectorInfo.selfie) {
                 modalContent += `
-                    <div style="margin-top: 20px; text-align: center;">
-                        <strong style="color: #667eea;">Селфи с места находки:</strong><br>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <strong style="color: #667eea;">Селфи:</strong><br>
                         <img src="${point.collectorInfo.selfie}" 
-                             style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"
+                             style="max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);"
                              alt="Селфи сборщика">
                     </div>
                 `;
@@ -593,19 +522,19 @@ async function showPointDetails(pointId) {
         
     } catch (error) {
         console.error('Ошибка загрузки информации:', error);
-        showNotification('Ошибка загрузки информации', 'error');
+        showFastNotification('Ошибка загрузки информации', 'error');
     }
 }
 
-// Закрыть модальное окно
+// Быстрое закрытие модального окна
 function closeModal() {
     document.getElementById('infoModal').style.display = 'none';
 }
 
-// Функция показа уведомлений
-function showNotification(message, type = 'info') {
+// Быстрые уведомления
+function showFastNotification(message, type = 'info') {
     const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
+    notification.className = `fast-notification ${type}`;
     
     const icons = {
         error: '❌',
@@ -615,107 +544,102 @@ function showNotification(message, type = 'info') {
     };
     
     notification.innerHTML = `
-        <div class="notification-content">
+        <div class="fast-notification-content">
             <span>${icons[type] || icons.info} ${message}</span>
             <button onclick="this.parentElement.parentElement.remove()">×</button>
         </div>
     `;
     
-    addEnhancedNotificationStyles();
+    addFastNotificationStyles();
     document.body.appendChild(notification);
     
     setTimeout(() => {
         if (notification.parentElement) {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
+            notification.style.animation = 'fastSlideOut 0.2s ease';
+            setTimeout(() => notification.remove(), 200);
         }
-    }, 4000);
+    }, 3000); // Уменьшено время показа
 }
 
-// Добавление стилей для уведомлений
-function addEnhancedNotificationStyles() {
-    if (!document.getElementById('enhanced-notification-styles')) {
+// Быстрые стили уведомлений
+function addFastNotificationStyles() {
+    if (!document.getElementById('fast-notification-styles')) {
         const style = document.createElement('style');
-        style.id = 'enhanced-notification-styles';
+        style.id = 'fast-notification-styles';
         style.textContent = `
-            .notification {
+            .fast-notification {
                 position: fixed;
-                top: 20px;
-                right: 20px;
+                top: 15px;
+                right: 15px;
                 z-index: 2000;
                 background: rgba(255, 255, 255, 0.98);
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-                backdrop-filter: blur(10px);
-                padding: 16px;
-                min-width: 280px;
-                max-width: 400px;
-                animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 8px;
+                box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+                backdrop-filter: blur(8px);
+                padding: 12px;
+                min-width: 250px;
+                max-width: 350px;
+                animation: fastSlideIn 0.3s ease;
+                border: 1px solid rgba(255,255,255,0.3);
+                font-size: 0.9rem;
             }
             
-            .notification.error {
-                border-left: 4px solid #f44336;
-                background: linear-gradient(135deg, rgba(244, 67, 54, 0.05), rgba(255, 255, 255, 0.98));
+            .fast-notification.error {
+                border-left: 3px solid #f44336;
             }
             
-            .notification.success {
-                border-left: 4px solid #4CAF50;
-                background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(255, 255, 255, 0.98));
+            .fast-notification.success {
+                border-left: 3px solid #4CAF50;
             }
             
-            .notification.info {
-                border-left: 4px solid #2196F3;
-                background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(255, 255, 255, 0.98));
+            .fast-notification.info {
+                border-left: 3px solid #2196F3;
             }
             
-            .notification.warning {
-                border-left: 4px solid #ff9800;
-                background: linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(255, 255, 255, 0.98));
+            .fast-notification.warning {
+                border-left: 3px solid #ff9800;
             }
             
-            .notification-content {
+            .fast-notification-content {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 font-weight: 500;
             }
             
-            .notification-content button {
+            .fast-notification-content button {
                 background: none;
                 border: none;
-                font-size: 1.3rem;
+                font-size: 1.1rem;
                 cursor: pointer;
                 color: #999;
                 padding: 0;
-                margin: 0;
-                width: auto;
-                margin-left: 12px;
-                transition: color 0.3s;
+                margin-left: 10px;
+                transition: color 0.2s;
             }
             
-            .notification-content button:hover {
+            .fast-notification-content button:hover {
                 color: #666;
             }
             
-            @keyframes slideIn {
+            @keyframes fastSlideIn {
                 from {
-                    transform: translateX(100%) scale(0.9);
+                    transform: translateX(100%);
                     opacity: 0;
                 }
                 to {
-                    transform: translateX(0) scale(1);
+                    transform: translateX(0);
                     opacity: 1;
                 }
             }
             
-            @keyframes slideOut {
+            @keyframes fastSlideOut {
                 from {
-                    transform: translateX(0) scale(1);
+                    transform: translateX(0);
                     opacity: 1;
                 }
                 to {
-                    transform: translateX(100%) scale(0.9);
+                    transform: translateX(100%);
                     opacity: 0;
                 }
             }
@@ -724,45 +648,44 @@ function addEnhancedNotificationStyles() {
     }
 }
 
-// Закрытие модального окна при клике вне его
+// Быстрые обработчики событий
 window.addEventListener('click', function(event) {
     const modal = document.getElementById('infoModal');
     if (event.target === modal) {
         closeModal();
     }
-});
+}, { passive: true });
 
-// Обработка ошибок загрузки карты
 window.addEventListener('error', function(e) {
     if (e.target.tagName === 'IMG' && e.target.src.includes('openstreetmap')) {
         console.warn('Ошибка загрузки тайлов карты');
-        showNotification('Проблемы с загрузкой карты. Проверьте интернет-соединение.', 'error');
+        showFastNotification('Проблемы с картой', 'warning');
     }
-});
+}, { passive: true });
 
-// Обработка изменения размера окна
+// Быстрое изменение размера
 window.addEventListener('resize', function() {
     if (map) {
-        clearTimeout(window.resizeTimeout);
-        window.resizeTimeout = setTimeout(() => {
+        clearTimeout(window.fastResizeTimeout);
+        window.fastResizeTimeout = setTimeout(() => {
             map.invalidateSize();
-        }, 150);
+        }, 100);
     }
-});
+}, { passive: true });
 
-// Обработка состояния сети
+// Быстрые сетевые события
 window.addEventListener('online', function() {
-    showNotification('Соединение восстановлено', 'success');
+    showFastNotification('Соединение восстановлено ⚡', 'success');
     if (isAppInitialized) {
-        loadPoints();
+        setTimeout(() => loadPoints(), 100);
     }
-});
+}, { passive: true });
 
 window.addEventListener('offline', function() {
-    showNotification('Нет подключения к интернету', 'warning');
-});
+    showFastNotification('Нет интернета ⚠️', 'warning');
+}, { passive: true });
 
-// Обработка клавиш
+// Быстрые клавиши
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeModal();
@@ -772,20 +695,25 @@ document.addEventListener('keydown', function(event) {
         event.preventDefault();
         getCurrentLocation();
     }
-});
+}, { passive: false });
 
-// Экспорт функций для глобального доступа
+// Быстрый экспорт
 window.PlasticBoy = {
     map,
     markers,
     loadPoints,
-    showNotification,
+    showFastNotification,
     getCurrentLocation,
     showPointDetails,
     closeModal,
     initMap,
-    updateMap,
-    updateStats
+    fastUpdateMap,
+    fastUpdateStats
 };
 
-console.log('📱 PlasticBoy script.js загружен и готов к работе');
+// Псевдонимы для совместимости
+window.showNotification = showFastNotification;
+window.updateMap = fastUpdateMap;
+window.updateStats = fastUpdateStats;
+
+console.log('⚡ Быстрый PlasticBoy script готов к работе');
