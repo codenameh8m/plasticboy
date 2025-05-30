@@ -226,21 +226,22 @@ body {
 
 .control-btn {
     width: 100%;
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-    border: none;
-    padding: 15px 20px;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-    overflow: hidden;
+    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+    color: white !important;
+    border: none !important;
+    padding: 15px 20px !important;
+    border-radius: 12px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin-top: 0 !important;
 }
 
 .control-btn::before {
@@ -274,21 +275,14 @@ body {
     transform: none;
 }
 
-/* Обе кнопки в одном зеленом стиле */
-.refresh-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
+/* Обе кнопки в одинаковом зеленом стиле */
+.refresh-btn, .location-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
 }
 
-.refresh-btn:hover {
-    background: linear-gradient(45deg, #45a049, #3d8b40);
-}
-
-.location-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-}
-
-.location-btn:hover {
-    background: linear-gradient(45deg, #45a049, #3d8b40);
+.refresh-btn:hover, .location-btn:hover {
+    background: linear-gradient(45deg, #45a049, #3d8b40) !important;
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3) !important;
 }
 
 /* Анимация вращения для кнопки обновления */
@@ -353,7 +347,7 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-button {
+button:not(.control-btn) {
     background: linear-gradient(45deg, #667eea, #764ba2);
     color: white;
     border: none;
@@ -367,16 +361,16 @@ button {
     margin-top: 10px;
 }
 
-button:hover {
+button:not(.control-btn):hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
-button:active {
+button:not(.control-btn):active {
     transform: translateY(0);
 }
 
-button:disabled {
+button:not(.control-btn):disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
