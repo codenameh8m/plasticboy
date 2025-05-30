@@ -207,7 +207,7 @@ body {
     background: #f44336;
 }
 
-/* ЦЕНТРИРОВАННЫЕ КНОПКИ УПРАВЛЕНИЯ В СТИЛЕ СТАТИСТИКИ */
+/* ЦЕНТРИРОВАННЫЕ КНОПКИ УПРАВЛЕНИЯ - ОБЕИМ ЗЕЛЕНЫМ ЦВЕТОМ */
 .map-controls {
     display: flex;
     flex-direction: column;
@@ -224,27 +224,30 @@ body {
     margin-right: auto;
 }
 
-.control-btn {
+/* СТИЛИ ДЛЯ КНОПОК УПРАВЛЕНИЯ - ОДИНАКОВЫЕ ЗЕЛЕНЫЕ */
+.refresh-btn,
+.location-btn {
     width: 100%;
-    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
-    color: white !important;
-    border: none !important;
-    padding: 15px 20px !important;
-    border-radius: 12px !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    position: relative !important;
-    overflow: hidden !important;
-    margin-top: 0 !important;
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+    margin: 0;
 }
 
-.control-btn::before {
+.refresh-btn::before,
+.location-btn::before {
     content: '';
     position: absolute;
     top: 0;
@@ -256,33 +259,28 @@ body {
     transition: opacity 0.3s;
 }
 
-.control-btn:hover::before {
+.refresh-btn:hover::before,
+.location-btn:hover::before {
     opacity: 1;
 }
 
-.control-btn:hover {
+.refresh-btn:hover,
+.location-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+    background: linear-gradient(45deg, #45a049, #3d8b40);
 }
 
-.control-btn:active {
+.refresh-btn:active,
+.location-btn:active {
     transform: translateY(0);
 }
 
-.control-btn:disabled {
+.refresh-btn:disabled,
+.location-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-}
-
-/* Обе кнопки в одинаковом зеленом стиле */
-.refresh-btn, .location-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
-}
-
-.refresh-btn:hover, .location-btn:hover {
-    background: linear-gradient(45deg, #45a049, #3d8b40) !important;
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3) !important;
 }
 
 /* Анимация вращения для кнопки обновления */
@@ -310,7 +308,7 @@ body {
     }
 }
 
-/* Формы */
+/* Формы - ИСКЛЮЧАЕМ КНОПКИ УПРАВЛЕНИЯ */
 .form-container {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
@@ -347,7 +345,8 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-button:not(.control-btn) {
+/* ОБЫЧНЫЕ КНОПКИ (НЕ КНОПКИ УПРАВЛЕНИЯ) */
+button:not(.refresh-btn):not(.location-btn) {
     background: linear-gradient(45deg, #667eea, #764ba2);
     color: white;
     border: none;
@@ -361,16 +360,16 @@ button:not(.control-btn) {
     margin-top: 10px;
 }
 
-button:not(.control-btn):hover {
+button:not(.refresh-btn):not(.location-btn):hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
-button:not(.control-btn):active {
+button:not(.refresh-btn):not(.location-btn):active {
     transform: translateY(0);
 }
 
-button:not(.control-btn):disabled {
+button:not(.refresh-btn):not(.location-btn):disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
@@ -865,7 +864,8 @@ button:not(.control-btn):disabled {
         gap: 12px;
     }
     
-    .control-btn {
+    .refresh-btn,
+    .location-btn {
         font-size: 0.9rem;
         padding: 12px 16px;
     }
@@ -890,7 +890,8 @@ button:not(.control-btn):disabled {
         height: 550px;
     }
     
-    .control-btn {
+    .refresh-btn,
+    .location-btn {
         font-size: 0.85rem;
         padding: 10px 14px;
     }
@@ -906,7 +907,8 @@ button:not(.control-btn):disabled {
         padding: 5px;
     }
     
-    .control-btn {
+    .refresh-btn,
+    .location-btn {
         font-size: 0.8rem;
         padding: 8px 12px;
     }
