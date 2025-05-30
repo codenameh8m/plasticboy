@@ -586,7 +586,99 @@ button:not(.control-btn):disabled {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* ЦВЕТНЫЕ ИКОНКИ МОДЕЛЕЙ */
+/* СПИСОК МОДЕЛЕЙ НА ГЛАВНОЙ СТРАНИЦЕ В СТИЛЕ АДМИНКИ */
+.models-list {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.models-list h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.model-item {
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.model-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.model-item.available {
+    border-left: 4px solid #4CAF50;
+}
+
+.model-item.collected {
+    border-left: 4px solid #f44336;
+}
+
+.model-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.model-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.model-status {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.8);
+}
+
+.model-info p {
+    margin: 6px 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.model-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.model-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin: 6px 6px 0 0;
+    min-width: 90px;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.model-btn:hover {
+    background: linear-gradient(45deg, #5a67d8, #6b46c1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
 .custom-marker {
     background: none !important;
     border: none !important;
