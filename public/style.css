@@ -81,7 +81,7 @@ body {
     font-weight: 500;
 }
 
-/* Карта - СЕРО-БЕЛАЯ С ЦВЕТНЫМИ ИКОНКАМИ */
+/* УВЕЛИЧЕННЫЕ КАРТЫ */
 .map-container {
     position: relative;
     background: white;
@@ -91,8 +91,9 @@ body {
     margin-bottom: 20px;
 }
 
+/* ОСНОВНЫЕ РАЗМЕРЫ КАРТ - УВЕЛИЧЕНЫ */
 #map, #adminMap {
-    height: 450px;
+    height: 600px; /* Увеличено с 450px до 600px */
     width: 100%;
 }
 
@@ -207,7 +208,7 @@ body {
     background: #f44336;
 }
 
-/* ЦЕНТРИРОВАННЫЕ КНОПКИ УПРАВЛЕНИЯ В СТИЛЕ СТАТИСТИКИ */
+/* ОДИНАКОВЫЕ КНОПКИ УПРАВЛЕНИЯ В СТИЛЕ СТАТИСТИКИ */
 .map-controls {
     display: flex;
     flex-direction: column;
@@ -224,6 +225,7 @@ body {
     margin-right: auto;
 }
 
+/* ЕДИНЫЙ СТИЛЬ ДЛЯ ОБЕИХ КНОПОК */
 .control-btn {
     width: 100%;
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
@@ -275,7 +277,7 @@ body {
     transform: none;
 }
 
-/* Обе кнопки в одинаковом зеленом стиле */
+/* ОБЕ КНОПКИ В ОДИНАКОВОМ ЗЕЛЕНОМ СТИЛЕ */
 .refresh-btn, .location-btn {
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
 }
@@ -818,7 +820,7 @@ button:not(.control-btn):disabled {
     }
 }
 
-/* Адаптивность */
+/* АДАПТИВНОСТЬ С УВЕЛИЧЕННЫМИ КАРТАМИ */
 @media (max-width: 768px) {
     .container {
         padding: 10px;
@@ -834,7 +836,7 @@ button:not(.control-btn):disabled {
     
     /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
-        height: 500px;
+        height: 650px; /* Увеличено с 500px до 650px */
     }
     
     .modal-content {
@@ -887,7 +889,7 @@ button:not(.control-btn):disabled {
     
     /* МАКСИМАЛЬНО УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ */
     #map, #adminMap {
-        height: 550px;
+        height: 700px; /* Увеличено с 550px до 700px */
     }
     
     .control-btn {
@@ -899,7 +901,7 @@ button:not(.control-btn):disabled {
 @media (max-width: 360px) {
     /* МАКСИМАЛЬНЫЙ РАЗМЕР КАРТЫ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
-        height: 600px;
+        height: 750px; /* Увеличено с 600px до 750px */
     }
     
     .container {
