@@ -75,6 +75,12 @@
         async function loadPointInfo() {
             try {
                 console.log('Loading point info...');
+                
+                // Показываем индикатор загрузки
+                const modelNameElement = document.getElementById('modelName');
+                modelNameElement.innerHTML = '⏳ Загрузка...';
+                modelNameElement.style.animation = 'pulse 1.5s infinite';
+                
                 const response = await fetch(`/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`, {
                     method: 'GET',
                     headers: {
@@ -90,9 +96,17 @@
                     throw new Error(data.error || 'Ошибка загрузки');
                 }
 
-                document.getElementById('modelName').textContent = data.name;
-                document.getElementById('modelLocation').textContent = 
-                    `Координаты: ${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}`;
+                // Обновляем информацию с анимацией
+                modelNameElement.style.animation = '';
+                modelNameElement.textContent = data.name;
+                
+                document.getElementById('modelLocation').innerHTML = 
+                    `📍 Координаты: <strong>${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}</strong>`;
+
+                // Добавляем фокус на поле имени
+                setTimeout(() => {
+                    document.getElementById('collectorName').focus();
+                }, 300);
 
             } catch (error) {
                 console.error('Error loading point info:', error);
@@ -100,7 +114,7 @@
             }
         }
 
-        // Превью изображения
+        // Улучшенное превью изображения
         document.getElementById('selfie').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const preview = document.getElementById('imagePreview');
@@ -108,7 +122,15 @@
             if (file) {
                 // Проверяем размер файла (максимум 5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('Файл слишком большой. Максимальный размер: 5MB');
+                    showNotification('Файл слишком большой. Максимальный размер: 5MB', 'error');
+                    this.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
+                // Проверяем тип файла
+                if (!file.type.startsWith('image/')) {
+                    showNotification('Пожалуйста, выберите изображение', 'error');
                     this.value = '';
                     preview.innerHTML = '';
                     return;
@@ -116,7 +138,17 @@
 
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Превью селфи" style="max-width: 100%; max-height: 200px; border-radius: 10px;">`;
+                    preview.innerHTML = `
+                        <div style="position: relative; display: inline-block; margin-top: 10px;">
+                            <img src="${e.target.result}" alt="Превью селфи" 
+                                 style="max-width: 100%; max-height: 200px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); 
+                                        color: white; border-radius: 50%; width: 25px; height: 25px; 
+                                        display: flex; align-items: center; justify-content: center; 
+                                        cursor: pointer; font-size: 14px;"
+                                 onclick="clearImage()">×</div>
+                        </div>
+                    `;
                 };
                 reader.readAsDataURL(file);
             } else {
@@ -124,20 +156,30 @@
             }
         });
 
-        // Обработка кнопки отправки
+        // Функция для очистки изображения
+        function clearImage() {
+            document.getElementById('selfie').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+        }
+
+        // Улучшенная обработка кнопки отправки
         document.getElementById('submitBtn').addEventListener('click', async function(e) {
             e.preventDefault();
             
             const name = document.getElementById('collectorName').value.trim();
             if (!name) {
-                alert('Пожалуйста, введите ваше имя');
+                showNotification('Пожалуйста, введите ваше имя', 'error');
                 document.getElementById('collectorName').focus();
                 return;
             }
 
             const submitBtn = document.getElementById('submitBtn');
+            const originalHTML = submitBtn.innerHTML;
+            
+            // Блокируем кнопку и показываем анимацию загрузки
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>⏳</span> Отправка...';
+            submitBtn.innerHTML = '<span style="animation: spin 1s linear infinite;">⏳</span> Отправка...';
+            submitBtn.style.opacity = '0.8';
 
             try {
                 console.log('Submitting form...');
@@ -177,19 +219,200 @@
                 
                 // Восстанавливаем кнопку
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>📸</span> Отметить находку';
+                submitBtn.innerHTML = originalHTML;
+                submitBtn.style.opacity = '';
             }
         });
 
+        // Улучшенная функция показа успеха
         function showSuccess() {
             document.getElementById('collectForm').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'block';
+            const successMessage = document.getElementById('successMessage');
+            successMessage.style.display = 'block';
+            
+            // Добавляем анимацию появления
+            successMessage.style.opacity = '0';
+            successMessage.style.transform = 'scale(0.9)';
+            successMessage.style.transition = 'all 0.5s ease';
+            
+            setTimeout(() => {
+                successMessage.style.opacity = '1';
+                successMessage.style.transform = 'scale(1)';
+            }, 100);
+            
+            // Добавляем конфетти эффект
+            createConfetti();
         }
 
+        // Улучшенная функция показа ошибки
         function showError(message) {
             document.getElementById('collectForm').style.display = 'none';
+            const errorMessage = document.getElementById('errorMessage');
             document.getElementById('errorText').textContent = message;
-            document.getElementById('errorMessage').style.display = 'block';
+            errorMessage.style.display = 'block';
+            
+            // Добавляем анимацию появления
+            errorMessage.style.opacity = '0';
+            errorMessage.style.transform = 'scale(0.9)';
+            errorMessage.style.transition = 'all 0.5s ease';
+            
+            setTimeout(() => {
+                errorMessage.style.opacity = '1';
+                errorMessage.style.transform = 'scale(1)';
+            }, 100);
+        }
+
+        // Функция создания конфетти эффекта
+        function createConfetti() {
+            const colors = ['#f44336', '#4CAF50', '#2196F3', '#ff9800', '#9c27b0', '#ffeb3b'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.position = 'fixed';
+                    confetti.style.width = '10px';
+                    confetti.style.height = '10px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = '-10px';
+                    confetti.style.zIndex = '9999';
+                    confetti.style.borderRadius = '50%';
+                    confetti.style.pointerEvents = 'none';
+                    confetti.style.animation = `fall ${2 + Math.random() * 3}s linear forwards`;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }, i * 50);
+            }
+            
+            // Добавляем CSS анимацию если её нет
+            if (!document.getElementById('confetti-styles')) {
+                const style = document.createElement('style');
+                style.id = 'confetti-styles';
+                style.textContent = `
+                    @keyframes fall {
+                        to {
+                            transform: translateY(100vh) rotate(360deg);
+                        }
+                    }
+                    
+                    @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                    
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.5; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Функция показа уведомлений
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icons = {
+                error: '❌',
+                success: '✅',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+            
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span>${icons[type] || icons.info} ${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Добавляем стили если их нет
+            if (!document.getElementById('notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    .notification {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        z-index: 2000;
+                        background: rgba(255, 255, 255, 0.98);
+                        border-radius: 12px;
+                        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+                        backdrop-filter: blur(10px);
+                        padding: 16px;
+                        min-width: 280px;
+                        max-width: 400px;
+                        animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                        border: 1px solid rgba(255,255,255,0.2);
+                        font-weight: 500;
+                    }
+                    
+                    .notification.error {
+                        border-left: 4px solid #f44336;
+                    }
+                    
+                    .notification.success {
+                        border-left: 4px solid #4CAF50;
+                    }
+                    
+                    .notification.info {
+                        border-left: 4px solid #2196F3;
+                    }
+                    
+                    .notification.warning {
+                        border-left: 4px solid #ff9800;
+                    }
+                    
+                    .notification-content {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    
+                    .notification-content button {
+                        background: none;
+                        border: none;
+                        font-size: 1.3rem;
+                        cursor: pointer;
+                        color: #999;
+                        padding: 0;
+                        margin-left: 12px;
+                        transition: color 0.3s;
+                    }
+                    
+                    .notification-content button:hover {
+                        color: #666;
+                    }
+                    
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(100%) scale(0.9);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0) scale(1);
+                            opacity: 1;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 4000);
         }
 
         // Предотвращаем случайную отправку формы
@@ -199,6 +422,83 @@
                 document.getElementById('submitBtn').click();
             }
         });
+
+        // Обработка изменения размера окна
+        window.addEventListener('resize', function() {
+            // Обновляем высоту textarea при изменении размера
+            const textarea = document.getElementById('signature');
+            if (textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = textarea.scrollHeight + 'px';
+            }
+        });
+
+        // Автоматическое изменение высоты textarea
+        document.getElementById('signature').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        // Валидация поля имени в реальном времени
+        document.getElementById('collectorName').addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length > 0) {
+                this.style.borderColor = '#4CAF50';
+                this.style.boxShadow = '0 0 0 3px rgba(76, 175, 80, 0.1)';
+            } else {
+                this.style.borderColor = '#ddd';
+                this.style.boxShadow = 'none';
+            }
+        });
+
+        // Обработка drag & drop для изображений
+        const selfieInput = document.getElementById('selfie');
+        const collectForm = document.getElementById('collectFormInner');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            collectForm.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            collectForm.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            collectForm.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            collectForm.style.background = 'rgba(76, 175, 80, 0.05)';
+            collectForm.style.border = '2px dashed #4CAF50';
+        }
+
+        function unhighlight(e) {
+            collectForm.style.background = '';
+            collectForm.style.border = '';
+        }
+
+        collectForm.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    selfieInput.files = files;
+                    selfieInput.dispatchEvent(new Event('change'));
+                    showNotification('Изображение добавлено!', 'success');
+                } else {
+                    showNotification('Пожалуйста, перетащите изображение', 'error');
+                }
+            }
+        }
     </script>
 </body>
 </html>
