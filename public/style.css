@@ -209,43 +209,42 @@ body {
     background: #f44336;
 }
 
-/* КНОПКИ УПРАВЛЕНИЯ КАРТОЙ */
+/* КНОПКА УПРАВЛЕНИЯ КАРТОЙ (только геолокация) */
 .map-controls {
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: stretch;
+    align-items: center;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
     padding: 20px;
     margin: 20px 0;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    gap: 15px;
     width: 100%;
 }
 
-/* КНОПКИ - БАЗОВЫЕ СТИЛИ */
+/* КНОПКА ГЕОЛОКАЦИИ - СТИЛИ */
 .control-btn {
     width: 100%;
+    max-width: 400px;
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
     color: white !important;
     border: none !important;
-    padding: 18px 24px !important;
-    border-radius: 12px !important;
-    font-size: 1.1rem !important;
+    padding: 20px 30px !important;
+    border-radius: 15px !important;
+    font-size: 1.2rem !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important;
+    gap: 12px !important;
     position: relative !important;
     overflow: hidden !important;
     margin: 0 !important;
-    min-height: 60px;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+    min-height: 65px;
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .control-btn::before {
@@ -265,40 +264,20 @@ body {
 }
 
 .control-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
     background: linear-gradient(45deg, #45a049, #3d8b40) !important;
 }
 
 .control-btn:active {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 .control-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
-}
-
-/* ОБЕ КНОПКИ В ОДИНАКОВОМ ЗЕЛЕНОМ СТИЛЕ */
-.refresh-btn, .location-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
-}
-
-.refresh-btn:hover, .location-btn:hover {
-    background: linear-gradient(45deg, #45a049, #3d8b40) !important;
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3) !important;
-}
-
-/* Анимация вращения для кнопки обновления */
-.refresh-btn.spinning {
-    animation: spin 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes spin {
-    from { transform: translateY(-3px) rotate(0deg); }
-    to { transform: translateY(-3px) rotate(360deg); }
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 /* Анимация пульса для пользователя */
@@ -807,21 +786,6 @@ button:not(.control-btn):disabled {
         transform: translateX(100%);
         opacity: 0;
     }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
 }
 
 /* =============================================== */
@@ -869,16 +833,15 @@ button:not(.control-btn):disabled {
         margin-bottom: 0;
     }
     
-    /* ПЛАНШЕТЫ - КНОПКИ УЖЕ ВЕРТИКАЛЬНО */
+    /* ПЛАНШЕТЫ - КНОПКА ГЕОЛОКАЦИИ */
     .map-controls {
-        gap: 15px;
         padding: 18px;
     }
     
     .control-btn {
-        font-size: 1rem !important;
-        padding: 16px 20px !important;
-        min-height: 55px;
+        font-size: 1.1rem !important;
+        padding: 18px 25px !important;
+        min-height: 60px;
     }
 }
 
@@ -902,9 +865,8 @@ button:not(.control-btn):disabled {
         min-height: 800px !important;
     }
     
-    /* СМАРТФОНЫ - КНОПКИ УЖЕ ВЕРТИКАЛЬНО */
+    /* СМАРТФОНЫ - КНОПКА ГЕОЛОКАЦИИ */
     .map-controls {
-        gap: 15px !important;
         padding: 20px !important;
     }
     
@@ -926,9 +888,8 @@ button:not(.control-btn):disabled {
         padding: 5px;
     }
     
-    /* МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКИ УЖЕ ВЕРТИКАЛЬНО */
+    /* МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКА ГЕОЛОКАЦИИ */
     .map-controls {
-        gap: 12px !important;
         padding: 16px !important;
     }
     
@@ -937,4 +898,19 @@ button:not(.control-btn):disabled {
         padding: 16px 20px !important;
         min-height: 55px !important;
     }
+}%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100
