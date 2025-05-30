@@ -18,25 +18,34 @@ document.addEventListener('DOMContentLoaded', function() {
         showAdminPanel();
     }
     
-    // Инициализация кнопки админа
+    // Инициализация кнопок админа
     initAdminControlButtons();
 });
 
-// Инициализация кнопки управления для админа
+// Инициализация кнопок управления для админа
 function initAdminControlButtons() {
     // Дождемся появления админ панели
     const checkAdminPanel = setInterval(() => {
         const adminPanel = document.getElementById('adminPanel');
         if (adminPanel && adminPanel.style.display !== 'none') {
             const locationBtn = document.querySelector('.location-btn');
+            const refreshBtn = document.querySelector('.refresh-btn');
             
-            if (locationBtn) {
+            if (locationBtn && refreshBtn) {
                 // Добавляем улучшенные обработчики событий
                 locationBtn.addEventListener('mousedown', function() {
                     this.style.transform = 'translateY(-1px)';
                 });
                 
                 locationBtn.addEventListener('mouseup', function() {
+                    this.style.transform = '';
+                });
+                
+                refreshBtn.addEventListener('mousedown', function() {
+                    this.style.transform = 'translateY(-1px)';
+                });
+                
+                refreshBtn.addEventListener('mouseup', function() {
                     this.style.transform = '';
                 });
                 
@@ -55,377 +64,6 @@ function adminLogin() {
         return;
     }
     
-    // Для существующих точек ищем в списке
-    const point = allPoints.find(p => p.id === pointId);
-    if (!point) {
-        showNotification('Точка не найдена', 'error');
-        return;
-    }
-    
-    currentQRCode = point.qrCode;
-    
-    document.getElementById('qrCodeDisplay').innerHTML = `
-        <img src="${point.qrCode}" alt="QR код для ${point.name}" style="max-width: 280px; border-radius: 12px;">
-        <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
-        <p style="color: #666;">ID: ${pointId}</p>
-    `;
-    
-    document.getElementById('qrModal').style.display = 'block';
-}
-
-// Закрыть QR модальное окно
-function closeQrModal() {
-    document.getElementById('qrModal').style.display = 'none';
-}
-
-// Скачать QR код
-function downloadQR() {
-    if (!currentQRCode) return;
-    
-    const link = document.createElement('a');
-    link.download = `plasticboy-qr-${Date.now()}.png`;
-    link.href = currentQRCode;
-    link.click();
-}
-
-// Удалить точку
-async function deletePoint(pointId) {
-    if (!confirm('Are you sure you want to delete this point?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/admin/points/${pointId}`, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'X-Admin-Password': encodeURIComponent(currentPassword)
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to delete point');
-        }
-        
-        showNotification('Point deleted', 'success');
-        await loadAdminPoints();
-        
-    } catch (error) {
-        console.error('Delete error:', error);
-        showNotification('Error deleting point', 'error');
-    }
-}
-
-// Добавление улучшенных стилей для админ маркеров
-function addAdminMarkerStyles() {
-    if (!document.getElementById('admin-marker-styles')) {
-        const style = document.createElement('style');
-        style.id = 'admin-marker-styles';
-        style.textContent = `
-            .admin-marker {
-                background: none !important;
-                border: none !important;
-            }
-            
-            .admin-marker-dot {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid white;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-                font-size: 16px;
-                color: white;
-                font-weight: bold;
-                transition: all 0.3s ease;
-                cursor: pointer;
-            }
-            
-            .admin-marker-dot:hover {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-            }
-            
-            .admin-popup {
-                min-width: 220px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            }
-            
-            .admin-popup h3 {
-                margin: 0 0 12px 0;
-                color: #333;
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            
-            .admin-popup p {
-                margin: 6px 0;
-                font-size: 0.9rem;
-            }
-            
-            .admin-btn {
-                background: linear-gradient(45deg, #667eea, #764ba2);
-                color: white;
-                border: none;
-                padding: 8px 14px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 0.85rem;
-                margin: 6px 6px 0 0;
-                min-width: 90px;
-                transition: all 0.3s;
-                font-weight: 500;
-            }
-            
-            .admin-btn:hover {
-                background: linear-gradient(45deg, #5a67d8, #6b46c1);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            }
-            
-            .delete-btn {
-                background: linear-gradient(45deg, #f44336, #e53935) !important;
-            }
-            
-            .delete-btn:hover {
-                background: linear-gradient(45deg, #d32f2f, #c62828) !important;
-                box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
-            }
-            
-            .point-item {
-                border-radius: 12px;
-                padding: 16px;
-                margin-bottom: 16px;
-                background: white;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                transition: all 0.3s ease;
-            }
-            
-            .point-item:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-            }
-            
-            .point-item.available {
-                border-left: 4px solid #4CAF50;
-            }
-            
-            .point-item.collected {
-                border-left: 4px solid #f44336;
-            }
-            
-            .point-item.scheduled {
-                border-left: 4px solid #ff9800;
-            }
-            
-            .point-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-            
-            .point-header h4 {
-                margin: 0;
-                color: #333;
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            
-            .point-status {
-                font-size: 0.9rem;
-                font-weight: 600;
-                padding: 4px 8px;
-                border-radius: 12px;
-                background: rgba(255,255,255,0.8);
-            }
-            
-            .point-actions {
-                margin-top: 12px;
-                padding-top: 12px;
-                border-top: 1px solid #eee;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Улучшенная функция показа уведомлений для админа
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span>${getNotificationIcon(type)} ${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()">×</button>
-        </div>
-    `;
-    
-    if (!document.getElementById('notification-styles')) {
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 2000;
-                background: rgba(255, 255, 255, 0.98);
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-                backdrop-filter: blur(10px);
-                padding: 16px;
-                min-width: 280px;
-                max-width: 400px;
-                animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                border: 1px solid rgba(255,255,255,0.2);
-                font-weight: 500;
-            }
-            
-            .notification.error {
-                border-left: 4px solid #f44336;
-                background: linear-gradient(135deg, rgba(244, 67, 54, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification.success {
-                border-left: 4px solid #4CAF50;
-                background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification.info {
-                border-left: 4px solid #2196F3;
-                background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification.warning {
-                border-left: 4px solid #ff9800;
-                background: linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification-content {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .notification-content button {
-                background: none;
-                border: none;
-                font-size: 1.3rem;
-                cursor: pointer;
-                color: #999;
-                padding: 0;
-                margin: 0;
-                width: auto;
-                margin-left: 12px;
-                transition: color 0.3s;
-            }
-            
-            .notification-content button:hover {
-                color: #666;
-            }
-            
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%) scale(0.9);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0) scale(1);
-                    opacity: 1;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        }
-    }, 5000);
-}
-
-// Получить иконку для уведомления
-function getNotificationIcon(type) {
-    const icons = {
-        error: '❌',
-        success: '✅',
-        info: 'ℹ️',
-        warning: '⚠️'
-    };
-    return icons[type] || icons.info;
-}
-
-// Закрытие модальных окон при клике вне их
-window.addEventListener('click', function(event) {
-    const addModal = document.getElementById('addPointModal');
-    const qrModal = document.getElementById('qrModal');
-    
-    if (event.target === addModal) {
-        closeAddModal();
-    }
-    
-    if (event.target === qrModal) {
-        closeQrModal();
-    }
-});
-
-// Обработка Enter в поле пароля
-document.addEventListener('DOMContentLoaded', function() {
-    const passwordInput = document.getElementById('adminPassword');
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                adminLogin();
-            }
-        });
-    }
-});
-
-// Обработка изменения размера окна для админ карты
-window.addEventListener('resize', function() {
-    if (adminMap) {
-        clearTimeout(window.adminResizeTimeout);
-        window.adminResizeTimeout = setTimeout(() => {
-            adminMap.invalidateSize();
-        }, 150);
-    }
-});
-
-// Улучшенная обработка клавиш для админа
-document.addEventListener('keydown', function(event) {
-    // Закрытие модальных окон по Escape
-    if (event.key === 'Escape') {
-        closeAddModal();
-        closeQrModal();
-    }
-    
-    // Определение местоположения по Ctrl+L
-    if (event.ctrlKey && event.key === 'l') {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && adminPanel.style.display !== 'none') {
-            event.preventDefault();
-            getAdminLocation();
-        }
-    }
-    
-    // Переключение режима добавления по Ctrl+A
-    if (event.ctrlKey && event.key === 'a') {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && adminPanel.style.display !== 'none') {
-            event.preventDefault();
-            toggleAddMode();
-        }
-    }
-});
-    }
-    
     currentPassword = password;
     sessionStorage.setItem('adminPassword', password);
     showAdminPanel();
@@ -441,9 +79,6 @@ async function showAdminPanel() {
     
     // Загружаем точки
     await loadAdminPoints();
-    
-    // Автообновление каждые 30 секунд (как в основном приложении)
-    setInterval(loadAdminPoints, 30000);
 }
 
 // Инициализация админ карты с увеличенным размером
@@ -471,6 +106,34 @@ function initAdminMap() {
     setTimeout(() => {
         adminMap.invalidateSize();
     }, 100);
+}
+
+// Функция обновления админ карты
+function refreshAdminMap() {
+    const refreshBtn = document.querySelector('.refresh-btn');
+    
+    // Добавляем анимацию вращения и блокируем кнопку
+    refreshBtn.classList.add('spinning');
+    refreshBtn.disabled = true;
+    refreshBtn.style.opacity = '0.8';
+    
+    // Загружаем точки
+    loadAdminPoints().then(() => {
+        showNotification('Карта обновлена', 'success');
+        
+        // Убираем анимацию через время анимации
+        setTimeout(() => {
+            refreshBtn.classList.remove('spinning');
+            refreshBtn.disabled = false;
+            refreshBtn.style.opacity = '';
+        }, 600);
+    }).catch(error => {
+        console.error('Ошибка обновления:', error);
+        showNotification('Ошибка обновления карты', 'error');
+        refreshBtn.classList.remove('spinning');
+        refreshBtn.disabled = false;
+        refreshBtn.style.opacity = '';
+    });
 }
 
 // Функция получения геолокации для админа
@@ -943,3 +606,383 @@ function showQRCode(pointId, qrCodeData = null) {
         `;
         document.getElementById('qrModal').style.display = 'block';
         return;
+    }
+    
+    // Для существующих точек ищем в списке
+    const point = allPoints.find(p => p.id === pointId);
+    if (!point) {
+        showNotification('Точка не найдена', 'error');
+        return;
+    }
+    
+    currentQRCode = point.qrCode;
+    
+    document.getElementById('qrCodeDisplay').innerHTML = `
+        <img src="${point.qrCode}" alt="QR код для ${point.name}" style="max-width: 280px; border-radius: 12px;">
+        <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
+        <p style="color: #666;">ID: ${pointId}</p>
+    `;
+    
+    document.getElementById('qrModal').style.display = 'block';
+}
+
+// Закрыть QR модальное окно
+function closeQrModal() {
+    document.getElementById('qrModal').style.display = 'none';
+}
+
+// Скачать QR код
+function downloadQR() {
+    if (!currentQRCode) return;
+    
+    const link = document.createElement('a');
+    link.download = `plasticboy-qr-${Date.now()}.png`;
+    link.href = currentQRCode;
+    link.click();
+}
+
+// Удалить точку
+async function deletePoint(pointId) {
+    if (!confirm('Are you sure you want to delete this point?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/points/${pointId}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-Admin-Password': encodeURIComponent(currentPassword)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to delete point');
+        }
+        
+        showNotification('Point deleted', 'success');
+        await loadAdminPoints();
+        
+    } catch (error) {
+        console.error('Delete error:', error);
+        showNotification('Error deleting point', 'error');
+    }
+}
+
+// Добавление улучшенных стилей для админ маркеров
+function addAdminMarkerStyles() {
+    if (!document.getElementById('admin-marker-styles')) {
+        const style = document.createElement('style');
+        style.id = 'admin-marker-styles';
+        style.textContent = `
+            .admin-marker {
+                background: none !important;
+                border: none !important;
+            }
+            
+            .admin-marker-dot {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid white;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+                font-size: 16px;
+                color: white;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            
+            .admin-marker-dot:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+            }
+            
+            .admin-popup {
+                min-width: 220px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            
+            .admin-popup h3 {
+                margin: 0 0 12px 0;
+                color: #333;
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+            
+            .admin-popup p {
+                margin: 6px 0;
+                font-size: 0.9rem;
+            }
+            
+            .admin-btn {
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                padding: 8px 14px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.85rem;
+                margin: 6px 6px 0 0;
+                min-width: 90px;
+                transition: all 0.3s;
+                font-weight: 500;
+            }
+            
+            .admin-btn:hover {
+                background: linear-gradient(45deg, #5a67d8, #6b46c1);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+            
+            .delete-btn {
+                background: linear-gradient(45deg, #f44336, #e53935) !important;
+            }
+            
+            .delete-btn:hover {
+                background: linear-gradient(45deg, #d32f2f, #c62828) !important;
+                box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
+            }
+            
+            .point-item {
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 16px;
+                background: white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                transition: all 0.3s ease;
+            }
+            
+            .point-item:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            }
+            
+            .point-item.available {
+                border-left: 4px solid #4CAF50;
+            }
+            
+            .point-item.collected {
+                border-left: 4px solid #f44336;
+            }
+            
+            .point-item.scheduled {
+                border-left: 4px solid #ff9800;
+            }
+            
+            .point-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .point-header h4 {
+                margin: 0;
+                color: #333;
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+            
+            .point-status {
+                font-size: 0.9rem;
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 12px;
+                background: rgba(255,255,255,0.8);
+            }
+            
+            .point-actions {
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid #eee;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// Улучшенная функция показа уведомлений для админа
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span>${getNotificationIcon(type)} ${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 2000;
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+                backdrop-filter: blur(10px);
+                padding: 16px;
+                min-width: 280px;
+                max-width: 400px;
+                animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                border: 1px solid rgba(255,255,255,0.2);
+                font-weight: 500;
+            }
+            
+            .notification.error {
+                border-left: 4px solid #f44336;
+                background: linear-gradient(135deg, rgba(244, 67, 54, 0.05), rgba(255, 255, 255, 0.98));
+            }
+            
+            .notification.success {
+                border-left: 4px solid #4CAF50;
+                background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(255, 255, 255, 0.98));
+            }
+            
+            .notification.info {
+                border-left: 4px solid #2196F3;
+                background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(255, 255, 255, 0.98));
+            }
+            
+            .notification.warning {
+                border-left: 4px solid #ff9800;
+                background: linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(255, 255, 255, 0.98));
+            }
+            
+            .notification-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .notification-content button {
+                background: none;
+                border: none;
+                font-size: 1.3rem;
+                cursor: pointer;
+                color: #999;
+                padding: 0;
+                margin: 0;
+                width: auto;
+                margin-left: 12px;
+                transition: color 0.3s;
+            }
+            
+            .notification-content button:hover {
+                color: #666;
+            }
+            
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%) scale(0.9);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0) scale(1);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Получить иконку для уведомления
+function getNotificationIcon(type) {
+    const icons = {
+        error: '❌',
+        success: '✅',
+        info: 'ℹ️',
+        warning: '⚠️'
+    };
+    return icons[type] || icons.info;
+}
+
+// Закрытие модальных окон при клике вне их
+window.addEventListener('click', function(event) {
+    const addModal = document.getElementById('addPointModal');
+    const qrModal = document.getElementById('qrModal');
+    
+    if (event.target === addModal) {
+        closeAddModal();
+    }
+    
+    if (event.target === qrModal) {
+        closeQrModal();
+    }
+});
+
+// Обработка Enter в поле пароля
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('adminPassword');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                adminLogin();
+            }
+        });
+    }
+});
+
+// Обработка изменения размера окна для админ карты
+window.addEventListener('resize', function() {
+    if (adminMap) {
+        clearTimeout(window.adminResizeTimeout);
+        window.adminResizeTimeout = setTimeout(() => {
+            adminMap.invalidateSize();
+        }, 150);
+    }
+});
+
+// Улучшенная обработка клавиш для админа
+document.addEventListener('keydown', function(event) {
+    // Закрытие модальных окон по Escape
+    if (event.key === 'Escape') {
+        closeAddModal();
+        closeQrModal();
+    }
+    
+    // Обновление карты по F5 или Ctrl+R
+    if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
+        const adminPanel = document.getElementById('adminPanel');
+        if (adminPanel && adminPanel.style.display !== 'none') {
+            event.preventDefault();
+            refreshAdminMap();
+        }
+    }
+    
+    // Определение местоположения по Ctrl+L
+    if (event.ctrlKey && event.key === 'l') {
+        const adminPanel = document.getElementById('adminPanel');
+        if (adminPanel && adminPanel.style.display !== 'none') {
+            event.preventDefault();
+            getAdminLocation();
+        }
+    }
+    
+    // Переключение режима добавления по Ctrl+A
+    if (event.ctrlKey && event.key === 'a') {
+        const adminPanel = document.getElementById('adminPanel');
+        if (adminPanel && adminPanel.style.display !== 'none') {
+            event.preventDefault();
+            toggleAddMode();
+        }
+    }
+});
