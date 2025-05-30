@@ -93,7 +93,7 @@ body {
 
 /* ОСНОВНЫЕ РАЗМЕРЫ КАРТ - ЗНАЧИТЕЛЬНО УВЕЛИЧЕНЫ */
 #map, #adminMap {
-    height: 700px !important; /* Увеличено с 450px до 700px */
+    height: 700px !important;
     width: 100% !important;
     min-height: 700px !important;
 }
@@ -209,10 +209,9 @@ body {
     background: #f44336;
 }
 
-/* КНОПКИ УПРАВЛЕНИЯ КАРТОЙ - ЦЕНТРИРОВАННЫЕ ПОД КАРТОЙ */
+/* КНОПКА УПРАВЛЕНИЯ КАРТОЙ - ЦЕНТРИРОВАННАЯ ПОД КАРТОЙ */
 .map-controls {
     display: flex;
-    flex-direction: row; /* Горизонтальное расположение */
     justify-content: center;
     align-items: center;
     background: rgba(255, 255, 255, 0.95);
@@ -221,32 +220,31 @@ body {
     margin: 20px auto;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    gap: 20px; /* Расстояние между кнопками */
-    max-width: 600px; /* Увеличена ширина контейнера */
+    max-width: 400px;
     width: 100%;
 }
 
-/* ЕДИНООБРАЗНЫЕ КНОПКИ */
+/* ЕДИНООБРАЗНАЯ КНОПКА */
 .control-btn {
-    flex: 1; /* Равная ширина для обеих кнопок */
-    max-width: 280px; /* Максимальная ширина кнопки */
+    width: 100%;
+    max-width: 350px;
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
     color: white !important;
     border: none !important;
-    padding: 18px 24px !important; /* Увеличенные отступы */
+    padding: 18px 24px !important;
     border-radius: 12px !important;
-    font-size: 1.1rem !important; /* Увеличенный шрифт */
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important; /* Расстояние между иконкой и текстом */
+    gap: 10px !important;
     position: relative !important;
     overflow: hidden !important;
-    margin: 0 !important; /* Убираем внешние отступы */
-    min-height: 60px; /* Минимальная высота для единообразия */
+    margin: 0 !important;
+    min-height: 60px;
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
 }
 
@@ -283,24 +281,10 @@ body {
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
 }
 
-/* ОБЕ КНОПКИ В ОДИНАКОВОМ ЗЕЛЕНОМ СТИЛЕ */
-.refresh-btn, .location-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
-}
-
-.refresh-btn:hover, .location-btn:hover {
-    background: linear-gradient(45deg, #45a049, #3d8b40) !important;
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3) !important;
-}
-
-/* Анимация вращения для кнопки обновления */
-.refresh-btn.spinning {
-    animation: spin 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes spin {
-    from { transform: translateY(-3px) rotate(0deg); }
-    to { transform: translateY(-3px) rotate(360deg); }
+/* Анимация пульса для загрузки */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 /* Анимация пульса для пользователя */
@@ -627,10 +611,10 @@ button:not(.control-btn):disabled {
 }
 
 .marker-pulse.pulse {
-    animation: pulse 2s infinite;
+    animation: markerPulse 2s infinite;
 }
 
-@keyframes pulse {
+@keyframes markerPulse {
     0% {
         transform: scale(1);
         opacity: 1;
@@ -842,7 +826,7 @@ button:not(.control-btn):disabled {
     
     /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
-        height: 750px !important; /* Увеличено еще больше для планшетов */
+        height: 750px !important;
         min-height: 750px !important;
     }
     
@@ -868,10 +852,9 @@ button:not(.control-btn):disabled {
         margin-bottom: 0;
     }
     
-    /* Адаптивные кнопки управления для планшетов */
+    /* Адаптивная кнопка управления для планшетов */
     .map-controls {
-        max-width: 500px;
-        gap: 15px;
+        max-width: 350px;
         padding: 18px;
     }
     
@@ -898,15 +881,13 @@ button:not(.control-btn):disabled {
     
     /* МАКСИМАЛЬНО УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ */
     #map, #adminMap {
-        height: 800px !important; /* Увеличено до 800px для смартфонов */
+        height: 800px !important;
         min-height: 800px !important;
     }
     
-    /* Адаптивные кнопки для смартфонов - в столбец */
+    /* Адаптивная кнопка для смартфонов */
     .map-controls {
-        flex-direction: column;
         max-width: 320px;
-        gap: 12px;
         padding: 16px;
     }
     
@@ -914,14 +895,13 @@ button:not(.control-btn):disabled {
         font-size: 0.95rem !important;
         padding: 14px 18px !important;
         min-height: 50px;
-        max-width: none; /* Убираем ограничение ширины на мобильных */
     }
 }
 
 @media (max-width: 360px) {
     /* МАКСИМАЛЬНЫЙ РАЗМЕР КАРТЫ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
-        height: 850px !important; /* Увеличено до 850px для очень маленьких экранов */
+        height: 850px !important;
         min-height: 850px !important;
     }
     
