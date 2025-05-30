@@ -12,11 +12,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Автообновление каждые 30 секунд
     setInterval(loadPoints, 30000);
+    
+    // Инициализация кнопок с улучшенными эффектами
+    initControlButtons();
 });
 
-// Инициализация карты с серо-белыми тайлами
+// Инициализация карты с увеличенным размером
 function initMap() {
-    map = L.map('map').setView(ALMATY_CENTER, 12);
+    // Создаем карту с увеличенным zoom для лучшего отображения на большой карте
+    map = L.map('map').setView(ALMATY_CENTER, 13);
     
     // Добавляем обычные тайлы OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -26,6 +30,38 @@ function initMap() {
     
     // Добавляем CSS для серо-белых тайлов
     addGrayscaleMapStyles();
+    
+    // Принудительно обновляем размер карты после инициализации
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+}
+
+// Инициализация кнопок управления
+function initControlButtons() {
+    const locationBtn = document.querySelector('.location-btn');
+    const refreshBtn = document.querySelector('.refresh-btn');
+    
+    // Добавляем улучшенные обработчики событий
+    if (locationBtn) {
+        locationBtn.addEventListener('mousedown', function() {
+            this.style.transform = 'translateY(-1px)';
+        });
+        
+        locationBtn.addEventListener('mouseup', function() {
+            this.style.transform = '';
+        });
+    }
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('mousedown', function() {
+            this.style.transform = 'translateY(-1px)';
+        });
+        
+        refreshBtn.addEventListener('mouseup', function() {
+            this.style.transform = '';
+        });
+    }
 }
 
 // Добавление стилей для серо-белой карты
@@ -49,17 +85,30 @@ function addGrayscaleMapStyles() {
             .leaflet-container {
                 background: #f8f9fa !important;
             }
+            
+            /* Улучшенные стили для большой карты */
+            .leaflet-control-zoom {
+                margin-top: 20px !important;
+                margin-left: 20px !important;
+            }
+            
+            .leaflet-control-attribution {
+                margin-bottom: 10px !important;
+                margin-right: 10px !important;
+            }
         `;
         document.head.appendChild(style);
     }
 }
 
-// Функция обновления карты с анимацией
+// Функция обновления карты с улучшенной анимацией
 function refreshMap() {
     const refreshBtn = document.querySelector('.refresh-btn');
     
-    // Добавляем анимацию вращения
+    // Добавляем анимацию вращения и блокируем кнопку
     refreshBtn.classList.add('spinning');
+    refreshBtn.disabled = true;
+    refreshBtn.style.opacity = '0.8';
     
     // Загружаем точки
     loadPoints().then(() => {
@@ -68,15 +117,19 @@ function refreshMap() {
         // Убираем анимацию через время анимации
         setTimeout(() => {
             refreshBtn.classList.remove('spinning');
+            refreshBtn.disabled = false;
+            refreshBtn.style.opacity = '';
         }, 600);
     }).catch(error => {
         console.error('Ошибка обновления:', error);
         showNotification('Ошибка обновления карты', 'error');
         refreshBtn.classList.remove('spinning');
+        refreshBtn.disabled = false;
+        refreshBtn.style.opacity = '';
     });
 }
 
-// Функция получения геолокации
+// Функция получения геолокации с улучшенными эффектами
 function getCurrentLocation() {
     const locationBtn = document.querySelector('.location-btn');
     
@@ -85,42 +138,47 @@ function getCurrentLocation() {
         return;
     }
     
-    // Анимация загрузки
+    // Анимация загрузки с пульсацией
     const originalText = locationBtn.innerHTML;
     locationBtn.innerHTML = '⏳ Определение...';
     locationBtn.disabled = true;
+    locationBtn.style.opacity = '0.8';
+    
+    // Добавляем пульсацию во время загрузки
+    locationBtn.style.animation = 'pulse 1.5s infinite';
     
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            // Создаем маркер пользователя
+            // Создаем улучшенный маркер пользователя
             const userIcon = L.divIcon({
                 className: 'user-location-marker',
                 html: `<div style="
                     background: linear-gradient(45deg, #007bff, #0056b3);
-                    width: 20px; 
-                    height: 20px; 
+                    width: 24px; 
+                    height: 24px; 
                     border-radius: 50%; 
                     border: 3px solid white; 
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
                     position: relative;
+                    transition: all 0.3s ease;
                 ">
                     <div style="
                         position: absolute;
-                        top: -5px;
-                        left: -5px;
-                        right: -5px;
-                        bottom: -5px;
+                        top: -6px;
+                        left: -6px;
+                        right: -6px;
+                        bottom: -6px;
                         border-radius: 50%;
                         border: 2px solid #007bff;
                         opacity: 0.3;
                         animation: userPulse 2s infinite;
                     "></div>
                 </div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
             });
             
             // Добавляем стили для анимации пульса пользователя
@@ -137,9 +195,14 @@ function getCurrentLocation() {
                             opacity: 0.2;
                         }
                         100% {
-                            transform: scale(2);
+                            transform: scale(2.2);
                             opacity: 0;
                         }
+                    }
+                    
+                    .user-location-marker:hover > div {
+                        transform: scale(1.1);
+                        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
                     }
                 `;
                 document.head.appendChild(style);
@@ -150,19 +213,31 @@ function getCurrentLocation() {
                 map.removeLayer(window.userMarker);
             }
             
-            // Добавляем новый маркер
+            // Добавляем новый маркер с улучшенным popup
             window.userMarker = L.marker([lat, lng], { icon: userIcon })
                 .addTo(map)
-                .bindPopup('<div style="text-align: center;"><strong>📍 Ваше местоположение</strong></div>');
+                .bindPopup(`
+                    <div style="text-align: center; min-width: 150px;">
+                        <strong>📍 Ваше местоположение</strong><br>
+                        <small style="color: #666;">
+                            ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                        </small>
+                    </div>
+                `);
             
-            // Центрируем карту на пользователе
-            map.setView([lat, lng], 15);
+            // Плавно центрируем карту на пользователе с анимацией
+            map.flyTo([lat, lng], 16, {
+                duration: 1.5,
+                easeLinearity: 0.5
+            });
             
             showNotification('Местоположение определено', 'success');
             
             // Восстанавливаем кнопку
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
+            locationBtn.style.opacity = '';
+            locationBtn.style.animation = '';
         },
         function(error) {
             console.error('Ошибка геолокации:', error);
@@ -185,6 +260,8 @@ function getCurrentLocation() {
             // Восстанавливаем кнопку
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
+            locationBtn.style.opacity = '';
+            locationBtn.style.animation = '';
         },
         {
             enableHighAccuracy: true,
@@ -218,7 +295,7 @@ async function loadPoints() {
     }
 }
 
-// Обновление карты с цветными маркерами
+// Обновление карты с улучшенными цветными маркерами
 function updateMap(points) {
     // Очищаем существующие маркеры (кроме пользовательского)
     markers.forEach(marker => map.removeLayer(marker));
@@ -227,20 +304,21 @@ function updateMap(points) {
     points.forEach(point => {
         const isAvailable = point.status === 'available';
         
-        // Создаем яркую цветную иконку
+        // Создаем улучшенную цветную иконку с градиентом
         const icon = L.divIcon({
             className: 'custom-marker',
             html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}">
                      <div class="marker-pulse ${isAvailable ? 'pulse' : ''}"></div>
+                     <div class="marker-glow"></div>
                    </div>`,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
         });
         
         const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
             .addTo(map);
         
-        // Добавляем popup
+        // Улучшенный popup с лучшим дизайном
         let popupContent = `
             <div class="popup-content">
                 <h3>${point.name}</h3>
@@ -267,15 +345,15 @@ function updateMap(points) {
         markers.push(marker);
     });
     
-    // Добавляем стили для маркеров
-    addMarkerStyles();
+    // Добавляем улучшенные стили для маркеров
+    addEnhancedMarkerStyles();
 }
 
-// Добавление стилей для цветных маркеров
-function addMarkerStyles() {
-    if (!document.getElementById('marker-styles')) {
+// Добавление улучшенных стилей для цветных маркеров
+function addEnhancedMarkerStyles() {
+    if (!document.getElementById('enhanced-marker-styles')) {
         const style = document.createElement('style');
-        style.id = 'marker-styles';
+        style.id = 'enhanced-marker-styles';
         style.textContent = `
             .custom-marker {
                 background: none !important;
@@ -283,70 +361,97 @@ function addMarkerStyles() {
             }
             
             .marker-dot {
-                width: 20px;
-                height: 20px;
+                width: 22px;
+                height: 22px;
                 border-radius: 50%;
                 position: relative;
                 border: 3px solid white;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
                 transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            
+            .marker-dot::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                border-radius: 50%;
+                background: linear-gradient(45deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+                z-index: 1;
+                pointer-events: none;
             }
             
             .marker-dot:hover {
-                transform: scale(1.2);
-                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                transform: scale(1.15);
+                box-shadow: 0 6px 18px rgba(0,0,0,0.35);
             }
             
             .marker-dot.available {
                 background: linear-gradient(45deg, #4CAF50, #45a049);
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            }
+            
+            .marker-dot.available:hover {
+                box-shadow: 0 6px 18px rgba(76, 175, 80, 0.4);
             }
             
             .marker-dot.collected {
                 background: linear-gradient(45deg, #f44336, #e53935);
+                box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+            }
+            
+            .marker-dot.collected:hover {
+                box-shadow: 0 6px 18px rgba(244, 67, 54, 0.4);
             }
             
             .marker-pulse {
                 position: absolute;
-                top: -3px;
-                left: -3px;
-                right: -3px;
-                bottom: -3px;
+                top: -4px;
+                left: -4px;
+                right: -4px;
+                bottom: -4px;
                 border-radius: 50%;
                 border: 2px solid #4CAF50;
                 opacity: 0;
             }
             
             .marker-pulse.pulse {
-                animation: pulse 2s infinite;
+                animation: markerPulse 2s infinite;
             }
             
-            @keyframes pulse {
+            @keyframes markerPulse {
                 0% {
                     transform: scale(1);
-                    opacity: 1;
+                    opacity: 0.8;
                 }
                 50% {
                     opacity: 0.3;
                 }
                 100% {
-                    transform: scale(1.5);
+                    transform: scale(1.6);
                     opacity: 0;
                 }
             }
             
             .popup-content {
-                min-width: 200px;
+                min-width: 220px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
             
             .popup-content h3 {
-                margin: 0 0 10px 0;
+                margin: 0 0 12px 0;
                 color: #333;
                 font-size: 1.1rem;
+                font-weight: 600;
             }
             
             .status {
-                margin: 10px 0;
+                margin: 12px 0;
                 font-weight: 600;
+                font-size: 0.95rem;
             }
             
             .status.available {
@@ -358,40 +463,43 @@ function addMarkerStyles() {
             }
             
             .collector-info {
-                background: #f8f9fa;
-                padding: 10px;
+                background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                padding: 12px;
                 border-radius: 8px;
-                margin: 10px 0;
+                margin: 12px 0;
                 font-size: 0.9rem;
+                border-left: 3px solid #667eea;
             }
             
             .collector-info p {
-                margin: 5px 0;
+                margin: 6px 0;
             }
             
             .details-btn {
                 background: linear-gradient(45deg, #667eea, #764ba2);
                 color: white;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
+                padding: 10px 16px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-size: 0.9rem;
-                margin-top: 10px;
+                margin-top: 12px;
                 width: 100%;
                 transition: all 0.3s;
+                font-weight: 500;
             }
             
             .details-btn:hover {
                 background: linear-gradient(45deg, #5a67d8, #6b46c1);
                 transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
             }
         `;
         document.head.appendChild(style);
     }
 }
 
-// Обновление статистики
+// Обновление статистики с анимацией
 function updateStats(points) {
     const available = points.filter(p => p.status === 'available').length;
     const collected = points.filter(p => p.status === 'collected').length;
@@ -406,17 +514,21 @@ function updateStats(points) {
     }
 }
 
-// Анимация изменения числа
+// Улучшенная анимация изменения числа
 function animateNumber(element, from, to) {
     if (from === to) return;
     
-    const duration = 500;
-    const steps = 20;
+    const duration = 800;
+    const steps = 30;
     const stepValue = (to - from) / steps;
     const stepDuration = duration / steps;
     
     let current = from;
     let step = 0;
+    
+    // Добавляем эффект масштабирования во время анимации
+    element.style.transform = 'scale(1.1)';
+    element.style.transition = 'transform 0.3s ease';
     
     const timer = setInterval(() => {
         step++;
@@ -424,6 +536,7 @@ function animateNumber(element, from, to) {
         
         if (step >= steps) {
             element.textContent = to;
+            element.style.transform = 'scale(1)';
             clearInterval(timer);
         } else {
             element.textContent = Math.round(current);
@@ -431,7 +544,7 @@ function animateNumber(element, from, to) {
     }, stepDuration);
 }
 
-// Показать подробности точки
+// Показать подробности точки с улучшенным модальным окном
 async function showPointDetails(pointId) {
     try {
         const response = await fetch(`/api/point/${pointId}/info`);
@@ -442,26 +555,29 @@ async function showPointDetails(pointId) {
         const point = await response.json();
         
         let modalContent = `
-            <h3>${point.name}</h3>
-            <p><strong>Статус:</strong> ${point.status === 'collected' ? 'Собрана' : 'Доступна'}</p>
-            <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
+            <h3 style="color: #667eea; margin-bottom: 15px;">${point.name}</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <p><strong>Статус:</strong> <span style="color: ${point.status === 'collected' ? '#f44336' : '#4CAF50'}">${point.status === 'collected' ? 'Собрана' : 'Доступна'}</span></p>
+                <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
+            </div>
         `;
         
         if (point.status === 'collected' && point.collectorInfo) {
             modalContent += `
-                <hr style="margin: 15px 0; border: 1px solid #eee;">
-                <h4>Информация о сборщике:</h4>
-                <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
-                ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
-                <p><strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+                <div style="border-left: 4px solid #667eea; padding-left: 15px; margin: 15px 0;">
+                    <h4 style="color: #333; margin-bottom: 10px;">Информация о сборщике:</h4>
+                    <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
+                    ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> <em>"${point.collectorInfo.signature}"</em></p>` : ''}
+                    <p><strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+                </div>
             `;
             
             if (point.collectorInfo.selfie) {
                 modalContent += `
-                    <div style="margin-top: 15px;">
-                        <strong>Селфи с места находки:</strong><br>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <strong style="color: #667eea;">Селфи с места находки:</strong><br>
                         <img src="${point.collectorInfo.selfie}" 
-                             style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-top: 10px;"
+                             style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"
                              alt="Селфи сборщика">
                     </div>
                 `;
@@ -483,7 +599,7 @@ function closeModal() {
     document.getElementById('infoModal').style.display = 'none';
 }
 
-// Показать уведомление
+// Улучшенная функция показа уведомлений
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -503,8 +619,8 @@ function showNotification(message, type = 'info') {
         </div>
     `;
     
-    // Добавляем стили для уведомлений если их нет
-    addNotificationStyles();
+    // Добавляем улучшенные стили для уведомлений
+    addEnhancedNotificationStyles();
     
     document.body.appendChild(notification);
     
@@ -517,78 +633,90 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-// Добавление стилей для уведомлений
-function addNotificationStyles() {
-    if (!document.getElementById('notification-styles')) {
+// Добавление улучшенных стилей для уведомлений
+function addEnhancedNotificationStyles() {
+    if (!document.getElementById('enhanced-notification-styles')) {
         const style = document.createElement('style');
-        style.id = 'notification-styles';
+        style.id = 'enhanced-notification-styles';
         style.textContent = `
             .notification {
                 position: fixed;
                 top: 20px;
                 right: 20px;
                 z-index: 2000;
-                background: white;
-                border-radius: 10px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                padding: 15px;
-                min-width: 250px;
-                max-width: 350px;
-                animation: slideIn 0.3s ease-out;
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+                backdrop-filter: blur(10px);
+                padding: 16px;
+                min-width: 280px;
+                max-width: 400px;
+                animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                border: 1px solid rgba(255,255,255,0.2);
             }
             
             .notification.error {
                 border-left: 4px solid #f44336;
+                background: linear-gradient(135deg, rgba(244, 67, 54, 0.05), rgba(255, 255, 255, 0.98));
             }
             
             .notification.success {
                 border-left: 4px solid #4CAF50;
+                background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(255, 255, 255, 0.98));
             }
             
             .notification.info {
                 border-left: 4px solid #2196F3;
+                background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(255, 255, 255, 0.98));
             }
             
             .notification.warning {
                 border-left: 4px solid #ff9800;
+                background: linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(255, 255, 255, 0.98));
             }
             
             .notification-content {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                font-weight: 500;
             }
             
             .notification-content button {
                 background: none;
                 border: none;
-                font-size: 1.2rem;
+                font-size: 1.3rem;
                 cursor: pointer;
                 color: #999;
                 padding: 0;
                 margin: 0;
                 width: auto;
-                margin-left: 10px;
+                margin-left: 12px;
+                transition: color 0.3s;
+            }
+            
+            .notification-content button:hover {
+                color: #666;
             }
             
             @keyframes slideIn {
                 from {
-                    transform: translateX(100%);
+                    transform: translateX(100%) scale(0.9);
                     opacity: 0;
                 }
                 to {
-                    transform: translateX(0);
+                    transform: translateX(0) scale(1);
                     opacity: 1;
                 }
             }
             
             @keyframes slideOut {
                 from {
-                    transform: translateX(0);
+                    transform: translateX(0) scale(1);
                     opacity: 1;
                 }
                 to {
-                    transform: translateX(100%);
+                    transform: translateX(100%) scale(0.9);
                     opacity: 0;
                 }
             }
@@ -616,9 +744,11 @@ window.addEventListener('error', function(e) {
 // Обработка изменения размера окна для адаптивности
 window.addEventListener('resize', function() {
     if (map) {
-        setTimeout(() => {
+        // Добавляем задержку для лучшей производительности
+        clearTimeout(window.resizeTimeout);
+        window.resizeTimeout = setTimeout(() => {
             map.invalidateSize();
-        }, 100);
+        }, 150);
     }
 });
 
@@ -632,11 +762,33 @@ window.addEventListener('offline', function() {
     showNotification('Нет подключения к интернету', 'warning');
 });
 
+// Улучшенная обработка клавиш
+document.addEventListener('keydown', function(event) {
+    // Закрытие модального окна по Escape
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+    
+    // Обновление карты по F5 или Ctrl+R
+    if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
+        event.preventDefault();
+        refreshMap();
+    }
+    
+    // Определение местоположения по Ctrl+L
+    if (event.ctrlKey && event.key === 'l') {
+        event.preventDefault();
+        getCurrentLocation();
+    }
+});
+
 // Экспорт функций для глобального доступа
 window.PlasticBoy = {
     map,
     loadPoints,
     showNotification,
     getCurrentLocation,
-    refreshMap
+    refreshMap,
+    showPointDetails,
+    closeModal
 };
