@@ -23,8 +23,13 @@
                 <span class="stat-number" id="collectedCount">0</span>
                 <span class="stat-label">Собрано</span>
             </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalCount">0</span>
+                <span class="stat-label">Всего</span>
+            </div>
         </div>
 
+        <!-- УВЕЛИЧЕННАЯ КАРТА КАК В АДМИНКЕ -->
         <div class="map-container">
             <div id="map"></div>
             <div class="legend">
@@ -39,7 +44,7 @@
             </div>
         </div>
 
-        <!-- ОБНОВЛЕННЫЕ КНОПКИ УПРАВЛЕНИЯ -->
+        <!-- КНОПКИ УПРАВЛЕНИЯ КАК В АДМИНКЕ -->
         <div class="map-controls">
             <button class="control-btn location-btn" onclick="getCurrentLocation()">
                 📍 Моё местоположение
@@ -48,9 +53,17 @@
                 🔄 Обновить карту
             </button>
         </div>
+
+        <!-- СПИСОК МОДЕЛЕЙ КАК В АДМИНКЕ -->
+        <div class="models-list">
+            <h3>Модели на карте</h3>
+            <div id="modelsList">
+                <p style="text-align: center; color: #666; padding: 20px;">Загрузка моделей...</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Модальное окно для информации о собранной модели -->
+    <!-- Модальное окно для информации о модели -->
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
