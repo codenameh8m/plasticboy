@@ -91,11 +91,11 @@ body {
     margin-bottom: 20px;
 }
 
-/* ОСНОВНЫЕ РАЗМЕРЫ КАРТ - ЗНАЧИТЕЛЬНО УВЕЛИЧЕНЫ */
+/* ОСНОВНЫЕ РАЗМЕРЫ КАРТ */
 #map, #adminMap {
     height: 400px !important;
     width: 100% !important;
-    min-height: 700px !important;
+    min-height: 500px !important;
 }
 
 /* СЕРО-БЕЛЫЕ ТАЙЛЫ КАРТЫ */
@@ -810,7 +810,7 @@ button:not(.control-btn):disabled {
     }
 }
 
-/* АДАПТИВНОСТЬ С УВЕЛИЧЕННЫМИ КАРТАМИ */
+/* АДАПТИВНОСТЬ С КОМПАКТНЫМИ КАРТАМИ */
 @media (max-width: 768px) {
     .container {
         padding: 10px;
@@ -824,10 +824,10 @@ button:not(.control-btn):disabled {
         font-size: 1rem;
     }
     
-    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
+    /* КОМПАКТНАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
-        height: 750px !important;
-        min-height: 750px !important;
+        height: 350px !important;
+        min-height: 350px !important;
     }
     
     .modal-content {
@@ -879,10 +879,10 @@ button:not(.control-btn):disabled {
         padding: 20px;
     }
     
-    /* МАКСИМАЛЬНО УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ */
+    /* КВАДРАТНАЯ КАРТА ДЛЯ СМАРТФОНОВ */
     #map, #adminMap {
-        height: 800px !important;
-        min-height: 800px !important;
+        height: 320px !important;
+        min-height: 320px !important;
     }
     
     /* Адаптивная кнопка для смартфонов */
@@ -899,10 +899,10 @@ button:not(.control-btn):disabled {
 }
 
 @media (max-width: 360px) {
-    /* МАКСИМАЛЬНЫЙ РАЗМЕР КАРТЫ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    /* КОМПАКТНАЯ КВАДРАТНАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
-        height: 850px !important;
-        min-height: 850px !important;
+        height: 300px !important;
+        min-height: 300px !important;
     }
     
     .container {
