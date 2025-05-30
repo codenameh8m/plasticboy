@@ -24,28 +24,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Инициализация кнопок управления для админа
 function initAdminControlButtons() {
-    // Дождемся появления админ панели
     const checkAdminPanel = setInterval(() => {
         const adminPanel = document.getElementById('adminPanel');
         if (adminPanel && adminPanel.style.display !== 'none') {
             const locationBtn = document.querySelector('.location-btn');
-            const refreshBtn = document.querySelector('.refresh-btn');
             
-            if (locationBtn && refreshBtn) {
-                // Добавляем улучшенные обработчики событий
+            if (locationBtn) {
                 locationBtn.addEventListener('mousedown', function() {
                     this.style.transform = 'translateY(-1px)';
                 });
                 
                 locationBtn.addEventListener('mouseup', function() {
-                    this.style.transform = '';
-                });
-                
-                refreshBtn.addEventListener('mousedown', function() {
-                    this.style.transform = 'translateY(-1px)';
-                });
-                
-                refreshBtn.addEventListener('mouseup', function() {
                     this.style.transform = '';
                 });
                 
@@ -81,13 +70,12 @@ async function showAdminPanel() {
     await loadAdminPoints();
 }
 
-// Инициализация админ карты с увеличенным размером
+// Инициализация админ карты
 function initAdminMap() {
     if (adminMap) {
         adminMap.remove();
     }
     
-    // Создаем карту с увеличенным zoom для лучшего отображения на большой карте
     adminMap = L.map('adminMap').setView(ALMATY_CENTER, 13);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -108,34 +96,6 @@ function initAdminMap() {
     }, 100);
 }
 
-// Функция обновления админ карты
-function refreshAdminMap() {
-    const refreshBtn = document.querySelector('.refresh-btn');
-    
-    // Добавляем анимацию вращения и блокируем кнопку
-    refreshBtn.classList.add('spinning');
-    refreshBtn.disabled = true;
-    refreshBtn.style.opacity = '0.8';
-    
-    // Загружаем точки
-    loadAdminPoints().then(() => {
-        showNotification('Карта обновлена', 'success');
-        
-        // Убираем анимацию через время анимации
-        setTimeout(() => {
-            refreshBtn.classList.remove('spinning');
-            refreshBtn.disabled = false;
-            refreshBtn.style.opacity = '';
-        }, 600);
-    }).catch(error => {
-        console.error('Ошибка обновления:', error);
-        showNotification('Ошибка обновления карты', 'error');
-        refreshBtn.classList.remove('spinning');
-        refreshBtn.disabled = false;
-        refreshBtn.style.opacity = '';
-    });
-}
-
 // Функция получения геолокации для админа
 function getAdminLocation() {
     const locationBtn = document.querySelector('.location-btn');
@@ -145,7 +105,6 @@ function getAdminLocation() {
         return;
     }
     
-    // Анимация загрузки с пульсацией
     const originalText = locationBtn.innerHTML;
     locationBtn.innerHTML = '⏳ Определение...';
     locationBtn.disabled = true;
@@ -957,15 +916,6 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeAddModal();
         closeQrModal();
-    }
-    
-    // Обновление карты по F5 или Ctrl+R
-    if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && adminPanel.style.display !== 'none') {
-            event.preventDefault();
-            refreshAdminMap();
-        }
     }
     
     // Определение местоположения по Ctrl+L
