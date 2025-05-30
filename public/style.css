@@ -212,7 +212,7 @@ body {
 /* КНОПКИ УПРАВЛЕНИЯ КАРТОЙ - ЦЕНТРИРОВАННЫЕ ПОД КАРТОЙ */
 .map-controls {
     display: flex;
-    flex-direction: row; /* Горизонтальное расположение */
+    flex-direction: row; /* Горизонтальное расположение на десктопе */
     justify-content: center;
     align-items: center;
     background: rgba(255, 255, 255, 0.95);
@@ -226,10 +226,10 @@ body {
     width: 100%;
 }
 
-/* ЕДИНООБРАЗНЫЕ КНОПКИ */
+/* ЕДИНООБРАЗНЫЕ КНОПКИ ДЛЯ ДЕСКТОПА */
 .control-btn {
-    flex: 1; /* Равная ширина для обеих кнопок */
-    max-width: 280px; /* Максимальная ширина кнопки */
+    flex: 1; /* Равная ширина для обеих кнопок на десктопе */
+    max-width: 280px; /* Максимальная ширина кнопки на десктопе */
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
     color: white !important;
     border: none !important;
@@ -934,7 +934,7 @@ button:not(.control-btn):disabled {
     
     /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
-        height: 750px !important; /* Увеличено еще больше для планшетов */
+        height: 750px !important;
         min-height: 750px !important;
     }
     
@@ -960,22 +960,23 @@ button:not(.control-btn):disabled {
         margin-bottom: 0;
     }
     
-    /* КНОПКИ НА МОБИЛЬНЫХ - ПОЛНОШИРИННЫЕ В СТОЛБЕЦ */
+    /* МОБИЛЬНЫЕ КНОПКИ - ПОЛНОШИРИННЫЕ В СТОЛБЕЦ */
     .map-controls {
         flex-direction: column !important;
         max-width: none !important;
-        width: 100% !important;
-        gap: 15px;
-        padding: 18px;
+        width: calc(100% - 20px) !important;
+        margin: 20px 10px !important;
+        gap: 15px !important;
+        padding: 20px !important;
     }
     
     .control-btn {
-        font-size: 1rem !important;
-        padding: 16px 20px !important;
-        min-height: 55px;
-        max-width: none !important; /* Убираем ограничение ширины */
-        width: 100% !important; /* Полная ширина */
-        flex: none !important; /* Отключаем flex для полной ширины */
+        flex: none !important;
+        max-width: none !important;
+        width: 100% !important;
+        font-size: 1.1rem !important;
+        padding: 18px 24px !important;
+        min-height: 60px !important;
     }
 }
 
@@ -995,33 +996,34 @@ button:not(.control-btn):disabled {
     
     /* МАКСИМАЛЬНО УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ */
     #map, #adminMap {
-        height: 800px !important; /* Увеличено до 800px для смартфонов */
+        height: 800px !important;
         min-height: 800px !important;
     }
     
-    /* КНОПКИ НА СМАРТФОНАХ - ПОЛНОШИРИННЫЕ В СТОЛБЕЦ */
+    /* СМАРТФОНЫ - КНОПКИ ПОЛНОЙ ШИРИНЫ */
     .map-controls {
         flex-direction: column !important;
         max-width: none !important;
-        width: 100% !important;
-        gap: 12px;
-        padding: 16px;
+        width: calc(100% - 10px) !important;
+        margin: 20px 5px !important;
+        gap: 12px !important;
+        padding: 16px !important;
     }
     
     .control-btn {
-        font-size: 0.95rem !important;
-        padding: 14px 18px !important;
-        min-height: 50px;
-        max-width: none !important; /* Убираем ограничение ширины на мобильных */
-        width: 100% !important; /* Полная ширина */
-        flex: none !important; /* Отключаем flex для полной ширины */
+        flex: none !important;
+        max-width: none !important;
+        width: 100% !important;
+        font-size: 1rem !important;
+        padding: 16px 20px !important;
+        min-height: 55px !important;
     }
 }
 
 @media (max-width: 360px) {
     /* МАКСИМАЛЬНЫЙ РАЗМЕР КАРТЫ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
-        height: 850px !important; /* Увеличено до 850px для очень маленьких экранов */
+        height: 850px !important;
         min-height: 850px !important;
     }
     
@@ -1029,19 +1031,22 @@ button:not(.control-btn):disabled {
         padding: 5px;
     }
     
-    /* КНОПКИ НА ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНАХ - ПОЛНОШИРИННЫЕ */
-    .control-btn {
-        font-size: 0.9rem !important;
-        padding: 12px 16px !important;
-        min-height: 48px;
-        width: 100% !important; /* Полная ширина */
+    /* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ - КНОПКИ ПОЛНОЙ ШИРИНЫ */
+    .map-controls {
+        flex-direction: column !important;
         max-width: none !important;
-        flex: none !important;
+        width: calc(100% - 10px) !important;
+        margin: 15px 5px !important;
+        gap: 10px !important;
+        padding: 14px !important;
     }
     
-    .map-controls {
+    .control-btn {
+        flex: none !important;
         max-width: none !important;
         width: 100% !important;
-        padding: 14px;
+        font-size: 0.95rem !important;
+        padding: 14px 18px !important;
+        min-height: 50px !important;
     }
 }
