@@ -45,8 +45,19 @@
                 </div>
             </div>
 
+            <!-- УВЕЛИЧЕННАЯ КАРТА ДЛЯ АДМИНА -->
             <div class="map-container">
                 <div id="adminMap"></div>
+            </div>
+
+            <!-- КНОПКИ УПРАВЛЕНИЯ КАРТОЙ ДЛЯ АДМИНА -->
+            <div class="map-controls">
+                <button class="control-btn location-btn" onclick="getAdminLocation()">
+                    📍 Моё местоположение
+                </button>
+                <button class="control-btn refresh-btn" onclick="refreshAdminMap()">
+                    🔄 Обновить карту
+                </button>
             </div>
 
             <div class="points-list">
