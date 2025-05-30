@@ -2,206 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>PlasticBoy - Admin Panel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Дополнительные мобильные стили для админки */
-        @media screen and (max-width: 768px) {
-            .form-container {
-                padding: 20px !important;
-                margin: 10px !important;
-            }
-            
-            .form-container h2 {
-                font-size: 1.5rem !important;
-                margin-bottom: 20px !important;
-            }
-            
-            .form-container input[type="password"] {
-                font-size: 16px !important; /* Предотвращает zoom на iOS */
-                padding: 18px !important;
-                border-radius: 12px !important;
-                border: 2px solid #ddd !important;
-                width: 100% !important;
-                box-sizing: border-box !important;
-                -webkit-appearance: none !important;
-                -webkit-border-radius: 12px !important;
-            }
-            
-            .form-container input[type="password"]:focus {
-                outline: none !important;
-                border-color: #667eea !important;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-            }
-            
-            .form-container button {
-                font-size: 16px !important; /* Предотвращает zoom на iOS */
-                padding: 18px !important;
-                margin-top: 15px !important;
-                border-radius: 12px !important;
-                background: linear-gradient(45deg, #667eea, #764ba2) !important;
-                color: white !important;
-                border: none !important;
-                width: 100% !important;
-                cursor: pointer !important;
-                transition: all 0.3s !important;
-                font-weight: 600 !important;
-            }
-            
-            .form-container button:hover,
-            .form-container button:focus {
-                transform: translateY(-2px) !important;
-                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
-            }
-            
-            .form-container button:active {
-                transform: translateY(0) !important;
-            }
-            
-            /* Улучшения для админ контролов */
-            .admin-controls {
-                padding: 15px !important;
-                margin: 10px !important;
-            }
-            
-            .admin-controls h3 {
-                font-size: 1.3rem !important;
-            }
-            
-            #addModeBtn {
-                font-size: 16px !important;
-                padding: 15px 20px !important;
-                margin-top: 10px !important;
-            }
-            
-            /* Улучшения для статистики */
-            .stats.admin-stats {
-                flex-direction: column !important;
-                gap: 10px !important;
-                padding: 15px !important;
-                margin: 10px !important;
-            }
-            
-            .stats.admin-stats .stat-item {
-                display: flex !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                padding: 10px !important;
-                background: rgba(255,255,255,0.8) !important;
-                border-radius: 10px !important;
-            }
-            
-            /* Модальные окна на мобильных */
-            .modal-content {
-                margin: 20px !important;
-                width: calc(100% - 40px) !important;
-                max-height: 80vh !important;
-                overflow-y: auto !important;
-                padding: 20px !important;
-            }
-            
-            .modal-content input,
-            .modal-content button {
-                font-size: 16px !important; /* Предотвращает zoom */
-            }
-            
-            /* Список точек */
-            .points-list {
-                margin: 10px !important;
-                padding: 15px !important;
-            }
-            
-            .point-item {
-                margin-bottom: 15px !important;
-                padding: 15px !important;
-            }
-            
-            .point-actions {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 10px !important;
-            }
-            
-            .admin-btn {
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 12px !important;
-                font-size: 14px !important;
-            }
-        }
-        
-        /* iOS Safari специфичные фиксы */
-        @supports (-webkit-touch-callout: none) {
-            input[type="password"] {
-                font-size: 16px !important;
-                -webkit-appearance: none !important;
-                border-radius: 12px !important;
-            }
-            
-            button {
-                font-size: 16px !important;
-                -webkit-appearance: none !important;
-                border-radius: 12px !important;
-            }
-        }
-        
-        /* Фикс для очень маленьких экранов */
-        @media screen and (max-width: 400px) {
-            .container {
-                padding: 5px !important;
-            }
-            
-            .header {
-                padding: 15px !important;
-                margin-bottom: 10px !important;
-            }
-            
-            .header h1 {
-                font-size: 1.8rem !important;
-            }
-            
-            .form-container {
-                padding: 15px !important;
-                margin: 5px !important;
-            }
-        }
-        
-        /* Дополнительная доступность */
-        .form-container input:invalid {
-            border-color: #f44336 !important;
-        }
-        
-        .form-container input:valid {
-            border-color: #4CAF50 !important;
-        }
-        
-        /* Анимация загрузки */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-        
-        .loading::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #667eea;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -210,20 +15,11 @@
             <p>Управление точками сбора</p>
         </header>
 
-        <!-- Форма входа с улучшенной мобильной поддержкой -->
+        <!-- Форма входа -->
         <div id="loginForm" class="form-container">
             <h2>Вход в админ панель</h2>
-            <div id="loginError" style="display: none; color: #f44336; margin-bottom: 15px; padding: 10px; background: rgba(244, 67, 54, 0.1); border-radius: 8px; font-size: 14px;"></div>
-            <input type="password" 
-                   id="adminPassword" 
-                   placeholder="Пароль администратора"
-                   autocomplete="current-password"
-                   required
-                   style="margin-bottom: 15px;">
-            <button type="button" id="loginBtn" onclick="adminLogin()">Войти</button>
-            <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
-                Введите пароль администратора для доступа к панели управления
-            </div>
+            <input type="password" id="adminPassword" placeholder="Пароль администратора">
+            <button onclick="adminLogin()">Войти</button>
         </div>
 
         <!-- Админ панель -->
@@ -236,16 +32,16 @@
 
             <div class="stats admin-stats">
                 <div class="stat-item">
-                    <span class="stat-label">Всего точек</span>
                     <span class="stat-number" id="totalPoints">0</span>
+                    <span class="stat-label">Всего точек</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Активных</span>
                     <span class="stat-number" id="activePoints">0</span>
+                    <span class="stat-label">Активных</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Запланированных</span>
                     <span class="stat-number" id="scheduledPoints">0</span>
+                    <span class="stat-label">Запланированных</span>
                 </div>
             </div>
 
@@ -254,27 +50,19 @@
                 <div id="adminMap"></div>
             </div>
 
-            <!-- КНОПКА УПРАВЛЕНИЯ КАРТОЙ ДЛЯ АДМИНА (только геолокация) -->
+            <!-- КНОПКИ УПРАВЛЕНИЯ КАРТОЙ ДЛЯ АДМИНА -->
             <div class="map-controls">
                 <button class="control-btn location-btn" onclick="getAdminLocation()">
                     📍 Моё местоположение
                 </button>
+                <button class="control-btn refresh-btn" onclick="refreshAdminMap()">
+                    🔄 Обновить карту
+                </button>
             </div>
 
             <div class="points-list">
-                <h3>Список точек (<span id="pointsCount">0</span>)</h3>
-                <div id="pointsList">
-                    <div style="text-align: center; padding: 20px; color: #666;">
-                        Загрузка данных...
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Кнопка выхода -->
-            <div style="margin: 20px 10px; text-align: center;">
-                <button onclick="adminLogout()" style="background: #f44336; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
-                    Выйти из админ панели
-                </button>
+                <h3>Список точек</h3>
+                <div id="pointsList"></div>
             </div>
         </div>
     </div>
@@ -285,18 +73,8 @@
             <span class="close" onclick="closeAddModal()">&times;</span>
             <h2>Добавить новую точку</h2>
             <form id="addPointForm">
-                <input type="text" 
-                       id="modelName" 
-                       placeholder="Название модели" 
-                       required
-                       autocomplete="off"
-                       style="margin-bottom: 15px;">
-                <input type="number" 
-                       id="delayMinutes" 
-                       placeholder="Задержка в минутах (необязательно)" 
-                       min="0"
-                       autocomplete="off"
-                       style="margin-bottom: 15px;">
+                <input type="text" id="modelName" placeholder="Название модели" required>
+                <input type="number" id="delayMinutes" placeholder="Задержка в минутах (необязательно)" min="0">
                 <button type="submit">Создать точку</button>
             </form>
         </div>
@@ -314,459 +92,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Мобильная версия admin.js с улучшениями
-        
-        // Переменные для админ панели
-        let adminMap;
-        let adminMarkers = [];
-        let isAddMode = false;
-        let currentPassword = '';
-        let allPoints = [];
-        let currentQRCode = '';
-
-        // Координаты Алматы
-        const ALMATY_CENTER = [43.2220, 76.8512];
-
-        // Инициализация админ панели
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Admin panel loading...');
-            
-            // Проверяем сохраненный пароль
-            const savedPassword = sessionStorage.getItem('adminPassword');
-            if (savedPassword) {
-                console.log('Found saved password');
-                currentPassword = savedPassword;
-                showAdminPanel();
-            }
-            
-            // Инициализация кнопки админа
-            initAdminControlButtons();
-            
-            // Мобильные улучшения
-            initMobileEnhancements();
-        });
-
-        // Мобильные улучшения
-        function initMobileEnhancements() {
-            // Предотвращаем zoom на iOS при фокусе на input
-            const inputs = document.querySelectorAll('input, button');
-            inputs.forEach(input => {
-                input.style.fontSize = '16px';
-            });
-            
-            // Обработка Enter в поле пароля
-            const passwordInput = document.getElementById('adminPassword');
-            if (passwordInput) {
-                passwordInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        adminLogin();
-                    }
-                });
-                
-                // Автофокус на поле пароля через небольшую задержку
-                setTimeout(() => {
-                    passwordInput.focus();
-                }, 500);
-            }
-        }
-
-        // Инициализация кнопки управления для админа
-        function initAdminControlButtons() {
-            // Дождемся появления админ панели
-            const checkAdminPanel = setInterval(() => {
-                const adminPanel = document.getElementById('adminPanel');
-                if (adminPanel && adminPanel.style.display !== 'none') {
-                    const locationBtn = document.querySelector('.location-btn');
-                    
-                    if (locationBtn) {
-                        // Добавляем улучшенные обработчики событий
-                        locationBtn.addEventListener('touchstart', function() {
-                            this.style.transform = 'translateY(-1px)';
-                        });
-                        
-                        locationBtn.addEventListener('touchend', function() {
-                            this.style.transform = '';
-                        });
-                        
-                        locationBtn.addEventListener('mousedown', function() {
-                            this.style.transform = 'translateY(-1px)';
-                        });
-                        
-                        locationBtn.addEventListener('mouseup', function() {
-                            this.style.transform = '';
-                        });
-                        
-                        clearInterval(checkAdminPanel);
-                    }
-                }
-            }, 100);
-        }
-
-        // Улучшенный вход в админ панель
-        function adminLogin() {
-            const password = document.getElementById('adminPassword').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const loginError = document.getElementById('loginError');
-            
-            // Скрываем предыдущие ошибки
-            loginError.style.display = 'none';
-            
-            if (!password) {
-                showLoginError('Введите пароль');
-                return;
-            }
-            
-            // Показываем индикатор загрузки
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Проверка...';
-            loginBtn.classList.add('loading');
-            
-            currentPassword = password;
-            
-            // Проверяем пароль с задержкой для UI
-            setTimeout(async () => {
-                try {
-                    // Тестовый запрос для проверки пароля
-                    const response = await fetch('/api/admin/points', {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Admin-Password': encodeURIComponent(currentPassword)
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        sessionStorage.setItem('adminPassword', password);
-                        showAdminPanel();
-                    } else {
-                        throw new Error('Неверный пароль');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    showLoginError('Неверный пароль администратора');
-                    currentPassword = '';
-                } finally {
-                    // Восстанавливаем кнопку
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Войти';
-                    loginBtn.classList.remove('loading');
-                }
-            }, 500);
-        }
-
-        // Показать ошибку входа
-        function showLoginError(message) {
-            const loginError = document.getElementById('loginError');
-            loginError.textContent = message;
-            loginError.style.display = 'block';
-            
-            // Встряхиваем форму
-            const loginForm = document.getElementById('loginForm');
-            loginForm.style.animation = 'shake 0.5s ease-in-out';
-            setTimeout(() => {
-                loginForm.style.animation = '';
-            }, 500);
-        }
-
-        // Выход из админ панели
-        function adminLogout() {
-            if (confirm('Вы уверены, что хотите выйти из админ панели?')) {
-                sessionStorage.removeItem('adminPassword');
-                location.reload();
-            }
-        }
-
-        // Показать админ панель
-        async function showAdminPanel() {
-            console.log('Showing admin panel...');
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            
-            // Инициализируем карту
-            setTimeout(() => {
-                initAdminMap();
-            }, 100);
-            
-            // Загружаем точки
-            await loadAdminPoints();
-            
-            // Автообновление каждые 30 секунд
-            setInterval(loadAdminPoints, 30000);
-        }
-
-        // Инициализация админ карты с мобильными улучшениями
-        function initAdminMap() {
-            console.log('Initializing admin map...');
-            if (adminMap) {
-                adminMap.remove();
-            }
-            
-            try {
-                // Создаем карту с настройками для мобильных
-                adminMap = L.map('adminMap', {
-                    center: ALMATY_CENTER,
-                    zoom: 13,
-                    zoomControl: true,
-                    touchZoom: true,
-                    doubleClickZoom: true,
-                    scrollWheelZoom: true,
-                    boxZoom: true,
-                    keyboard: true,
-                    dragging: true,
-                    tap: true,
-                    tapTolerance: 15
-                });
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    maxZoom: 18
-                }).addTo(adminMap);
-                
-                // Добавляем обработчик клика для добавления точек
-                adminMap.on('click', function(e) {
-                    if (isAddMode) {
-                        openAddPointModal(e.latlng);
-                    }
-                });
-                
-                // Принудительно обновляем размер карты после инициализации
-                setTimeout(() => {
-                    adminMap.invalidateSize();
-                }, 200);
-                
-                console.log('Admin map initialized successfully');
-            } catch (error) {
-                console.error('Error initializing map:', error);
-                showNotification('Ошибка инициализации карты', 'error');
-            }
-        }
-
-        // Остальные функции admin.js...
-        // (загрузка точек, обновление карты, etc.)
-        
-        // Функция получения геолокации для админа (мобильная версия)
-        function getAdminLocation() {
-            const locationBtn = document.querySelector('.location-btn');
-            
-            if (!navigator.geolocation) {
-                showNotification('Геолокация не поддерживается', 'error');
-                return;
-            }
-            
-            // Анимация загрузки
-            const originalText = locationBtn.innerHTML;
-            locationBtn.innerHTML = '⏳ Определение...';
-            locationBtn.disabled = true;
-            locationBtn.style.opacity = '0.8';
-            
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    
-                    // Создаем маркер пользователя
-                    const userIcon = L.divIcon({
-                        className: 'admin-user-location-marker',
-                        html: `<div style="
-                            background: linear-gradient(45deg, #667eea, #764ba2);
-                            width: 26px; 
-                            height: 26px; 
-                            border-radius: 50%; 
-                            border: 3px solid white; 
-                            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                        "></div>`,
-                        iconSize: [26, 26],
-                        iconAnchor: [13, 13]
-                    });
-                    
-                    // Удаляем предыдущий маркер
-                    if (window.adminUserMarker) {
-                        adminMap.removeLayer(window.adminUserMarker);
-                    }
-                    
-                    // Добавляем новый маркер
-                    window.adminUserMarker = L.marker([lat, lng], { icon: userIcon })
-                        .addTo(adminMap)
-                        .bindPopup(`
-                            <div style="text-align: center;">
-                                <strong>🛡️ Местоположение админа</strong><br>
-                                <small>${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
-                            </div>
-                        `);
-                    
-                    // Центрируем карту
-                    adminMap.flyTo([lat, lng], 16, {
-                        duration: 1.5
-                    });
-                    
-                    showNotification('Местоположение определено', 'success');
-                    
-                    // Восстанавливаем кнопку
-                    locationBtn.innerHTML = originalText;
-                    locationBtn.disabled = false;
-                    locationBtn.style.opacity = '';
-                },
-                function(error) {
-                    console.error('Geolocation error:', error);
-                    showNotification('Не удалось определить местоположение', 'error');
-                    
-                    // Восстанавливаем кнопку
-                    locationBtn.innerHTML = originalText;
-                    locationBtn.disabled = false;
-                    locationBtn.style.opacity = '';
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 300000
-                }
-            );
-        }
-
-        // Загрузка точек для админа
-        async function loadAdminPoints() {
-            try {
-                console.log('Loading admin points...');
-                const response = await fetch('/api/admin/points', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Admin-Password': encodeURIComponent(currentPassword)
-                    }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        showNotification('Сессия истекла', 'error');
-                        adminLogout();
-                        return;
-                    }
-                    throw new Error('Failed to load points');
-                }
-                
-                allPoints = await response.json();
-                console.log('Loaded points:', allPoints.length);
-                
-                updateAdminMap();
-                updateAdminStats();
-                updatePointsList();
-                
-            } catch (error) {
-                console.error('Error loading points:', error);
-                showNotification('Ошибка загрузки данных', 'error');
-            }
-        }
-
-        // Простая функция уведомлений
-        function showNotification(message, type = 'info') {
-            console.log(`[${type.toUpperCase()}] ${message}`);
-            
-            // Создаем простое уведомление
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 2000;
-                background: ${type === 'error' ? '#f44336' : type === 'success' ? '#4CAF50' : '#2196F3'};
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                max-width: 300px;
-                word-wrap: break-word;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            `;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.remove();
-                }
-            }, 4000);
-        }
-
-        // Заглушки для других функций (добавлять по мере необходимости)
-        function updateAdminMap() {
-            console.log('Updating admin map...');
-            // Простая реализация для тестирования
-        }
-
-        function updateAdminStats() {
-            console.log('Updating admin stats...');
-            const totalElement = document.getElementById('totalPoints');
-            const activeElement = document.getElementById('activePoints');
-            const scheduledElement = document.getElementById('scheduledPoints');
-            const countElement = document.getElementById('pointsCount');
-            
-            if (totalElement) totalElement.textContent = allPoints.length;
-            if (countElement) countElement.textContent = allPoints.length;
-            
-            const now = new Date();
-            const active = allPoints.filter(p => new Date(p.scheduledTime) <= now && p.status === 'available').length;
-            const scheduled = allPoints.filter(p => new Date(p.scheduledTime) > now && p.status !== 'collected').length;
-            
-            if (activeElement) activeElement.textContent = active;
-            if (scheduledElement) scheduledElement.textContent = scheduled;
-        }
-
-        function updatePointsList() {
-            console.log('Updating points list...');
-            const container = document.getElementById('pointsList');
-            
-            if (allPoints.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Нет созданных точек</p>';
-                return;
-            }
-            
-            container.innerHTML = `<p style="text-align: center; color: #666; padding: 20px;">Загружено ${allPoints.length} точек</p>`;
-        }
-
-        function toggleAddMode() {
-            isAddMode = !isAddMode;
-            const btn = document.getElementById('addModeBtn');
-            
-            if (isAddMode) {
-                btn.textContent = 'Режим добавления: ВКЛ';
-                btn.style.background = '#f44336';
-                showNotification('Кликните по карте для добавления точки', 'info');
-            } else {
-                btn.textContent = 'Режим добавления: ВЫКЛ';
-                btn.style.background = '#4CAF50';
-            }
-        }
-
-        function openAddPointModal(latlng) {
-            showNotification('Функция добавления точек в разработке', 'info');
-        }
-
-        function closeAddModal() {
-            // Заглушка
-        }
-
-        function closeQrModal() {
-            // Заглушка
-        }
-
-        function downloadQR() {
-            // Заглушка
-        }
-
-        // Добавляем CSS анимацию встряхивания
-        const shakeStyle = document.createElement('style');
-        shakeStyle.textContent = `
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                25% { transform: translateX(-10px); }
-                75% { transform: translateX(10px); }
-            }
-        `;
-        document.head.appendChild(shakeStyle);
-        
-    </script>
+    <script src="admin.js"></script>
 </body>
 </html>
