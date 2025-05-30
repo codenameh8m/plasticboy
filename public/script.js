@@ -13,16 +13,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Автообновление каждые 30 секунд
     setInterval(loadPoints, 30000);
     
-    // Инициализация кнопок с улучшенными эффектами
+    // Инициализация кнопок
     initControlButtons();
 });
 
-// Инициализация карты с увеличенным размером
+// Инициализация карты
 function initMap() {
-    // Создаем карту с увеличенным zoom для лучшего отображения на большой карте
     map = L.map('map').setView(ALMATY_CENTER, 13);
     
-    // Добавляем обычные тайлы OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18
@@ -40,25 +38,13 @@ function initMap() {
 // Инициализация кнопок управления
 function initControlButtons() {
     const locationBtn = document.querySelector('.location-btn');
-    const refreshBtn = document.querySelector('.refresh-btn');
     
-    // Добавляем улучшенные обработчики событий
     if (locationBtn) {
         locationBtn.addEventListener('mousedown', function() {
             this.style.transform = 'translateY(-1px)';
         });
         
         locationBtn.addEventListener('mouseup', function() {
-            this.style.transform = '';
-        });
-    }
-    
-    if (refreshBtn) {
-        refreshBtn.addEventListener('mousedown', function() {
-            this.style.transform = 'translateY(-1px)';
-        });
-        
-        refreshBtn.addEventListener('mouseup', function() {
             this.style.transform = '';
         });
     }
@@ -70,12 +56,10 @@ function addGrayscaleMapStyles() {
         const style = document.createElement('style');
         style.id = 'grayscale-map-styles';
         style.textContent = `
-            /* Применяем серо-белые фильтры только к тайлам карты */
             .leaflet-tile-pane {
                 filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
             }
             
-            /* Остальные элементы карты остаются цветными */
             .leaflet-marker-pane,
             .leaflet-popup-pane,
             .leaflet-control-container {
@@ -86,7 +70,6 @@ function addGrayscaleMapStyles() {
                 background: #f8f9fa !important;
             }
             
-            /* Улучшенные стили для большой карты */
             .leaflet-control-zoom {
                 margin-top: 20px !important;
                 margin-left: 20px !important;
@@ -101,35 +84,7 @@ function addGrayscaleMapStyles() {
     }
 }
 
-// Функция обновления карты с улучшенной анимацией
-function refreshMap() {
-    const refreshBtn = document.querySelector('.refresh-btn');
-    
-    // Добавляем анимацию вращения и блокируем кнопку
-    refreshBtn.classList.add('spinning');
-    refreshBtn.disabled = true;
-    refreshBtn.style.opacity = '0.8';
-    
-    // Загружаем точки
-    loadPoints().then(() => {
-        showNotification('Карта обновлена', 'success');
-        
-        // Убираем анимацию через время анимации
-        setTimeout(() => {
-            refreshBtn.classList.remove('spinning');
-            refreshBtn.disabled = false;
-            refreshBtn.style.opacity = '';
-        }, 600);
-    }).catch(error => {
-        console.error('Ошибка обновления:', error);
-        showNotification('Ошибка обновления карты', 'error');
-        refreshBtn.classList.remove('spinning');
-        refreshBtn.disabled = false;
-        refreshBtn.style.opacity = '';
-    });
-}
-
-// Функция получения геолокации с улучшенными эффектами
+// Функция получения геолокации
 function getCurrentLocation() {
     const locationBtn = document.querySelector('.location-btn');
     
@@ -138,13 +93,11 @@ function getCurrentLocation() {
         return;
     }
     
-    // Анимация загрузки с пульсацией
+    // Анимация загрузки
     const originalText = locationBtn.innerHTML;
     locationBtn.innerHTML = '⏳ Определение...';
     locationBtn.disabled = true;
     locationBtn.style.opacity = '0.8';
-    
-    // Добавляем пульсацию во время загрузки
     locationBtn.style.animation = 'pulse 1.5s infinite';
     
     navigator.geolocation.getCurrentPosition(
@@ -152,7 +105,7 @@ function getCurrentLocation() {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            // Создаем улучшенный маркер пользователя
+            // Создаем маркер пользователя
             const userIcon = L.divIcon({
                 className: 'user-location-marker',
                 html: `<div style="
@@ -181,7 +134,7 @@ function getCurrentLocation() {
                 iconAnchor: [12, 12]
             });
             
-            // Добавляем стили для анимации пульса пользователя
+            // Добавляем стили для анимации пульса
             if (!document.getElementById('user-pulse-styles')) {
                 const style = document.createElement('style');
                 style.id = 'user-pulse-styles';
@@ -213,7 +166,7 @@ function getCurrentLocation() {
                 map.removeLayer(window.userMarker);
             }
             
-            // Добавляем новый маркер с улучшенным popup
+            // Добавляем новый маркер
             window.userMarker = L.marker([lat, lng], { icon: userIcon })
                 .addTo(map)
                 .bindPopup(`
@@ -225,7 +178,7 @@ function getCurrentLocation() {
                     </div>
                 `);
             
-            // Плавно центрируем карту на пользователе с анимацией
+            // Плавно центрируем карту на пользователе
             map.flyTo([lat, lng], 16, {
                 duration: 1.5,
                 easeLinearity: 0.5
@@ -291,11 +244,10 @@ async function loadPoints() {
     } catch (error) {
         console.error('Error loading points:', error);
         showNotification('Ошибка загрузки данных', 'error');
-        throw error;
     }
 }
 
-// Обновление карты с улучшенными цветными маркерами
+// Обновление карты с цветными маркерами
 function updateMap(points) {
     // Очищаем существующие маркеры (кроме пользовательского)
     markers.forEach(marker => map.removeLayer(marker));
@@ -304,7 +256,7 @@ function updateMap(points) {
     points.forEach(point => {
         const isAvailable = point.status === 'available';
         
-        // Создаем улучшенную цветную иконку с градиентом
+        // Создаем цветную иконку
         const icon = L.divIcon({
             className: 'custom-marker',
             html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}">
@@ -318,7 +270,7 @@ function updateMap(points) {
         const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
             .addTo(map);
         
-        // Улучшенный popup с лучшим дизайном
+        // Улучшенный popup
         let popupContent = `
             <div class="popup-content">
                 <h3>${point.name}</h3>
@@ -334,10 +286,8 @@ function updateMap(points) {
                     ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
                     <p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
                 </div>
+                <button onclick="showPointDetails('${point.id}')" class="details-btn">Подробнее</button>
             `;
-            
-            // Добавляем кнопку для просмотра подробностей
-            popupContent += `<button onclick="showPointDetails('${point.id}')" class="details-btn">Подробнее</button>`;
         }
         
         popupContent += '</div>';
@@ -345,11 +295,11 @@ function updateMap(points) {
         markers.push(marker);
     });
     
-    // Добавляем улучшенные стили для маркеров
+    // Добавляем стили для маркеров
     addEnhancedMarkerStyles();
 }
 
-// Добавление улучшенных стилей для цветных маркеров
+// Добавление стилей для цветных маркеров
 function addEnhancedMarkerStyles() {
     if (!document.getElementById('enhanced-marker-styles')) {
         const style = document.createElement('style');
@@ -508,13 +458,12 @@ function updateStats(points) {
     const collectedElement = document.getElementById('collectedCount');
     
     if (availableElement && collectedElement) {
-        // Анимированное обновление цифр
         animateNumber(availableElement, parseInt(availableElement.textContent) || 0, available);
         animateNumber(collectedElement, parseInt(collectedElement.textContent) || 0, collected);
     }
 }
 
-// Улучшенная анимация изменения числа
+// Анимация изменения числа
 function animateNumber(element, from, to) {
     if (from === to) return;
     
@@ -526,7 +475,6 @@ function animateNumber(element, from, to) {
     let current = from;
     let step = 0;
     
-    // Добавляем эффект масштабирования во время анимации
     element.style.transform = 'scale(1.1)';
     element.style.transition = 'transform 0.3s ease';
     
@@ -544,7 +492,7 @@ function animateNumber(element, from, to) {
     }, stepDuration);
 }
 
-// Показать подробности точки с улучшенным модальным окном
+// Показать подробности точки
 async function showPointDetails(pointId) {
     try {
         const response = await fetch(`/api/point/${pointId}/info`);
@@ -599,12 +547,11 @@ function closeModal() {
     document.getElementById('infoModal').style.display = 'none';
 }
 
-// Улучшенная функция показа уведомлений
+// Функция показа уведомлений
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     
-    // Иконки для разных типов уведомлений
     const icons = {
         error: '❌',
         success: '✅',
@@ -619,12 +566,9 @@ function showNotification(message, type = 'info') {
         </div>
     `;
     
-    // Добавляем улучшенные стили для уведомлений
     addEnhancedNotificationStyles();
-    
     document.body.appendChild(notification);
     
-    // Автоматически удаляем через 4 секунды
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOut 0.3s ease';
@@ -633,7 +577,7 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-// Добавление улучшенных стилей для уведомлений
+// Добавление стилей для уведомлений
 function addEnhancedNotificationStyles() {
     if (!document.getElementById('enhanced-notification-styles')) {
         const style = document.createElement('style');
@@ -741,10 +685,9 @@ window.addEventListener('error', function(e) {
     }
 });
 
-// Обработка изменения размера окна для адаптивности
+// Обработка изменения размера окна
 window.addEventListener('resize', function() {
     if (map) {
-        // Добавляем задержку для лучшей производительности
         clearTimeout(window.resizeTimeout);
         window.resizeTimeout = setTimeout(() => {
             map.invalidateSize();
@@ -762,20 +705,12 @@ window.addEventListener('offline', function() {
     showNotification('Нет подключения к интернету', 'warning');
 });
 
-// Улучшенная обработка клавиш
+// Обработка клавиш
 document.addEventListener('keydown', function(event) {
-    // Закрытие модального окна по Escape
     if (event.key === 'Escape') {
         closeModal();
     }
     
-    // Обновление карты по F5 или Ctrl+R
-    if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
-        event.preventDefault();
-        refreshMap();
-    }
-    
-    // Определение местоположения по Ctrl+L
     if (event.ctrlKey && event.key === 'l') {
         event.preventDefault();
         getCurrentLocation();
@@ -788,7 +723,6 @@ window.PlasticBoy = {
     loadPoints,
     showNotification,
     getCurrentLocation,
-    refreshMap,
     showPointDetails,
     closeModal
 };
