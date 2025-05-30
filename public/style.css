@@ -207,31 +207,34 @@ body {
     background: #f44336;
 }
 
-/* КРАСИВЫЕ КНОПКИ УПРАВЛЕНИЯ */
+/* ЦЕНТРИРОВАННЫЕ КНОПКИ УПРАВЛЕНИЯ В СТИЛЕ СТАТИСТИКИ */
 .map-controls {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
     display: flex;
-    flex-direction: column;
+    justify-content: space-around;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     gap: 15px;
-    z-index: 1000;
 }
 
 .control-btn {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    flex: 1;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
     border: none;
+    padding: 15px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 
-        0 8px 25px rgba(0, 0, 0, 0.15),
-        0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 8px;
     position: relative;
     overflow: hidden;
 }
@@ -253,34 +256,30 @@ body {
 }
 
 .control-btn:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 35px rgba(0, 0, 0, 0.2),
-        0 6px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
 .control-btn:active {
-    transform: translateY(-1px) scale(0.98);
+    transform: translateY(0);
 }
 
 /* Кнопка обновления */
 .refresh-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    background: linear-gradient(45deg, #667eea, #764ba2);
 }
 
 .refresh-btn:hover {
-    background: linear-gradient(135deg, #5a67d8, #6b46c1);
+    background: linear-gradient(45deg, #5a67d8, #6b46c1);
 }
 
 /* Кнопка геолокации */
 .location-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
+    background: linear-gradient(45deg, #4CAF50, #45a049);
 }
 
 .location-btn:hover {
-    background: linear-gradient(135deg, #45a049, #3d8b40);
+    background: linear-gradient(45deg, #45a049, #3d8b40);
 }
 
 /* Анимация вращения для кнопки обновления */
@@ -289,29 +288,8 @@ body {
 }
 
 @keyframes spin {
-    from { transform: translateY(-3px) scale(1.05) rotate(0deg); }
-    to { transform: translateY(-3px) scale(1.05) rotate(360deg); }
-}
-
-/* Подсказки для кнопок */
-.control-tooltip {
-    position: absolute;
-    right: 70px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-}
-
-.control-btn:hover .control-tooltip {
-    opacity: 1;
+    from { transform: translateY(-2px) rotate(0deg); }
+    to { transform: translateY(-2px) rotate(360deg); }
 }
 
 /* Анимация пульса для пользователя */
@@ -878,20 +856,15 @@ button:disabled {
         margin-bottom: 0;
     }
     
+    /* Адаптивность для кнопок управления */
     .map-controls {
-        bottom: 20px;
-        right: 20px;
+        flex-direction: column;
         gap: 12px;
     }
     
     .control-btn {
-        width: 55px;
-        height: 55px;
-        font-size: 1.3rem;
-    }
-    
-    .control-tooltip {
-        right: 65px;
+        font-size: 0.9rem;
+        padding: 12px 16px;
     }
 }
 
@@ -914,22 +887,9 @@ button:disabled {
         height: 550px;
     }
     
-    .map-controls {
-        bottom: 15px;
-        right: 15px;
-        gap: 10px;
-    }
-    
     .control-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 1.2rem;
-    }
-    
-    .control-tooltip {
-        right: 60px;
-        font-size: 0.7rem;
-        padding: 6px 10px;
+        font-size: 0.85rem;
+        padding: 10px 14px;
     }
 }
 
@@ -943,14 +903,8 @@ button:disabled {
         padding: 5px;
     }
     
-    .map-controls {
-        bottom: 10px;
-        right: 10px;
-    }
-    
     .control-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 1.1rem;
+        font-size: 0.8rem;
+        padding: 8px 12px;
     }
 }
