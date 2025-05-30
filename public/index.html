@@ -322,7 +322,7 @@
         <!-- Логотип -->
         <div class="logo-container">
             <div class="logo-title">PLASTICBOY</div>
-            <div class="logo-subtitle">Almighty Edition</div>
+            <div class="logo-subtitle">Almaty Collection System</div>
         </div>
         
         <!-- Пиксельная анимация загрузки -->
@@ -342,6 +342,12 @@
             <div class="progress-bar" id="progressBar"></div>
             <div class="progress-text" id="progressText">0%</div>
         </div>
+        
+        <!-- Подсказка для пользователя -->
+        <div style="position: absolute; bottom: 30px; text-align: center; color: #00cccc; font-size: 0.7rem; opacity: 0.7;">
+            <div>💡 Нажмите ENTER для ускорения</div>
+            <div style="margin-top: 5px;">🎮 Нажмите пробел для эффектов</div>
+        </div>
     </div>
 
     <!-- ОСНОВНОЙ КОНТЕНТ ПРИЛОЖЕНИЯ -->
@@ -349,7 +355,7 @@
         <div class="container">
             <header class="header">
                 <h1>🎯 PlasticBoy</h1>
-                <p>Collect'em all</p>
+                <p>Collect'em all around Almaty</p>
             </header>
 
             <div class="stats">
@@ -395,12 +401,20 @@
         </div>
     </div>
 
+    <!-- Подключение библиотек -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
     
+    <!-- Скрипт новой системы загрузки -->
     <script>
-        // СИСТЕМА ЗАГРУЗКИ В СТИЛЕ РЕТРО ИГР
-        
+        // ОБНОВЛЕННАЯ СИСТЕМА ЗАГРУЗКИ В СТИЛЕ РЕТРО ИГР
+        // Теперь загрузка ждет полной загрузки точек на карте
+
+        // Флаги состояния загрузки
+        let isMapReady = false;
+        let arePointsLoaded = false;
+        let isLeafletReady = false;
+        let loadingStepsCompleted = 0;
+
         // Создание матричного фона
         function createMatrixDots() {
             const matrixBg = document.getElementById('matrixBg');
@@ -415,59 +429,85 @@
                 matrixBg.appendChild(dot);
             }
         }
-        
-        // Статусы загрузки в стиле старых игр
+
+        // Обновленные статусы загрузки с акцентом на карту
         const loadingSteps = [
             "INITIALIZING SYSTEM...",
-            "LOADING GAME ASSETS...",
+            "LOADING GAME ASSETS...", 
             "CONNECTING TO ALMATY SERVER...",
             "CALIBRATING GPS MODULES...",
-            "PREPARING MAP DATA...",
-            "SCANNING FOR MODELS...",
+            "PREPARING MAP ENGINE...",
             "LOADING LEAFLET MAPS...",
-            "FINAL CHECKS...",
-            "WELCOME TO PLASTICBOY!"
+            "ESTABLISHING MAP CONNECTION...",
+            "SCANNING FOR MODEL POINTS...",
+            "LOADING POINT DATA...",
+            "SYNCHRONIZING MAP MARKERS...",
+            "FINAL MAP VALIDATION...",
+            "PLASTICBOY READY!"
         ];
-        
+
         let currentStep = 0;
         let progress = 0;
         let loadingInterval;
-        
+        let mapCheckInterval;
+
         function updateLoadingScreen() {
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const loadingStatus = document.getElementById('loadingStatus');
             
-            // Обновляем прогресс
-            progress += Math.random() * 12 + 8; // Случайное увеличение от 8 до 20%
-            if (progress > 100) progress = 100;
+            // Определяем максимальный прогресс в зависимости от состояния
+            let maxProgress = 85; // Максимум до загрузки точек
+            
+            if (isLeafletReady) maxProgress = 70;
+            if (isMapReady) maxProgress = 80;
+            if (arePointsLoaded) maxProgress = 100;
+            
+            // Обновляем прогресс с ограничением
+            if (progress < maxProgress) {
+                const increment = arePointsLoaded ? 15 : Math.random() * 8 + 3;
+                progress += increment;
+                if (progress > maxProgress) progress = maxProgress;
+            }
             
             progressBar.style.width = progress + '%';
             progressText.textContent = Math.floor(progress) + '%';
             
-            // Обновляем статус
-            const stepProgress = progress / (100 / loadingSteps.length);
-            if (Math.floor(stepProgress) > currentStep && currentStep < loadingSteps.length - 1) {
-                currentStep++;
-                loadingStatus.textContent = loadingSteps[currentStep];
-                
-                // Добавляем звуковой эффект
-                playLoadingSound();
-            }
+            // Обновляем статус в зависимости от состояния загрузки
+            updateLoadingStatus(loadingStatus);
             
-            // Завершение загрузки
-            if (progress >= 100) {
+            // Завершение загрузки только когда все готово
+            if (arePointsLoaded && progress >= 100) {
                 loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
                 setTimeout(() => {
                     finishLoading();
-                }, 1500);
+                }, 1000);
                 clearInterval(loadingInterval);
                 return;
             }
         }
-        
+
+        function updateLoadingStatus(loadingStatus) {
+            let targetStep = 0;
+            
+            if (!isLeafletReady) {
+                targetStep = Math.min(4, Math.floor(progress / 15));
+            } else if (!isMapReady) {
+                targetStep = Math.min(6, 4 + Math.floor((progress - 40) / 10));
+            } else if (!arePointsLoaded) {
+                targetStep = Math.min(10, 7 + Math.floor((progress - 60) / 8));
+            } else {
+                targetStep = loadingSteps.length - 1;
+            }
+            
+            if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
+                currentStep = targetStep;
+                loadingStatus.textContent = loadingSteps[currentStep];
+                playLoadingSound();
+            }
+        }
+
         function playLoadingSound() {
-            // Простой звуковой эффект через Web Audio API
             try {
                 if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -487,14 +527,48 @@
                     oscillator.stop(audioContext.currentTime + 0.1);
                 }
             } catch (e) {
-                // Игнорируем ошибки аудио
                 console.log('Audio not supported');
             }
         }
-        
+
+        // Функция проверки готовности карты и точек
+        function checkMapAndPointsReady() {
+            // Проверяем готовность Leaflet
+            if (typeof L !== 'undefined' && !isLeafletReady) {
+                isLeafletReady = true;
+                console.log('✅ Leaflet готов');
+            }
+            
+            // Проверяем готовность карты
+            if (window.map && !isMapReady) {
+                isMapReady = true;
+                console.log('✅ Карта инициализирована');
+            }
+            
+            // Проверяем загрузку точек (через глобальную переменную или DOM)
+            if (!arePointsLoaded) {
+                // Проверяем наличие маркеров на карте
+                if (window.map && window.markers && window.markers.length > 0) {
+                    arePointsLoaded = true;
+                    console.log('✅ Точки на карте загружены');
+                }
+                // Альтернативный способ - проверяем статистику
+                else if (document.getElementById('availableCount')) {
+                    const availableCount = parseInt(document.getElementById('availableCount').textContent);
+                    const collectedCount = parseInt(document.getElementById('collectedCount').textContent);
+                    if (availableCount > 0 || collectedCount > 0) {
+                        arePointsLoaded = true;
+                        console.log('✅ Точки загружены (через статистику)');
+                    }
+                }
+            }
+        }
+
         function finishLoading() {
             const loadingScreen = document.getElementById('loadingScreen');
             const mainContent = document.getElementById('mainContent');
+            
+            console.log('🎯 Завершение загрузки - все компоненты готовы!');
             
             // Скрываем загрузочный экран
             loadingScreen.classList.add('fade-out');
@@ -504,51 +578,96 @@
                 // Показываем основной контент
                 mainContent.classList.add('loaded');
                 
-                // Инициализируем основное приложение
-                initMainApp();
+                // Показываем приветственное уведомление
+                setTimeout(() => {
+                    if (typeof showNotification === 'function') {
+                        showNotification('PlasticBoy готов к работе! 🎯', 'success');
+                    }
+                }, 500);
             }, 800);
         }
-        
-        function initMainApp() {
-            console.log('🎯 PlasticBoy загружен и готов к работе!');
-            
-            // Инициализируем карту и загружаем данные
-            if (typeof initMap === 'function') {
-                initMap();
+
+        // Функция-хук для уведомления о загрузке точек
+        function onPointsLoaded() {
+            if (!arePointsLoaded) {
+                arePointsLoaded = true;
+                console.log('✅ Точки карты загружены (внешний вызов)');
             }
-            if (typeof loadPoints === 'function') {
-                loadPoints();
-            }
-            
-            // Показываем приветственное уведомление
-            setTimeout(() => {
-                if (typeof showNotification === 'function') {
-                    showNotification('Добро пожаловать в PlasticBoy! 🎯', 'success');
-                }
-            }, 500);
         }
-        
-        // Запуск загрузки при загрузке страницы
+
+        // Переопределяем функцию загрузки точек в основном скрипте
+        function enhancedLoadPoints() {
+            // Вызываем оригинальную функцию loadPoints
+            if (typeof window.originalLoadPoints === 'function') {
+                return window.originalLoadPoints().then(() => {
+                    onPointsLoaded();
+                });
+            } else {
+                // Если оригинальной функции нет, создаем свою
+                return fetch('/api/points', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load points');
+                    }
+                    return response.json();
+                })
+                .then(points => {
+                    // Обновляем карту и статистику
+                    if (typeof updateMap === 'function') updateMap(points);
+                    if (typeof updateStats === 'function') updateStats(points);
+                    
+                    // Уведомляем о загрузке
+                    onPointsLoaded();
+                    return points;
+                })
+                .catch(error => {
+                    console.error('Error loading points:', error);
+                    if (typeof showNotification === 'function') {
+                        showNotification('Ошибка загрузки данных', 'error');
+                    }
+                    // Помечаем как загруженные даже при ошибке, чтобы не блокировать интерфейс
+                    onPointsLoaded();
+                });
+            }
+        }
+
+        // Запуск системы загрузки
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Запуск системы загрузки PlasticBoy');
+            
             createMatrixDots();
             
-            // Проверяем, загружены ли основные ресурсы
+            // Сохраняем оригинальную функцию loadPoints если она существует
+            if (typeof loadPoints === 'function') {
+                window.originalLoadPoints = loadPoints;
+                // Переопределяем глобальную функцию
+                window.loadPoints = enhancedLoadPoints;
+            }
+            
+            // Запускаем проверку состояния
+            mapCheckInterval = setInterval(checkMapAndPointsReady, 200);
+            
+            // Проверяем готовность основных ресурсов
             Promise.all([
                 // Ждем загрузки Leaflet
                 new Promise((resolve) => {
-                    if (typeof L !== 'undefined') {
-                        resolve();
-                    } else {
-                        const checkLeaflet = setInterval(() => {
-                            if (typeof L !== 'undefined') {
-                                clearInterval(checkLeaflet);
-                                resolve();
-                            }
-                        }, 50);
-                    }
+                    const checkLeaflet = () => {
+                        if (typeof L !== 'undefined') {
+                            isLeafletReady = true;
+                            resolve();
+                        } else {
+                            setTimeout(checkLeaflet, 50);
+                        }
+                    };
+                    checkLeaflet();
                 }),
                 
-                // Ждем загрузки основного скрипта
+                // Ждем готовности DOM
                 new Promise((resolve) => {
                     if (document.readyState === 'complete') {
                         resolve();
@@ -557,15 +676,22 @@
                     }
                 })
             ]).then(() => {
-                // Начинаем анимацию загрузки после загрузки ресурсов
+                console.log('📚 Основные ресурсы загружены, запуск анимации');
+                
+                // Начинаем анимацию загрузки
                 setTimeout(() => {
                     loadingInterval = setInterval(updateLoadingScreen, 150);
                 }, 300);
+                
+                // Инициализируем основное приложение через небольшую задержку
+                setTimeout(() => {
+                    initMainAppWithLoadingTracking();
+                }, 500);
             });
             
-            // Дополнительные матричные точки каждые несколько секунд
+            // Дополнительные матричные точки
             setInterval(() => {
-                if (progress < 100) {
+                if (!arePointsLoaded) {
                     const matrixBg = document.getElementById('matrixBg');
                     if (matrixBg && matrixBg.children.length < 100) {
                         for (let i = 0; i < 3; i++) {
@@ -580,18 +706,40 @@
                 }
             }, 2000);
         });
-        
-        // Пасхалки и интерактивность
+
+        // Инициализация основного приложения с отслеживанием загрузки
+        function initMainAppWithLoadingTracking() {
+            console.log('🗺️ Инициализация карты и загрузка точек');
+            
+            // Инициализируем карту
+            if (typeof initMap === 'function') {
+                initMap();
+                
+                // Проверяем готовность карты через небольшой интервал
+                const checkMap = setInterval(() => {
+                    if (window.map && !isMapReady) {
+                        isMapReady = true;
+                        clearInterval(checkMap);
+                        console.log('✅ Карта готова, загружаем точки');
+                        
+                        // Теперь загружаем точки
+                        if (typeof enhancedLoadPoints === 'function') {
+                            enhancedLoadPoints();
+                        }
+                    }
+                }, 100);
+            }
+        }
+
+        // Интерактивность для ускорения загрузки
         document.addEventListener('keydown', function(e) {
-            if (progress < 100) {
+            if (!arePointsLoaded) {
                 switch(e.key) {
                     case 'Enter':
-                        // Ускорение загрузки
-                        progress += 15;
+                        progress += 10;
                         playLoadingSound();
                         break;
                     case ' ':
-                        // Spacebar - добавляем больше точек матрицы
                         const matrixBg = document.getElementById('matrixBg');
                         if (matrixBg) {
                             for (let i = 0; i < 10; i++) {
@@ -605,43 +753,65 @@
                         }
                         break;
                     case 'Escape':
-                        // Мгновенная загрузка (для разработки)
                         if (e.ctrlKey) {
+                            // Принудительно завершаем загрузку (для разработки)
+                            arePointsLoaded = true;
                             progress = 100;
                         }
                         break;
                 }
             }
         });
-        
-        // Клик по экрану для ускорения (мобильные устройства)
+
+        // Клик для ускорения (мобильные устройства)
         document.addEventListener('click', function(e) {
-            if (progress < 100 && e.target.closest('.loading-screen')) {
-                progress += 10;
+            if (!arePointsLoaded && e.target.closest('.loading-screen')) {
+                progress += 5;
                 playLoadingSound();
             }
         });
-        
-        // Предотвращение случайного закрытия во время загрузки
+
+        // Предотвращение закрытия во время загрузки
         window.addEventListener('beforeunload', function(e) {
-            if (progress < 100) {
+            if (!arePointsLoaded) {
                 e.preventDefault();
-                e.returnValue = 'Загрузка еще не завершена. Вы уверены, что хотите покинуть страницу?';
+                e.returnValue = 'PlasticBoy еще загружается. Вы уверены?';
             }
         });
-        
-        // Адаптация к размеру экрана
-        function adjustLoadingForMobile() {
-            if (window.innerWidth <= 480) {
-                const progressContainer = document.querySelector('.progress-container');
-                if (progressContainer) {
-                    progressContainer.style.width = '250px';
-                }
+
+        // Очистка интервалов при завершении загрузки
+        function cleanup() {
+            if (loadingInterval) {
+                clearInterval(loadingInterval);
+                loadingInterval = null;
+            }
+            if (mapCheckInterval) {
+                clearInterval(mapCheckInterval);
+                mapCheckInterval = null;
             }
         }
-        
-        window.addEventListener('resize', adjustLoadingForMobile);
-        adjustLoadingForMobile();
+
+        // Вызываем очистку при завершении загрузки
+        const originalFinishLoading = finishLoading;
+        finishLoading = function() {
+            cleanup();
+            originalFinishLoading();
+        };
+
+        // Экспорт функций для внешнего использования
+        window.PlasticBoyLoader = {
+            onPointsLoaded,
+            checkMapAndPointsReady,
+            enhancedLoadPoints,
+            isMapReady: () => isMapReady,
+            arePointsLoaded: () => arePointsLoaded,
+            isLeafletReady: () => isLeafletReady
+        };
+
+        console.log('🎮 Система загрузки PlasticBoy инициализирована');
     </script>
+    
+    <!-- Основной скрипт приложения -->
+    <script src="script.js"></script>
 </body>
 </html>
