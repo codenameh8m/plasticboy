@@ -9,7 +9,6 @@ const ALMATY_CENTER = [43.2220, 76.8512];
 document.addEventListener('DOMContentLoaded', function() {
     initMap();
     loadPoints();
-    createMapControls();
     
     // Автообновление каждые 30 секунд
     setInterval(loadPoints, 30000);
@@ -55,35 +54,6 @@ function addGrayscaleMapStyles() {
     }
 }
 
-// Создание красивых кнопок управления
-function createMapControls() {
-    // Создаем контейнер для кнопок
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'map-controls';
-    
-    // Кнопка обновления
-    const refreshBtn = document.createElement('button');
-    refreshBtn.className = 'control-btn refresh-btn';
-    refreshBtn.innerHTML = `
-        🔄
-        <div class="control-tooltip">Обновить карту</div>
-    `;
-    refreshBtn.addEventListener('click', refreshMap);
-    
-    // Кнопка геолокации
-    const locationBtn = document.createElement('button');
-    locationBtn.className = 'control-btn location-btn';
-    locationBtn.innerHTML = `
-        📍
-        <div class="control-tooltip">Моё местоположение</div>
-    `;
-    locationBtn.addEventListener('click', getCurrentLocation);
-    
-    controlsContainer.appendChild(refreshBtn);
-    controlsContainer.appendChild(locationBtn);
-    document.body.appendChild(controlsContainer);
-}
-
 // Функция обновления карты с анимацией
 function refreshMap() {
     const refreshBtn = document.querySelector('.refresh-btn');
@@ -116,11 +86,9 @@ function getCurrentLocation() {
     }
     
     // Анимация загрузки
-    locationBtn.style.transform = 'scale(0.95)';
-    locationBtn.innerHTML = `
-        ⏳
-        <div class="control-tooltip">Определение местоположения...</div>
-    `;
+    const originalText = locationBtn.innerHTML;
+    locationBtn.innerHTML = '⏳ Определение...';
+    locationBtn.disabled = true;
     
     navigator.geolocation.getCurrentPosition(
         function(position) {
@@ -193,11 +161,8 @@ function getCurrentLocation() {
             showNotification('Местоположение определено', 'success');
             
             // Восстанавливаем кнопку
-            locationBtn.style.transform = '';
-            locationBtn.innerHTML = `
-                📍
-                <div class="control-tooltip">Моё местоположение</div>
-            `;
+            locationBtn.innerHTML = originalText;
+            locationBtn.disabled = false;
         },
         function(error) {
             console.error('Ошибка геолокации:', error);
@@ -218,11 +183,8 @@ function getCurrentLocation() {
             showNotification(errorMessage, 'error');
             
             // Восстанавливаем кнопку
-            locationBtn.style.transform = '';
-            locationBtn.innerHTML = `
-                📍
-                <div class="control-tooltip">Моё местоположение</div>
-            `;
+            locationBtn.innerHTML = originalText;
+            locationBtn.disabled = false;
         },
         {
             enableHighAccuracy: true,
