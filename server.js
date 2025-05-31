@@ -4,147 +4,82 @@ const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const path = require('path');
-const compression = require('compression');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// МАКСИМАЛЬНО БЫСТРЫЕ Middleware
-app.use(compression({
-    level: 6,
-    threshold: 1024,
-    filter: (req, res) => {
-        if (req.headers['x-no-compression']) return false;
-        return compression.filter(req, res);
-    }
-}));
-
+// ОПТИМИЗИРОВАННЫЕ Middleware для максимальной скорости
 app.use(cors({
     origin: true,
     credentials: true,
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Password', 'Accept', 'Cache-Control'],
-    exposedHeaders: ['ETag', 'Last-Modified', 'Cache-Control']
+    optionsSuccessStatus: 200 // Для старых браузеров
 }));
 
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Статические файлы с кэшированием
 app.use(express.static('public', {
-    maxAge: '1d',
+    maxAge: '1d', // Кэш на день для статики
     etag: true,
     lastModified: true
 }));
 
-// МГНОВЕННЫЙ КЭШИРОВАНИЕ СИСТЕМЫ
-class HighSpeedCache {
-    constructor() {
-        this.data = {
-            public: null,
-            admin: null,
-            etag: null,
-            lastUpdate: 0,
-            version: 1
-        };
-        this.isUpdating = false;
-    }
-    
-    isValid(maxAge = 30000) {
-        return this.data.public && (Date.now() - this.data.lastUpdate) < maxAge;
-    }
-    
-    getPublic() {
-        return this.data.public || [];
-    }
-    
-    getAdmin() {
-        return this.data.admin || [];
-    }
-    
-    async update() {
-        if (this.isUpdating) return false;
-        
-        this.isUpdating = true;
-        const startTime = Date.now();
-        
-        try {
-            if (mongoose.connection.readyState !== 1) {
-                console.log('⚠️ БД не подключена');
-                return false;
-            }
-            
-            const [adminPoints, publicPoints] = await Promise.all([
-                ModelPoint.find({}).lean().exec(),
-                ModelPoint.find({
-                    scheduledTime: { $lte: new Date() }
-                }).select('-qrSecret').lean().exec()
-            ]);
-            
-            this.data = {
-                admin: adminPoints,
-                public: publicPoints,
-                lastUpdate: Date.now(),
-                etag: `"${Date.now()}-${adminPoints.length}"`,
-                version: this.data.version + 1
-            };
-            
-            const updateTime = Date.now() - startTime;
-            console.log(`⚡ Кэш обновлен за ${updateTime}ms (${adminPoints.length} точек)`);
-            
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Ошибка обновления кэша:', error);
-            return false;
-        } finally {
-            this.isUpdating = false;
-        }
-    }
-    
-    invalidate() {
-        this.data.lastUpdate = 0;
-        setImmediate(() => this.update());
-    }
-}
+// Компрессия ответов
+app.use(require('compression')());
 
-const cache = new HighSpeedCache();
+// Кэш для точек в памяти для МГНОВЕННОЙ отдачи
+let pointsCache = {
+    public: null,      // Кэш для пользователей
+    admin: null,       // Кэш для админов
+    lastUpdate: 0,     // Время последнего обновления
+    etag: null         // ETag для кэширования
+};
 
-// Multer для файлов
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 3 * 1024 * 1024 },
+// Multer для загрузки файлов
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage, 
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        cb(null, file.mimetype.startsWith('image/'));
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Только изображения разрешены'));
+        }
     }
 });
 
-// БЫСТРОЕ подключение к MongoDB
-async function connectDB() {
+// ОПТИМИЗИРОВАННОЕ MongoDB подключение
+const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
-            maxPoolSize: 10,
-            serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
-            bufferCommands: false,
-            bufferMaxEntries: 0
+            maxPoolSize: 10,        // Максимум 10 соединений
+            serverSelectionTimeoutMS: 5000, // Быстрый таймаут
+            socketTimeoutMS: 45000, // Таймаут сокета
+            maxIdleTimeMS: 30000,   // Время жизни неактивных соединений
+            retryWrites: true,      // Повторные попытки записи
+            w: 'majority'           // Подтверждение записи
         });
+        console.log(`⚡ MongoDB подключена БЫСТРО: ${conn.connection.host}`);
         
-        console.log(`⚡ MongoDB подключена: ${conn.connection.host}`);
-        
-        // Создаем тестовые данные если их нет
-        await createTestDataIfNeeded();
-        
-        // Инициализируем кэш
-        await cache.update();
-        
-        return true;
+        // Инициализируем кэш при подключении
+        await initializeCache();
     } catch (error) {
-        console.error('❌ Ошибка подключения MongoDB:', error);
-        return false;
+        console.error('❌ Ошибка подключения к MongoDB:', error.message);
+        
+        // Пытаемся подключиться с минимальными настройками
+        try {
+            console.log('🔄 Пробуем подключение с базовыми настройками...');
+            const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy');
+            console.log(`✅ MongoDB подключена (базовые настройки): ${conn.connection.host}`);
+            await initializeCache();
+        } catch (fallbackError) {
+            console.error('💥 Критическая ошибка подключения к MongoDB:', fallbackError.message);
+            process.exit(1);
+        }
     }
-}
+};
 
 // Оптимизированная схема с индексами
 const ModelPointSchema = new mongoose.Schema({
@@ -169,90 +104,69 @@ const ModelPointSchema = new mongoose.Schema({
 
 // Составной индекс для быстрых запросов
 ModelPointSchema.index({ scheduledTime: 1, status: 1 });
-ModelPointSchema.index({ id: 1, qrSecret: 1 });
 
 const ModelPoint = mongoose.model('ModelPoint', ModelPointSchema);
 
-// Создание тестовых данных
-async function createTestDataIfNeeded() {
+// МГНОВЕННАЯ инициализация кэша
+async function initializeCache() {
     try {
-        const count = await ModelPoint.countDocuments();
-        if (count > 0) {
-            console.log(`📊 В базе уже есть ${count} точек`);
-            return;
+        console.log('⚡ Инициализация МГНОВЕННОГО кэша...');
+        const success = await updatePointsCache();
+        if (success) {
+            console.log('✅ Кэш готов для мгновенной отдачи');
+        } else {
+            console.log('⚠️ Кэш будет инициализирован при первом запросе');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка инициализации кэша:', error);
+        console.log('🔄 Кэш будет создан при первом обращении к данным');
+    }
+}
+
+// БЫСТРОЕ обновление кэша
+async function updatePointsCache() {
+    try {
+        const startTime = Date.now();
+        
+        // Проверяем состояние подключения к БД
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️ База данных не подключена, пропускаем обновление кэша');
+            return false;
         }
         
-        console.log('📝 Создание тестовых данных...');
+        // Параллельные запросы для скорости
+        const [allPoints, publicPoints] = await Promise.all([
+            ModelPoint.find({}).lean().exec(), // lean() для скорости
+            ModelPoint.find({
+                scheduledTime: { $lte: new Date() }
+            }).select('-qrSecret').lean().exec()
+        ]);
         
-        const testPoints = [
-            {
-                id: 'almaty-001',
-                name: 'Модель "Алматы Арена"',
-                coordinates: { lat: 43.2220, lng: 76.8512 },
-                status: 'available',
-                qrCode: await QRCode.toDataURL('http://localhost:3000/collect.html?id=almaty-001&secret=secret1'),
-                qrSecret: 'secret1',
-                scheduledTime: new Date()
-            },
-            {
-                id: 'almaty-002',
-                name: 'Модель "Площадь Республики"',
-                coordinates: { lat: 43.2380, lng: 76.8840 },
-                status: 'collected',
-                qrCode: await QRCode.toDataURL('http://localhost:3000/collect.html?id=almaty-002&secret=secret2'),
-                qrSecret: 'secret2',
-                scheduledTime: new Date(),
-                collectedAt: new Date(Date.now() - 3600000),
-                collectorInfo: {
-                    name: 'Айдар Нурланов',
-                    signature: 'Первая находка в центре города!'
-                }
-            },
-            {
-                id: 'almaty-003',
-                name: 'Модель "Кок-Тобе"',
-                coordinates: { lat: 43.2050, lng: 76.9080 },
-                status: 'available',
-                qrCode: await QRCode.toDataURL('http://localhost:3000/collect.html?id=almaty-003&secret=secret3'),
-                qrSecret: 'secret3',
-                scheduledTime: new Date()
-            },
-            {
-                id: 'almaty-004',
-                name: 'Модель "Медеу"',
-                coordinates: { lat: 43.1633, lng: 77.0669 },
-                status: 'available',
-                qrCode: await QRCode.toDataURL('http://localhost:3000/collect.html?id=almaty-004&secret=secret4'),
-                qrSecret: 'secret4',
-                scheduledTime: new Date()
-            },
-            {
-                id: 'almaty-005',
-                name: 'Модель "Парк 28 Панфиловцев"',
-                coordinates: { lat: 43.2628, lng: 76.9569 },
-                status: 'available',
-                qrCode: await QRCode.toDataURL('http://localhost:3000/collect.html?id=almaty-005&secret=secret5'),
-                qrSecret: 'secret5',
-                scheduledTime: new Date()
-            }
-        ];
+        // Обновляем кэш
+        pointsCache.admin = allPoints;
+        pointsCache.public = publicPoints;
+        pointsCache.lastUpdate = Date.now();
+        pointsCache.etag = `"${Date.now()}-${allPoints.length}"`;
         
-        await ModelPoint.insertMany(testPoints);
-        console.log(`✅ Создано ${testPoints.length} тестовых точек`);
+        const updateTime = Date.now() - startTime;
+        console.log(`⚡ Кэш обновлен за ${updateTime}ms (${allPoints.length} точек)`);
         
+        return true;
     } catch (error) {
-        console.error('❌ Ошибка создания тестовых данных:', error);
+        console.error('❌ Ошибка обновления кэша:', error);
+        return false;
     }
 }
 
 // Автообновление кэша каждые 30 секунд
-setInterval(() => {
-    if (!cache.isValid(25000)) {
-        cache.update();
-    }
-}, 30000);
+setInterval(updatePointsCache, 30000);
 
-// Запуск подключения
+// Обновление кэша при изменениях
+function invalidateCache() {
+    pointsCache.lastUpdate = 0; // Принудительное обновление
+    updatePointsCache();
+}
+
 connectDB();
 
 // МАРШРУТЫ
@@ -262,109 +176,124 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// МГНОВЕННОЕ получение точек
+// МГНОВЕННОЕ получение точек для пользователей
 app.get('/api/points', async (req, res) => {
     try {
-        // Проверяем кэш
-        if (cache.isValid()) {
-            const points = cache.getPublic();
-            
+        // Проверяем свежесть кэша
+        if (!pointsCache.public || (Date.now() - pointsCache.lastUpdate > 60000)) {
+            console.log('🔄 Обновляем кэш точек...');
+            await updatePointsCache();
+        }
+        
+        // Если кэш доступен - используем его
+        if (pointsCache.public) {
+            // Устанавливаем заголовки для кэширования
             res.set({
                 'Content-Type': 'application/json; charset=utf-8',
-                'Cache-Control': 'public, max-age=30',
-                'ETag': cache.data.etag,
-                'Last-Modified': new Date(cache.data.lastUpdate).toUTCString()
+                'Cache-Control': 'public, max-age=30', // Кэш на 30 секунд
+                'ETag': pointsCache.etag,
+                'Last-Modified': new Date(pointsCache.lastUpdate).toUTCString()
             });
             
-            // 304 Not Modified
-            if (req.get('If-None-Match') === cache.data.etag) {
+            // Проверяем If-None-Match для 304 ответа
+            if (req.get('If-None-Match') === pointsCache.etag) {
                 return res.status(304).end();
             }
             
-            return res.json(points);
+            // МГНОВЕННАЯ отдача из кэша
+            return res.json(pointsCache.public);
         }
         
-        // Обновляем кэш если устарел
-        console.log('🔄 Обновление кэша для /api/points');
-        await cache.update();
-        
-        const points = cache.getPublic();
+        // Если кэш недоступен - делаем прямой запрос к БД
+        console.log('⚠️ Кэш недоступен, прямой запрос к БД');
+        const now = new Date();
+        const points = await ModelPoint.find({
+            scheduledTime: { $lte: now }
+        }).select('-qrSecret').lean().exec();
         
         res.set({
             'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'public, max-age=15'
+            'Cache-Control': 'public, max-age=10' // Короткий кэш при проблемах
         });
         
-        res.json(points);
+        res.json(points || []);
         
     } catch (error) {
-        console.error('❌ Ошибка /api/points:', error);
+        console.error('❌ Ошибка получения точек:', error);
         
-        // Возвращаем закэшированные данные при ошибке
-        const points = cache.getPublic();
-        if (points.length > 0) {
-            return res.json(points);
+        // Возвращаем кэшированные данные если есть
+        if (pointsCache.public) {
+            console.log('📦 Возвращаем устаревшие данные из кэша');
+            return res.json(pointsCache.public);
         }
         
-        res.status(500).json({ error: 'Ошибка сервера', points: [] });
+        // Иначе возвращаем пустой массив
+        res.status(500).json([]);
     }
 });
 
-// Админские точки
+// БЫСТРОЕ получение точек для админа
 app.get('/api/admin/points', async (req, res) => {
     try {
-        const password = req.headers['x-admin-password'] || req.headers.authorization;
-        
-        if (!password || decodeURIComponent(password) !== process.env.ADMIN_PASSWORD) {
+        const password = req.headers['x-admin-password'] 
+            ? decodeURIComponent(req.headers['x-admin-password'])
+            : req.headers.authorization;
+            
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Invalid password' });
         }
         
-        if (!cache.isValid()) {
-            await cache.update();
+        // Проверяем свежесть кэша
+        if (!pointsCache.admin || (Date.now() - pointsCache.lastUpdate > 60000)) {
+            await updatePointsCache();
         }
-        
-        const points = cache.getAdmin();
         
         res.set({
             'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'private, max-age=10'
+            'Cache-Control': 'private, max-age=10' // Короткий кэш для админа
         });
         
-        res.json(points);
+        // МГНОВЕННАЯ отдача админских данных
+        res.json(pointsCache.admin || []);
         
     } catch (error) {
-        console.error('❌ Ошибка админских точек:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        console.error('❌ Ошибка получения админских точек:', error);
+        res.status(500).json({ error: 'Failed to load points' });
     }
 });
 
-// Создание новой точки
+// БЫСТРОЕ создание новой точки (админ)
 app.post('/api/admin/points', async (req, res) => {
     try {
-        const password = req.headers['x-admin-password'] || req.headers.authorization;
-        
-        if (!password || decodeURIComponent(password) !== process.env.ADMIN_PASSWORD) {
+        const password = req.headers['x-admin-password'] 
+            ? decodeURIComponent(req.headers['x-admin-password'])
+            : req.headers.authorization;
+            
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
         const { name, coordinates, delayMinutes } = req.body;
         
+        // Валидация
         if (!name || !coordinates || !coordinates.lat || !coordinates.lng) {
             return res.status(400).json({ error: 'Неверные данные' });
         }
         
-        const pointId = `point-${Date.now()}`;
-        const qrSecret = Math.random().toString(36).substring(2, 15);
+        const pointId = Date.now().toString();
+        const qrSecret = Math.random().toString(36).substring(7);
         
         const scheduledTime = new Date();
         if (delayMinutes && !isNaN(delayMinutes)) {
             scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
         }
 
+        // Определяем протокол и хост
         const protocol = req.get('x-forwarded-proto') || req.protocol;
         const host = req.get('host');
         const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
         
+        // Быстрая генерация QR кода
         const qrCodeDataUrl = await QRCode.toDataURL(collectUrl, {
             width: 300,
             margin: 2,
@@ -376,7 +305,7 @@ app.post('/api/admin/points', async (req, res) => {
 
         const newPoint = new ModelPoint({
             id: pointId,
-            name: name.trim(),
+            name,
             coordinates: {
                 lat: parseFloat(coordinates.lat),
                 lng: parseFloat(coordinates.lng)
@@ -386,10 +315,12 @@ app.post('/api/admin/points', async (req, res) => {
             scheduledTime
         });
 
+        // Быстрое сохранение
         await newPoint.save();
-        cache.invalidate();
         
-        console.log(`✅ Создана новая точка: ${name}`);
+        // МГНОВЕННОЕ обновление кэша
+        invalidateCache();
+        
         res.status(201).json(newPoint);
         
     } catch (error) {
@@ -402,17 +333,22 @@ app.post('/api/admin/points', async (req, res) => {
     }
 });
 
-// Альтернативный роут создания
+// Альтернативный роут для создания точки
 app.post('/api/admin/points/create', async (req, res) => {
     try {
         const { name, coordinates, delayMinutes, adminPassword } = req.body;
         
-        if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+        if (adminPassword !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
-        const pointId = `point-${Date.now()}`;
-        const qrSecret = Math.random().toString(36).substring(2, 15);
+        // Валидация
+        if (!name || !coordinates) {
+            return res.status(400).json({ error: 'Неверные данные' });
+        }
+
+        const pointId = Date.now().toString();
+        const qrSecret = Math.random().toString(36).substring(7);
         
         const scheduledTime = new Date();
         if (delayMinutes && !isNaN(delayMinutes)) {
@@ -423,11 +359,14 @@ app.post('/api/admin/points/create', async (req, res) => {
         const host = req.get('host');
         const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
         
-        const qrCodeDataUrl = await QRCode.toDataURL(collectUrl, { width: 300, margin: 2 });
+        const qrCodeDataUrl = await QRCode.toDataURL(collectUrl, {
+            width: 300,
+            margin: 2
+        });
 
         const newPoint = new ModelPoint({
             id: pointId,
-            name: name.trim(),
+            name,
             coordinates,
             qrCode: qrCodeDataUrl,
             qrSecret,
@@ -435,7 +374,7 @@ app.post('/api/admin/points/create', async (req, res) => {
         });
 
         await newPoint.save();
-        cache.invalidate();
+        invalidateCache();
         
         res.status(201).json(newPoint);
         
@@ -445,12 +384,12 @@ app.post('/api/admin/points/create', async (req, res) => {
     }
 });
 
-// Страница сбора
+// Страница сбора модели
 app.get('/collect.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'collect.html'));
 });
 
-// Получение информации для сбора
+// БЫСТРОЕ получение информации о точке для сбора
 app.get('/api/collect/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -460,19 +399,26 @@ app.get('/api/collect/:id', async (req, res) => {
             return res.status(400).json({ error: 'Неверные параметры' });
         }
 
+        console.log(`⚡ Запрос сбора - ID: ${id}`);
+
+        // Быстрый поиск с индексом
         const point = await ModelPoint.findOne({ 
             id, 
             qrSecret: secret 
         }).lean().exec();
         
         if (!point) {
+            console.log('❌ Точка не найдена или неверный секрет');
             return res.status(404).json({ error: 'Точка не найдена или неверный QR код' });
         }
 
         if (point.status === 'collected') {
+            console.log('⚠️ Точка уже собрана');
             return res.status(400).json({ error: 'Эта модель уже собрана' });
         }
 
+        console.log(`✅ Точка найдена: ${point.name}`);
+        
         res.json({
             id: point.id,
             name: point.name,
@@ -485,7 +431,7 @@ app.get('/api/collect/:id', async (req, res) => {
     }
 });
 
-// Сбор модели
+// БЫСТРЫЙ сбор модели
 app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -495,26 +441,32 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
             return res.status(400).json({ error: 'Не все данные заполнены' });
         }
 
+        console.log(`⚡ Попытка сбора - ID: ${id}, Имя: ${name}`);
+
+        // Быстрый поиск
         const point = await ModelPoint.findOne({ 
             id, 
             qrSecret: secret 
         }).exec();
         
         if (!point) {
+            console.log('❌ Точка не найдена для сбора');
             return res.status(404).json({ error: 'Точка не найдена или неверный QR код' });
         }
 
         if (point.status === 'collected') {
+            console.log('⚠️ Точка уже собрана');
             return res.status(400).json({ error: 'Эта модель уже собрана' });
         }
 
-        // Обработка селфи
+        // Быстрая обработка селфи
         let selfieBase64 = null;
         if (req.file) {
+            console.log(`📸 Обработка селфи: ${req.file.size} байт`);
             selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
         }
 
-        // Обновляем точку
+        // БЫСТРОЕ обновление точки
         point.status = 'collected';
         point.collectedAt = new Date();
         point.collectorInfo = {
@@ -524,9 +476,11 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
         };
 
         await point.save();
-        cache.invalidate();
         
-        console.log(`✅ Точка собрана: ${name} → ${point.name}`);
+        // МГНОВЕННОЕ обновление кэша
+        invalidateCache();
+        
+        console.log(`✅ Точка успешно собрана: ${name}`);
         
         res.json({ success: true, message: 'Модель успешно собрана!' });
         
@@ -536,10 +490,20 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     }
 });
 
-// Информация о точке
+// БЫСТРОЕ получение информации о собранной точке с кэшем
+const detailsCache = new Map();
+
 app.get('/api/point/:id/info', async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Проверяем кэш деталей
+        const cacheKey = `details_${id}`;
+        const cached = detailsCache.get(cacheKey);
+        
+        if (cached && (Date.now() - cached.timestamp < 300000)) { // 5 минут кэш
+            return res.json(cached.data);
+        }
         
         const point = await ModelPoint.findOne({ id })
             .select('-qrSecret')
@@ -550,9 +514,18 @@ app.get('/api/point/:id/info', async (req, res) => {
             return res.status(404).json({ error: 'Точка не найдена' });
         }
 
-        res.set({
-            'Cache-Control': 'public, max-age=300' // 5 минут
+        // Кэшируем результат
+        detailsCache.set(cacheKey, {
+            data: point,
+            timestamp: Date.now()
         });
+        
+        // Очищаем старые записи из кэша
+        if (detailsCache.size > 100) {
+            const oldEntries = Array.from(detailsCache.entries())
+                .filter(([key, value]) => Date.now() - value.timestamp > 600000);
+            oldEntries.forEach(([key]) => detailsCache.delete(key));
+        }
 
         res.json(point);
         
@@ -562,12 +535,14 @@ app.get('/api/point/:id/info', async (req, res) => {
     }
 });
 
-// Удаление точки
+// БЫСТРОЕ удаление точки (админ)
 app.delete('/api/admin/points/:id', async (req, res) => {
     try {
-        const password = req.headers['x-admin-password'] || req.headers.authorization;
-        
-        if (!password || decodeURIComponent(password) !== process.env.ADMIN_PASSWORD) {
+        const password = req.headers['x-admin-password'] 
+            ? decodeURIComponent(req.headers['x-admin-password'])
+            : req.headers.authorization;
+            
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
@@ -579,7 +554,11 @@ app.delete('/api/admin/points/:id', async (req, res) => {
             return res.status(404).json({ error: 'Точка не найдена' });
         }
 
-        cache.invalidate();
+        // МГНОВЕННОЕ обновление кэша
+        invalidateCache();
+        
+        // Очищаем кэш деталей
+        detailsCache.delete(`details_${id}`);
 
         res.json({ success: true, message: 'Точка удалена' });
         
@@ -592,25 +571,21 @@ app.delete('/api/admin/points/:id', async (req, res) => {
 // Проверка работоспособности
 app.get('/health', (req, res) => {
     const memoryUsage = process.memoryUsage();
-    const stats = cache.data;
+    const uptime = process.uptime();
     
     res.json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
-        uptime: Math.floor(process.uptime()),
+        uptime: Math.floor(uptime),
         memory: {
             used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
             total: Math.round(memoryUsage.heapTotal / 1024 / 1024)
         },
         cache: {
-            publicPoints: stats.public ? stats.public.length : 0,
-            adminPoints: stats.admin ? stats.admin.length : 0,
-            lastUpdate: new Date(stats.lastUpdate).toISOString(),
-            isValid: cache.isValid()
-        },
-        database: {
-            connected: mongoose.connection.readyState === 1,
-            state: mongoose.connection.readyState
+            publicPoints: pointsCache.public ? pointsCache.public.length : 0,
+            adminPoints: pointsCache.admin ? pointsCache.admin.length : 0,
+            lastUpdate: new Date(pointsCache.lastUpdate).toISOString(),
+            detailsCacheSize: detailsCache.size
         }
     });
 });
@@ -620,7 +595,7 @@ app.get('/admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// 404 обработка
+// Обработка ошибок 404
 app.use((req, res) => {
     res.status(404).json({ error: 'Страница не найдена' });
 });
@@ -632,27 +607,19 @@ app.use((err, req, res, next) => {
 });
 
 // Graceful shutdown
-const gracefulShutdown = async (signal) => {
-    console.log(`⚡ Получен ${signal}, завершение работы...`);
-    try {
-        await mongoose.connection.close();
-        console.log('✅ MongoDB соединение закрыто');
-        process.exit(0);
-    } catch (error) {
-        console.error('❌ Ошибка при закрытии:', error);
-        process.exit(1);
-    }
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Запуск сервера
-app.listen(PORT, () => {
-    console.log(`⚡ PlasticBoy сервер запущен на порту ${PORT}`);
-    console.log(`🚀 Режим: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`💾 MongoDB: ${process.env.MONGODB_URI ? 'облачная' : 'локальная'}`);
-    console.log(`🔧 Админ пароль: ${process.env.ADMIN_PASSWORD ? 'установлен' : 'НЕ УСТАНОВЛЕН'}`);
+process.on('SIGTERM', async () => {
+    console.log('⚡ Получен SIGTERM, завершение работы...');
+    await mongoose.connection.close();
+    process.exit(0);
 });
 
-module.exports = app;
+process.on('SIGINT', async () => {
+    console.log('⚡ Получен SIGINT, завершение работы...');
+    await mongoose.connection.close();
+    process.exit(0);
+});
+
+app.listen(PORT, () => {
+    console.log(`⚡ PlasticBoy сервер запущен МОЛНИЕНОСНО на порту ${PORT}`);
+    console.log(`🚀 Кэширование включено для максимальной скорости`);
+});
