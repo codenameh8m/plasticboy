@@ -54,13 +54,12 @@ const upload = multer({
 const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             maxPoolSize: 10,        // Максимум 10 соединений
             serverSelectionTimeoutMS: 5000, // Быстрый таймаут
             socketTimeoutMS: 45000, // Таймаут сокета
-            bufferCommands: false,  // Отключить буферизацию команд
-            bufferMaxEntries: 0     // Отключить буфер записей
+            maxIdleTimeMS: 30000,   // Время жизни неактивных соединений
+            retryWrites: true,      // Повторные попытки записи
+            w: 'majority'           // Подтверждение записи
         });
         console.log(`⚡ MongoDB подключена БЫСТРО: ${conn.connection.host}`);
         
@@ -68,7 +67,17 @@ const connectDB = async () => {
         await initializeCache();
     } catch (error) {
         console.error('❌ Ошибка подключения к MongoDB:', error.message);
-        process.exit(1);
+        
+        // Пытаемся подключиться с минимальными настройками
+        try {
+            console.log('🔄 Пробуем подключение с базовыми настройками...');
+            const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy');
+            console.log(`✅ MongoDB подключена (базовые настройки): ${conn.connection.host}`);
+            await initializeCache();
+        } catch (fallbackError) {
+            console.error('💥 Критическая ошибка подключения к MongoDB:', fallbackError.message);
+            process.exit(1);
+        }
     }
 };
 
@@ -102,10 +111,15 @@ const ModelPoint = mongoose.model('ModelPoint', ModelPointSchema);
 async function initializeCache() {
     try {
         console.log('⚡ Инициализация МГНОВЕННОГО кэша...');
-        await updatePointsCache();
-        console.log('✅ Кэш готов для мгновенной отдачи');
+        const success = await updatePointsCache();
+        if (success) {
+            console.log('✅ Кэш готов для мгновенной отдачи');
+        } else {
+            console.log('⚠️ Кэш будет инициализирован при первом запросе');
+        }
     } catch (error) {
         console.error('❌ Ошибка инициализации кэша:', error);
+        console.log('🔄 Кэш будет создан при первом обращении к данным');
     }
 }
 
@@ -113,6 +127,12 @@ async function initializeCache() {
 async function updatePointsCache() {
     try {
         const startTime = Date.now();
+        
+        // Проверяем состояние подключения к БД
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️ База данных не подключена, пропускаем обновление кэша');
+            return false;
+        }
         
         // Параллельные запросы для скорости
         const [allPoints, publicPoints] = await Promise.all([
@@ -161,28 +181,54 @@ app.get('/api/points', async (req, res) => {
     try {
         // Проверяем свежесть кэша
         if (!pointsCache.public || (Date.now() - pointsCache.lastUpdate > 60000)) {
+            console.log('🔄 Обновляем кэш точек...');
             await updatePointsCache();
         }
         
-        // Устанавливаем заголовки для кэширования
-        res.set({
-            'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'public, max-age=30', // Кэш на 30 секунд
-            'ETag': pointsCache.etag,
-            'Last-Modified': new Date(pointsCache.lastUpdate).toUTCString()
-        });
-        
-        // Проверяем If-None-Match для 304 ответа
-        if (req.get('If-None-Match') === pointsCache.etag) {
-            return res.status(304).end();
+        // Если кэш доступен - используем его
+        if (pointsCache.public) {
+            // Устанавливаем заголовки для кэширования
+            res.set({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'public, max-age=30', // Кэш на 30 секунд
+                'ETag': pointsCache.etag,
+                'Last-Modified': new Date(pointsCache.lastUpdate).toUTCString()
+            });
+            
+            // Проверяем If-None-Match для 304 ответа
+            if (req.get('If-None-Match') === pointsCache.etag) {
+                return res.status(304).end();
+            }
+            
+            // МГНОВЕННАЯ отдача из кэша
+            return res.json(pointsCache.public);
         }
         
-        // МГНОВЕННАЯ отдача из кэша
-        res.json(pointsCache.public || []);
+        // Если кэш недоступен - делаем прямой запрос к БД
+        console.log('⚠️ Кэш недоступен, прямой запрос к БД');
+        const now = new Date();
+        const points = await ModelPoint.find({
+            scheduledTime: { $lte: now }
+        }).select('-qrSecret').lean().exec();
+        
+        res.set({
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'public, max-age=10' // Короткий кэш при проблемах
+        });
+        
+        res.json(points || []);
         
     } catch (error) {
         console.error('❌ Ошибка получения точек:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        
+        // Возвращаем кэшированные данные если есть
+        if (pointsCache.public) {
+            console.log('📦 Возвращаем устаревшие данные из кэша');
+            return res.json(pointsCache.public);
+        }
+        
+        // Иначе возвращаем пустой массив
+        res.status(500).json([]);
     }
 });
 
