@@ -311,9 +311,7 @@
                 }, 500);
             }
             
-            if (successCount > 0) {
-                Notification.show(`Загружено ${successCount} точек на карту`, 'success');
-            }
+            // Убрали уведомление о загрузке точек
         }
     };
     
@@ -478,7 +476,10 @@
             MapManager.updateMarkers(testPoints);
             Stats.update(testPoints);
             
-            Notification.show('Загружены тестовые точки', 'info');
+            // Убрали уведомление о тестовых точках - оставляем только в debug режиме
+            if (location.search.includes('debug')) {
+                Notification.show('Загружены тестовые точки', 'info');
+            }
         }
     };
     
@@ -501,10 +502,11 @@
                 await this.loadPoints();
                 
                 Utils.log('✅ PlasticBoy готов');
+                // Убрали уведомление о готовности
                 
             } catch (error) {
                 Utils.log('❌ Ошибка инициализации:', error);
-                Notification.show('Ошибка загрузки приложения', 'error');
+                // Убрали уведомление об ошибке инициализации
             }
         },
         
@@ -522,7 +524,7 @@
                 
             } catch (error) {
                 Utils.log('❌ Ошибка загрузки точек:', error);
-                Notification.show('Ошибка загрузки данных: ' + error.message, 'error');
+                // Убрали уведомление об ошибке загрузки точек
                 
                 // Тестовые данные для отладки
                 if (location.hostname === 'localhost' || location.search.includes('debug')) {
