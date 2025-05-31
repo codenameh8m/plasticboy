@@ -2,13 +2,27 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>PlasticBoy - Карта моделей Алматы</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
+        /* Оптимизация для мобильных устройств */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
         /* Стили для загрузочного экрана */
         .loading-screen {
             position: fixed;
@@ -307,6 +321,16 @@
                 font-size: 0.65rem;
             }
         }
+        
+        /* Фикс для мобильной карты */
+        #map {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .leaflet-container {
+            touch-action: manipulation !important;
+        }
     </style>
 </head>
 <body>
@@ -401,370 +425,207 @@
     </div>
 
     <!-- Подключение библиотек -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
     
-    <!-- Оптимизированная система загрузки -->
+    <!-- Упрощенная система загрузки для мобильных -->
     <script>
-        // БЫСТРАЯ СИСТЕМА ЗАГРУЗКИ PlasticBoy
-        // Оптимизирована для быстрой синхронизации с точками карты
-
-        // Флаги состояния загрузки
-        let isMapReady = false;
-        let arePointsLoaded = false;
-        let isLeafletReady = false;
-        let loadingTimeout;
-
-        // Создание матричного фона (уменьшенное количество)
-        function createMatrixDots() {
-            const matrixBg = document.getElementById('matrixBg');
-            const numberOfDots = 30; // Уменьшено для производительности
+        // МОБИЛЬНАЯ ОПТИМИЗАЦИЯ PlasticBoy
+        (function() {
+            'use strict';
             
-            for (let i = 0; i < numberOfDots; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'matrix-dot';
-                dot.style.left = Math.random() * 100 + '%';
-                dot.style.animationDelay = Math.random() * 2 + 's';
-                dot.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
-                matrixBg.appendChild(dot);
-            }
-        }
-
-        // Быстрые статусы загрузки
-        const loadingSteps = [
-            "INITIALIZING...",
-            "LOADING ASSETS...", 
-            "CONNECTING...",
-            "PREPARING MAP...",
-            "LOADING LEAFLET...",
-            "SCANNING POINTS...",
-            "SYNCING DATA...",
-            "READY!"
-        ];
-
-        let currentStep = 0;
-        let progress = 0;
-        let loadingInterval;
-
-        function updateLoadingScreen() {
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            const loadingStatus = document.getElementById('loadingStatus');
+            // Детектирование мобильного устройства
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                           ('ontouchstart' in window && window.innerWidth <= 768);
             
-            // Быстрое увеличение прогресса
-            if (!arePointsLoaded) {
-                if (isLeafletReady && progress < 60) {
-                    progress += Math.random() * 15 + 10; // Быстрее до 60%
-                } else if (isMapReady && progress < 80) {
-                    progress += Math.random() * 12 + 8; // Быстрее до 80%
-                } else if (progress < 95) {
-                    progress += Math.random() * 8 + 5; // Быстрее до 95%
+            console.log('📱 Устройство:', isMobile ? 'Мобильное' : 'Десктоп');
+            
+            // Флаги состояния
+            let mapInitialized = false;
+            let pointsLoaded = false;
+            let loadingComplete = false;
+            
+            // Создание матричного фона
+            function createMatrixDots() {
+                const matrixBg = document.getElementById('matrixBg');
+                const numberOfDots = isMobile ? 20 : 30; // Меньше точек для мобильных
+                
+                for (let i = 0; i < numberOfDots; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'matrix-dot';
+                    dot.style.left = Math.random() * 100 + '%';
+                    dot.style.animationDelay = Math.random() * 2 + 's';
+                    dot.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
+                    matrixBg.appendChild(dot);
                 }
-            } else {
-                progress = 100; // Мгновенно до 100% при загрузке точек
             }
             
-            if (progress > 100) progress = 100;
+            // Статусы загрузки
+            const loadingSteps = [
+                "INITIALIZING...",
+                "LOADING ASSETS...", 
+                "CONNECTING...",
+                "PREPARING MAP...",
+                "LOADING POINTS...",
+                "ALMOST READY...",
+                "READY!"
+            ];
             
-            progressBar.style.width = progress + '%';
-            progressText.textContent = Math.floor(progress) + '%';
+            let currentStep = 0;
+            let progress = 0;
+            let loadingInterval;
             
-            // Обновляем статус быстрее
-            updateLoadingStatus(loadingStatus);
+            // Обновление экрана загрузки
+            function updateLoadingScreen() {
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                const loadingStatus = document.getElementById('loadingStatus');
+                
+                // Прогресс в зависимости от состояния
+                if (mapInitialized && !pointsLoaded) {
+                    progress = Math.min(progress + 5, 70);
+                } else if (pointsLoaded) {
+                    progress = 100;
+                } else {
+                    progress = Math.min(progress + 2, 50);
+                }
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = Math.floor(progress) + '%';
+                
+                // Обновление статуса
+                const targetStep = Math.floor(progress / 15);
+                if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
+                    currentStep = targetStep;
+                    loadingStatus.textContent = loadingSteps[currentStep];
+                }
+                
+                // Завершение загрузки
+                if (progress >= 100 && !loadingComplete) {
+                    loadingComplete = true;
+                    loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
+                    setTimeout(finishLoading, 500);
+                    clearInterval(loadingInterval);
+                }
+            }
             
-            // Быстрое завершение
-            if (arePointsLoaded && progress >= 100) {
-                loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
+            // Завершение загрузки
+            function finishLoading() {
+                const loadingScreen = document.getElementById('loadingScreen');
+                const mainContent = document.getElementById('mainContent');
+                
+                console.log('✅ Загрузка завершена');
+                
+                loadingScreen.classList.add('fade-out');
+                
                 setTimeout(() => {
-                    finishLoading();
-                }, 300); // Уменьшена задержка
-                clearInterval(loadingInterval);
-                return;
-            }
-        }
-
-        function updateLoadingStatus(loadingStatus) {
-            let targetStep = Math.floor(progress / 14); // Быстрее переключение статусов
-            
-            if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
-                currentStep = targetStep;
-                loadingStatus.textContent = loadingSteps[currentStep];
-                playLoadingSound();
-            }
-        }
-
-        function playLoadingSound() {
-            try {
-                if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
+                    loadingScreen.style.display = 'none';
+                    mainContent.classList.add('loaded');
                     
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    oscillator.frequency.setValueAtTime(900, audioContext.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(500, audioContext.currentTime + 0.05);
-                    
-                    gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-                    
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.05);
-                }
-            } catch (e) {
-                // Игнорируем ошибки аудио для производительности
-            }
-        }
-
-        // Быстрая проверка готовности
-        function checkMapAndPointsReady() {
-            // Проверяем готовность Leaflet
-            if (typeof L !== 'undefined' && !isLeafletReady) {
-                isLeafletReady = true;
-                console.log('✅ Leaflet готов (быстро)');
-            }
-            
-            // Проверяем готовность карты
-            if (window.map && !isMapReady) {
-                isMapReady = true;
-                console.log('✅ Карта готова (быстро)');
-            }
-            
-            // Быстрая проверка точек - несколько способов
-            if (!arePointsLoaded) {
-                // Способ 1: проверяем маркеры
-                if (window.markers && window.markers.length > 0) {
-                    arePointsLoaded = true;
-                    console.log('✅ Точки загружены через маркеры');
-                    return;
-                }
-                
-                // Способ 2: проверяем статистику
-                const availableElement = document.getElementById('availableCount');
-                const collectedElement = document.getElementById('collectedCount');
-                if (availableElement && collectedElement) {
-                    const available = parseInt(availableElement.textContent) || 0;
-                    const collected = parseInt(collectedElement.textContent) || 0;
-                    if (available > 0 || collected > 0) {
-                        arePointsLoaded = true;
-                        console.log('✅ Точки загружены через статистику');
-                        return;
-                    }
-                }
-                
-                // Способ 3: проверяем DOM карты на наличие маркеров
-                const mapElement = document.getElementById('map');
-                if (mapElement && mapElement.querySelector('.leaflet-marker-pane .leaflet-marker-icon')) {
-                    arePointsLoaded = true;
-                    console.log('✅ Точки загружены через DOM');
-                    return;
-                }
-            }
-        }
-
-        function finishLoading() {
-            const loadingScreen = document.getElementById('loadingScreen');
-            const mainContent = document.getElementById('mainContent');
-            
-            console.log('🚀 Быстрое завершение загрузки!');
-            
-            // Быстрое скрытие загрузочного экрана
-            loadingScreen.classList.add('fade-out');
-            
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                mainContent.classList.add('loaded');
-                
-                // Быстрое уведомление
-                setTimeout(() => {
-                    if (typeof showNotification === 'function') {
-                        showNotification('PlasticBoy готов! ⚡', 'success');
-                    }
-                }, 200);
-            }, 600); // Уменьшена задержка
-        }
-
-        // Быстрое уведомление о загрузке точек
-        function onPointsLoaded() {
-            if (!arePointsLoaded) {
-                arePointsLoaded = true;
-                console.log('⚡ Точки загружены мгновенно!');
-            }
-        }
-
-        // Быстрая загрузка точек
-        function fastLoadPoints() {
-            return fetch('/api/points', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load points');
-                }
-                return response.json();
-            })
-            .then(points => {
-                console.log(`⚡ Быстро загружено ${points.length} точек`);
-                
-                // Быстрое обновление карты и статистики
-                if (typeof updateMap === 'function') updateMap(points);
-                if (typeof updateStats === 'function') updateStats(points);
-                
-                // Мгновенное уведомление
-                onPointsLoaded();
-                return points;
-            })
-            .catch(error => {
-                console.error('Error loading points:', error);
-                // Помечаем как загруженные даже при ошибке
-                onPointsLoaded();
-            });
-        }
-
-        // Быстрый запуск системы
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('⚡ Быстрый запуск PlasticBoy');
-            
-            createMatrixDots();
-            
-            // Переопределяем функцию загрузки точек
-            if (typeof loadPoints === 'function') {
-                window.originalLoadPoints = loadPoints;
-                window.loadPoints = fastLoadPoints;
-            }
-            
-            // Быстрая проверка состояния
-            const quickCheck = setInterval(checkMapAndPointsReady, 100); // Увеличена частота
-            
-            // Таймаут безопасности - принудительно завершаем через 8 секунд
-            loadingTimeout = setTimeout(() => {
-                console.log('⏰ Таймаут загрузки - принудительное завершение');
-                arePointsLoaded = true;
-                progress = 100;
-            }, 8000);
-            
-            // Быстрая инициализация
-            Promise.all([
-                // Ждем Leaflet (быстрее)
-                new Promise((resolve) => {
-                    const checkLeaflet = () => {
-                        if (typeof L !== 'undefined') {
-                            isLeafletReady = true;
-                            resolve();
-                        } else {
-                            setTimeout(checkLeaflet, 25); // Увеличена частота проверки
-                        }
-                    };
-                    checkLeaflet();
-                }),
-                
-                // Ждем DOM
-                new Promise((resolve) => {
-                    if (document.readyState === 'complete') {
-                        resolve();
-                    } else {
-                        window.addEventListener('load', resolve);
-                    }
-                })
-            ]).then(() => {
-                console.log('⚡ Ресурсы готовы, запуск');
-                
-                // Быстрый запуск анимации
-                setTimeout(() => {
-                    loadingInterval = setInterval(updateLoadingScreen, 100); // Увеличена частота
-                }, 100);
-                
-                // Быстрая инициализация приложения
-                setTimeout(() => {
-                    initFastApp();
-                }, 200);
-            });
-            
-            // Очистка интервалов при завершении
-            const cleanup = () => {
-                clearInterval(quickCheck);
-                clearTimeout(loadingTimeout);
-            };
-            
-            // Автоочистка через 10 секунд
-            setTimeout(cleanup, 10000);
-        });
-
-        // Быстрая инициализация приложения
-        function initFastApp() {
-            console.log('⚡ Быстрая инициализация карты');
-            
-            // Инициализируем карту
-            if (typeof initMap === 'function') {
-                initMap();
-                
-                // Быстрая проверка карты
-                const quickMapCheck = setInterval(() => {
-                    if (window.map && !isMapReady) {
-                        isMapReady = true;
-                        clearInterval(quickMapCheck);
-                        console.log('⚡ Карта готова, быстрая загрузка точек');
-                        
-                        // Быстрая загрузка точек
+                    // Принудительное обновление размера карты для мобильных
+                    if (window.map && isMobile) {
                         setTimeout(() => {
-                            if (typeof fastLoadPoints === 'function') {
-                                fastLoadPoints();
-                            }
+                            window.map.invalidateSize();
+                            console.log('📐 Размер карты обновлен');
                         }, 100);
                     }
-                }, 50); // Очень быстрая проверка
+                }, 600);
+            }
+            
+            // Инициализация при загрузке DOM
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('🚀 PlasticBoy загружается...');
                 
-                // Таймаут для быстрой проверки
-                setTimeout(() => clearInterval(quickMapCheck), 2000);
-            }
-        }
-
-        // Быстрая интерактивность
-        document.addEventListener('keydown', function(e) {
-            if (!arePointsLoaded) {
-                switch(e.key) {
-                    case 'Enter':
-                        progress += 20; // Большее ускорение
-                        playLoadingSound();
-                        break;
-                    case ' ':
-                        progress += 15;
-                        break;
-                    case 'Escape':
-                        if (e.ctrlKey) {
-                            arePointsLoaded = true;
-                            progress = 100;
+                createMatrixDots();
+                
+                // Запуск анимации загрузки
+                loadingInterval = setInterval(updateLoadingScreen, 100);
+                
+                // Ждем загрузки Leaflet
+                const leafletCheck = setInterval(() => {
+                    if (typeof L !== 'undefined') {
+                        clearInterval(leafletCheck);
+                        console.log('✅ Leaflet загружен');
+                        // Небольшая задержка перед загрузкой основного скрипта
+                        setTimeout(() => {
+                            loadMainScript();
+                        }, 100);
+                    }
+                }, 50);
+                
+                // Таймаут безопасности
+                setTimeout(() => {
+                    if (!loadingComplete) {
+                        console.log('⏰ Принудительное завершение загрузки');
+                        pointsLoaded = true;
+                        mapInitialized = true;
+                    }
+                }, 10000);
+            });
+            
+            // Загрузка основного скрипта
+            function loadMainScript() {
+                const script = document.createElement('script');
+                script.src = 'script.js';
+                script.onload = () => {
+                    console.log('✅ Основной скрипт загружен');
+                    
+                    // Отслеживание инициализации карты
+                    const mapCheck = setInterval(() => {
+                        if (window.map) {
+                            mapInitialized = true;
+                            clearInterval(mapCheck);
+                            console.log('✅ Карта инициализирована');
                         }
-                        break;
-                }
+                    }, 100);
+                    
+                    // Отслеживание загрузки точек
+                    const pointsCheck = setInterval(() => {
+                        const available = document.getElementById('availableCount');
+                        const collected = document.getElementById('collectedCount');
+                        
+                        if (available && collected) {
+                            const total = parseInt(available.textContent) + parseInt(collected.textContent);
+                            if (total > 0 || (window.markers && window.markers.length > 0)) {
+                                pointsLoaded = true;
+                                clearInterval(pointsCheck);
+                                console.log('✅ Точки загружены:', total || window.markers.length);
+                            }
+                        }
+                    }, 100);
+                };
+                
+                script.onerror = () => {
+                    console.error('❌ Ошибка загрузки основного скрипта');
+                    // Продолжаем загрузку даже при ошибке
+                    pointsLoaded = true;
+                    mapInitialized = true;
+                };
+                
+                document.body.appendChild(script);
             }
-        });
-
-        // Быстрый клик
-        document.addEventListener('click', function(e) {
-            if (!arePointsLoaded && e.target.closest('.loading-screen')) {
-                progress += 10;
-                playLoadingSound();
+            
+            // Предотвращение масштабирования на iOS
+            if (isMobile) {
+                document.addEventListener('gesturestart', function(e) {
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('touchmove', function(e) {
+                    if (e.scale !== 1) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
             }
-        });
-
-        // Экспорт для внешнего использования
-        window.PlasticBoyLoader = {
-            onPointsLoaded,
-            checkMapAndPointsReady,
-            fastLoadPoints,
-            isMapReady: () => isMapReady,
-            arePointsLoaded: () => arePointsLoaded,
-            isLeafletReady: () => isLeafletReady
-        };
-
-        console.log('⚡ Быстрая система загрузки готова');
+            
+            // Экспорт для внешнего использования
+            window.PlasticBoyLoader = {
+                onPointsLoaded: () => { pointsLoaded = true; },
+                onMapReady: () => { mapInitialized = true; }
+            };
+            
+        })();
     </script>
-    
-    <!-- Основной скрипт приложения -->
-    <script src="script.js"></script>
 </body>
 </html>
