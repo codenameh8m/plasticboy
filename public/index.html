@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>PlasticBoy - Карта моделей Алматы</title>
+    
+    <!-- Preload критических ресурсов -->
+    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
+    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -300,7 +306,7 @@
         <!-- Логотип -->
         <div class="logo-container">
             <div class="logo-title">PLASTICBOY</div>
-            <div class="logo-subtitle">Almighty Edition</div>
+            <div class="logo-subtitle">Almaty Edition</div>
         </div>
         
         <!-- Пиксельная анимация -->
@@ -494,139 +500,6 @@
                 progress = 100;
             }, 15000);
         });
-    </script>
-    
-    <!-- Подключение Leaflet -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Основной скрипт приложения -->
-    <script src="script.js"></script>
-</body>
-</html> i = 0; i < numberOfDots; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'matrix-dot';
-                dot.style.left = Math.random() * 100 + '%';
-                dot.style.animationDelay = Math.random() * 3 + 's';
-                dot.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                matrixBg.appendChild(dot);
-            }
-        }
-
-        // Обновление загрузочного экрана
-        function updateLoader() {
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            const loadingStatus = document.getElementById('loadingStatus');
-            
-            // Проверка состояния
-            if (isLeafletReady && progress < 40) {
-                progress = Math.min(progress + 25, 40);
-            }
-            if (isMapReady && progress < 70) {
-                progress = Math.min(progress + 20, 70);
-            }
-            if (arePointsLoaded && progress < 100) {
-                progress = 100;
-            } else if (progress < 95) {
-                progress += Math.random() * 5 + 2;
-            }
-            
-            if (progress > 100) progress = 100;
-            
-            progressBar.style.width = progress + '%';
-            progressText.textContent = Math.floor(progress) + '%';
-            
-            // Обновление статуса
-            const targetStep = Math.floor(progress / 14);
-            if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
-                currentStep = targetStep;
-                loadingStatus.textContent = loadingSteps[currentStep];
-            }
-            
-            // Завершение загрузки
-            if (arePointsLoaded && progress >= 100) {
-                loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
-                setTimeout(finishLoading, 500);
-                return true;
-            }
-            return false;
-        }
-
-        // Завершение загрузки
-        function finishLoading() {
-            const loadingScreen = document.getElementById('loadingScreen');
-            const mainContent = document.getElementById('mainContent');
-            
-            loadingScreen.classList.add('fade-out');
-            
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                mainContent.classList.add('loaded');
-            }, 600);
-        }
-
-        // Проверка готовности компонентов
-        function checkReadiness() {
-            // Проверка Leaflet
-            if (typeof L !== 'undefined' && !isLeafletReady) {
-                isLeafletReady = true;
-                console.log('✅ Leaflet готов');
-            }
-            
-            // Проверка карты
-            if (window.map && !isMapReady) {
-                isMapReady = true;
-                console.log('✅ Карта готова');
-            }
-            
-            // Проверка точек
-            if (!arePointsLoaded) {
-                if (window.markers && window.markers.length > 0) {
-                    arePointsLoaded = true;
-                    console.log('✅ Точки загружены');
-                }
-                
-                const availableElement = document.getElementById('availableCount');
-                const collectedElement = document.getElementById('collectedCount');
-                if (availableElement && collectedElement) {
-                    const available = parseInt(availableElement.textContent) || 0;
-                    const collected = parseInt(collectedElement.textContent) || 0;
-                    if (available > 0 || collected > 0) {
-                        arePointsLoaded = true;
-                        console.log('✅ Точки загружены через статистику');
-                    }
-                }
-            }
-        }
-
-        // Инициализация загрузчика
-        function initLoader() {
-            createSimpleMatrix();
-            
-            // Основной цикл загрузки
-            const loaderInterval = setInterval(() => {
-                checkReadiness();
-                if (updateLoader()) {
-                    clearInterval(loaderInterval);
-                }
-            }, 200);
-            
-            // Таймаут безопасности
-            setTimeout(() => {
-                arePointsLoaded = true;
-                progress = 100;
-            }, 12000);
-        }
-
-        // Экспорт для использования в script.js
-        window.LoaderAPI = {
-            onPointsLoaded: () => { arePointsLoaded = true; },
-            onMapReady: () => { isMapReady = true; },
-            checkReadiness: checkReadiness
-        };
-
-        // Запуск при загрузке DOM
-        document.addEventListener('DOMContentLoaded', initLoader);
     </script>
     
     <!-- Подключение Leaflet -->
