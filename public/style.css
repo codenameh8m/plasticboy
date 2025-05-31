@@ -1,174 +1,119 @@
-/* КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */
-
-/* Принудительные размеры карты для всех устройств */
-#map, #adminMap {
-    width: 100% !important;
-    height: 400px !important;
-    min-height: 300px !important;
-    max-height: 400px !important;
-    position: relative !important;
-    z-index: 1 !important;
-    background: #f0f0f0 !important;
-    border-radius: 0 !important;
+/* Базовые стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* Контейнер карты */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 10px;
+    min-height: 100vh;
+}
+
+/* Заголовок */
+.header {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header p {
+    font-size: 1.1rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* Статистика */
+.stats {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-stats {
+    justify-content: space-between;
+}
+
+.stat-item {
+    text-align: center;
+    flex: 1;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* УВЕЛИЧЕННЫЕ КАРТЫ */
 .map-container {
-    width: 100% !important;
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* ОСНОВНЫЕ РАЗМЕРЫ КАРТ */
+#map, #adminMap {
     height: 400px !important;
-    min-height: 300px !important;
-    position: relative !important;
-    overflow: hidden !important;
-    border-radius: 15px !important;
-    background: white !important;
-    margin: 10px 0 !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-}
-
-/* Критические стили для Leaflet */
-.leaflet-container {
     width: 100% !important;
-    height: 100% !important;
-    position: relative !important;
-    background: #f8f9fa !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    min-height: 500px !important;
 }
 
-.leaflet-map-pane {
-    position: relative !important;
-    z-index: 1 !important;
-}
-
+/* СЕРО-БЕЛЫЕ ТАЙЛЫ КАРТЫ */
 .leaflet-tile-pane {
     filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
 }
 
-/* Убираем фильтры с маркеров и контролов */
+/* Остальные элементы карты остаются цветными */
 .leaflet-marker-pane,
 .leaflet-popup-pane,
 .leaflet-control-container {
     filter: none !important;
 }
 
-/* МОБИЛЬНЫЕ МАРКЕРЫ */
-.pb-marker {
-    background: none !important;
-    border: none !important;
-    z-index: 1000 !important;
-}
-
-.pb-dot {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    border: 3px solid white !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 14px !important;
-    font-weight: bold !important;
-    color: white !important;
-    position: relative !important;
-    touch-action: manipulation !important;
-    z-index: 1001 !important;
-}
-
-.pb-dot:active,
-.pb-dot.active {
-    transform: scale(1.2) !important;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
-    z-index: 1002 !important;
-}
-
-.pb-dot.available {
-    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
-}
-
-.pb-dot.collected {
-    background: linear-gradient(45deg, #f44336, #e53935) !important;
-}
-
-.pb-dot.available::before {
-    content: '📦' !important;
-}
-
-.pb-dot.collected::before {
-    content: '✅' !important;
-}
-
-/* МОБИЛЬНЫЕ ПОПАПЫ */
-.leaflet-popup {
-    z-index: 2000 !important;
-}
-
-.leaflet-popup-content-wrapper {
-    background: rgba(255, 255, 255, 0.98) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-    backdrop-filter: blur(15px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    max-width: calc(100vw - 40px) !important;
-    min-width: 250px !important;
-}
-
-.leaflet-popup-close-button {
-    color: #6c757d !important;
-    font-size: 24px !important;
-    padding: 8px !important;
-    width: 32px !important;
-    height: 32px !important;
-    line-height: 24px !important;
-    text-align: center !important;
-    transition: color 0.3s !important;
-    font-weight: bold !important;
-    z-index: 2001 !important;
-}
-
-.leaflet-popup-close-button:hover {
-    color: #495057 !important;
-    background: none !important;
-}
-
-.pb-popup {
-    min-width: 250px !important;
-    max-width: calc(100vw - 60px) !important;
+/* Кастомные стили для Leaflet карты */
+.leaflet-container {
+    background: #f8f9fa !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    font-size: 15px !important;
-}
-
-.pb-popup h3 {
-    margin: 0 0 12px 0 !important;
-    color: #333 !important;
-    font-size: 1.1rem !important;
-    font-weight: 600 !important;
-}
-
-.pb-status {
-    margin: 8px 0 !important;
-    font-weight: 600 !important;
-    padding: 6px 12px !important;
-    border-radius: 20px !important;
-    text-align: center !important;
-    font-size: 0.9rem !important;
-}
-
-.pb-status.available {
-    background: #e8f5e8 !important;
-    color: #2e7d32 !important;
-}
-
-.pb-status.collected {
-    background: #ffebee !important;
-    color: #c62828 !important;
-}
-
-/* КОНТРОЛЫ КАРТЫ ДЛЯ МОБИЛЬНЫХ */
-.leaflet-control-zoom {
-    margin-top: 10px !important;
-    margin-left: 10px !important;
 }
 
 .leaflet-control-zoom a {
@@ -178,11 +123,6 @@
     backdrop-filter: blur(10px) !important;
     transition: all 0.3s !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    width: 40px !important;
-    height: 40px !important;
-    line-height: 40px !important;
-    font-size: 20px !important;
-    text-align: center !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -192,85 +132,108 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* УВЕДОМЛЕНИЯ ДЛЯ МОБИЛЬНЫХ */
-.pb-notification {
-    position: fixed !important;
-    top: 10px !important;
-    left: 10px !important;
-    right: 10px !important;
-    z-index: 3000 !important;
-    background: white !important;
+.leaflet-control-attribution {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    color: #6c757d !important;
+    font-size: 0.7rem !important;
     border-radius: 8px !important;
-    padding: 16px 20px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
-    max-width: none !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    animation: slideInMobile 0.3s ease-out !important;
-}
-
-.pb-notification.error {
-    border-left: 4px solid #f44336 !important;
-}
-
-.pb-notification.success {
-    border-left: 4px solid #4CAF50 !important;
-}
-
-.pb-notification.info {
-    border-left: 4px solid #2196F3 !important;
-}
-
-.pb-notification button {
-    background: none !important;
-    border: none !important;
-    font-size: 20px !important;
-    cursor: pointer !important;
-    color: #999 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    margin-left: auto !important;
-    min-width: 30px !important;
-    height: 30px !important;
-    flex-shrink: 0 !important;
-}
-
-@keyframes slideInMobile {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* КНОПКА ГЕОЛОКАЦИИ */
-.map-controls {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-radius: 15px !important;
-    padding: 16px !important;
-    margin: 15px 10px !important;
     backdrop-filter: blur(10px) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid rgba(108, 117, 125, 0.1) !important;
+    padding: 2px 5px !important;
 }
 
+.leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.leaflet-popup-close-button {
+    color: #6c757d !important;
+    font-size: 18px !important;
+    padding: 8px !important;
+    transition: color 0.3s !important;
+    font-weight: bold !important;
+}
+
+.leaflet-popup-close-button:hover {
+    color: #495057 !important;
+    background: none !important;
+}
+
+/* Легенда карты */
+.legend {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.legend-dot.green {
+    background: #4CAF50;
+}
+
+.legend-dot.red {
+    background: #f44336;
+}
+
+/* КНОПКА УПРАВЛЕНИЯ КАРТОЙ - ЦЕНТРИРОВАННАЯ ПОД КАРТОЙ */
+.map-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px auto;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    width: 100%;
+}
+
+/* ЕДИНООБРАЗНАЯ КНОПКА */
 .control-btn {
-    width: 100% !important;
-    max-width: 350px !important;
+    width: 100%;
+    max-width: 350px;
     background: linear-gradient(45deg, #4CAF50, #45a049) !important;
     color: white !important;
     border: none !important;
-    padding: 16px 20px !important;
+    padding: 18px 24px !important;
     border-radius: 12px !important;
-    font-size: 1rem !important;
+    font-size: 1.1rem !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -281,246 +244,679 @@
     position: relative !important;
     overflow: hidden !important;
     margin: 0 !important;
-    min-height: 55px !important;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2) !important;
-    touch-action: manipulation !important;
+    min-height: 60px;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+}
+
+.control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2));
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.control-btn:hover::before {
+    opacity: 1;
+}
+
+.control-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    background: linear-gradient(45deg, #45a049, #3d8b40) !important;
 }
 
 .control-btn:active {
-    transform: translateY(1px) !important;
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+    transform: translateY(-1px);
 }
 
 .control-btn:disabled {
-    opacity: 0.6 !important;
-    cursor: not-allowed !important;
-    transform: none !important;
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
 }
 
-/* АДАПТИВНОСТЬ ПО РАЗМЕРАМ ЭКРАНА */
+/* Анимация пульса для загрузки */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
 
-/* Планшеты */
-@media (max-width: 768px) and (min-width: 481px) {
-    #map, #adminMap {
-        height: 350px !important;
-        min-height: 350px !important;
-        max-height: 350px !important;
+/* Анимация пульса для пользователя */
+@keyframes userPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
     }
-    
-    .map-container {
-        height: 350px !important;
-        min-height: 350px !important;
-        margin: 10px 5px !important;
+    50% {
+        opacity: 0.2;
     }
-    
-    .pb-dot {
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 13px !important;
-    }
-    
-    .leaflet-control-zoom a {
-        width: 38px !important;
-        height: 38px !important;
-        line-height: 38px !important;
-        font-size: 18px !important;
+    100% {
+        transform: scale(2);
+        opacity: 0;
     }
 }
 
-/* Большие смартфоны */
-@media (max-width: 480px) and (min-width: 361px) {
+/* Формы */
+.form-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background: white;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+button:not(.control-btn) {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+    margin-top: 10px;
+}
+
+button:not(.control-btn):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+button:not(.control-btn):active {
+    transform: translateY(0);
+}
+
+button:not(.control-btn):disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Админ панель */
+.admin-controls {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-controls h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.admin-controls p {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+#addModeBtn {
+    background: #4CAF50;
+    width: auto;
+    margin: 0;
+}
+
+#addModeBtn.active {
+    background: #f44336;
+}
+
+/* Список точек */
+.points-list {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.point-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.point-item.collected {
+    border-left-color: #f44336;
+}
+
+.point-item.scheduled {
+    border-left-color: #ff9800;
+}
+
+.point-item.available {
+    border-left-color: #4CAF50;
+}
+
+.point-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.point-header h4 {
+    margin: 0;
+    color: #333;
+}
+
+.point-status {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.point-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+}
+
+.close:hover {
+    color: #000;
+}
+
+/* Сбор модели */
+.collect-container {
+    max-width: 500px;
+}
+
+.model-info {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+}
+
+.model-info h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.model-info p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.collect-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    font-size: 1.1rem;
+    padding: 18px;
+}
+
+/* Превью изображения */
+#imagePreview {
+    margin-top: 10px;
+}
+
+#imagePreview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Сообщения */
+.success-message, .error-message {
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.success-message h2 {
+    color: #4CAF50;
+    margin-bottom: 15px;
+}
+
+.error-message h2 {
+    color: #f44336;
+    margin-bottom: 15px;
+}
+
+.success-message p, .error-message p {
+    margin-bottom: 10px;
+    color: #666;
+}
+
+/* QR код */
+#qrCodeDisplay {
+    text-align: center;
+    margin: 20px 0;
+}
+
+#qrCodeDisplay img {
+    max-width: 250px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* ЦВЕТНЫЕ ИКОНКИ МОДЕЛЕЙ */
+.custom-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.marker-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    position: relative;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+
+.marker-dot:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+.marker-dot.available {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.marker-dot.collected {
+    background: linear-gradient(45deg, #f44336, #e53935);
+}
+
+.marker-pulse {
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 50%;
+    border: 2px solid #4CAF50;
+    opacity: 0;
+}
+
+.marker-pulse.pulse {
+    animation: markerPulse 2s infinite;
+}
+
+@keyframes markerPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+.popup-content {
+    min-width: 200px;
+}
+
+.popup-content h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.status {
+    margin: 10px 0;
+    font-weight: 600;
+}
+
+.status.available {
+    color: #4CAF50;
+}
+
+.status.collected {
+    color: #f44336;
+}
+
+.collector-info {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+}
+
+.collector-info p {
+    margin: 5px 0;
+}
+
+.details-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    width: 100%;
+    transition: all 0.3s;
+}
+
+.details-btn:hover {
+    background: linear-gradient(45deg, #5a67d8, #6b46c1);
+    transform: translateY(-1px);
+}
+
+/* Админ маркеры */
+.admin-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.admin-marker-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+}
+
+.admin-popup {
+    min-width: 200px;
+}
+
+.admin-popup h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.admin-popup p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.admin-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin: 5px 5px 0 0;
+    min-width: 80px;
+}
+
+.admin-btn:hover {
+    background: #5a67d8;
+}
+
+.delete-btn {
+    background: #f44336 !important;
+}
+
+.delete-btn:hover {
+    background: #d32f2f !important;
+}
+
+/* Уведомления */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 15px;
+    min-width: 250px;
+    max-width: 350px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.error {
+    border-left: 4px solid #f44336;
+}
+
+.notification.success {
+    border-left: 4px solid #4CAF50;
+}
+
+.notification.info {
+    border-left: 4px solid #2196F3;
+}
+
+.notification.warning {
+    border-left: 4px solid #ff9800;
+}
+
+.notification-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-content button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    margin: 0;
+    width: auto;
+    margin-left: 10px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* АДАПТИВНОСТЬ С КОМПАКТНЫМИ КАРТАМИ */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header p {
+        font-size: 1rem;
+    }
+    
+    /* КОМПАКТНАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
+    #map, #adminMap {
+        height: 350px !important;
+        min-height: 350px !important;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 20px;
+    }
+    
+    .stats {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    /* Адаптивная кнопка управления для планшетов */
+    .map-controls {
+        max-width: 350px;
+        padding: 18px;
+    }
+    
+    .control-btn {
+        font-size: 1rem !important;
+        padding: 16px 20px !important;
+        min-height: 55px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .form-container {
+        padding: 20px;
+    }
+    
+    /* КВАДРАТНАЯ КАРТА ДЛЯ СМАРТФОНОВ */
     #map, #adminMap {
         height: 320px !important;
         min-height: 320px !important;
-        max-height: 320px !important;
     }
     
-    .map-container {
-        height: 320px !important;
-        min-height: 320px !important;
-        margin: 8px 3px !important;
-    }
-    
-    .pb-dot {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 12px !important;
+    /* Адаптивная кнопка для смартфонов */
+    .map-controls {
+        max-width: 320px;
+        padding: 16px;
     }
     
     .control-btn {
         font-size: 0.95rem !important;
         padding: 14px 18px !important;
-        min-height: 50px !important;
-    }
-    
-    .map-controls {
-        padding: 14px !important;
-        margin: 12px 8px !important;
+        min-height: 50px;
     }
 }
 
-/* Маленькие смартфоны */
 @media (max-width: 360px) {
+    /* КОМПАКТНАЯ КВАДРАТНАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
         height: 300px !important;
         min-height: 300px !important;
-        max-height: 300px !important;
     }
     
-    .map-container {
-        height: 300px !important;
-        min-height: 300px !important;
-        margin: 5px 2px !important;
-    }
-    
-    .pb-dot {
-        width: 26px !important;
-        height: 26px !important;
-        font-size: 11px !important;
+    .container {
+        padding: 5px;
     }
     
     .control-btn {
         font-size: 0.9rem !important;
         padding: 12px 16px !important;
-        min-height: 48px !important;
+        min-height: 48px;
     }
     
     .map-controls {
-        padding: 12px !important;
-        margin: 10px 5px !important;
-    }
-    
-    .pb-notification {
-        top: 5px !important;
-        left: 5px !important;
-        right: 5px !important;
-        padding: 12px 16px !important;
-        font-size: 13px !important;
-    }
-    
-    .leaflet-control-zoom a {
-        width: 35px !important;
-        height: 35px !important;
-        line-height: 35px !important;
-        font-size: 16px !important;
-    }
-}
-
-/* iOS СПЕЦИФИЧНЫЕ ИСПРАВЛЕНИЯ */
-@supports (-webkit-touch-callout: none) {
-    .leaflet-container {
-        -webkit-transform: translate3d(0,0,0) !important;
-        -webkit-perspective: 1000 !important;
-        -webkit-backface-visibility: hidden !important;
-    }
-    
-    .pb-dot {
-        -webkit-transform: translate3d(0,0,0) !important;
-        -webkit-backface-visibility: hidden !important;
-    }
-    
-    .leaflet-popup-content-wrapper {
-        -webkit-transform: translate3d(0,0,0) !important;
-    }
-}
-
-/* ANDROID СПЕЦИФИЧНЫЕ ИСПРАВЛЕНИЯ */
-@media (max-width: 768px) {
-    .leaflet-container {
-        transform: translateZ(0) !important;
-    }
-    
-    .leaflet-map-pane {
-        transform: translateZ(0) !important;
-    }
-}
-
-/* ВЫСОКАЯ ПЛОТНОСТЬ ПИКСЕЛЕЙ */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .pb-dot {
-        border-width: 2px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-    }
-    
-    .leaflet-control-zoom a {
-        border-width: 1px !important;
-    }
-}
-
-/* ТЕМНАЯ ТЕМА ДЛЯ УСТРОЙСТВ */
-@media (prefers-color-scheme: dark) {
-    .leaflet-control-zoom a {
-        background-color: rgba(40, 40, 40, 0.95) !important;
-        color: #ffffff !important;
-        border-color: rgba(255, 255, 255, 0.2) !important;
-    }
-    
-    .leaflet-popup-content-wrapper {
-        background: rgba(40, 40, 40, 0.98) !important;
-        color: #ffffff !important;
-    }
-    
-    .pb-popup h3 {
-        color: #ffffff !important;
-    }
-}
-
-/* ОТЛАДОЧНАЯ ИНФОРМАЦИЯ */
-.mobile-debug {
-    position: fixed !important;
-    bottom: 10px !important;
-    left: 10px !important;
-    background: rgba(0,0,0,0.8) !important;
-    color: white !important;
-    padding: 8px 12px !important;
-    border-radius: 6px !important;
-    font-size: 11px !important;
-    font-family: monospace !important;
-    z-index: 9999 !important;
-    display: none !important;
-    max-width: calc(100vw - 20px) !important;
-    word-wrap: break-word !important;
-}
-
-.mobile-debug.show {
-    display: block !important;
-}
-
-/* ПРИНУДИТЕЛЬНЫЕ СТИЛИ ДЛЯ ПРОБЛЕМНЫХ УСТРОЙСТВ */
-.force-mobile-map {
-    width: 100vw !important;
-    height: 50vh !important;
-    min-height: 300px !important;
-    max-height: 400px !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-
-.force-mobile-map .leaflet-container {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-/* ACCESSIBILITY */
-@media (prefers-reduced-motion: reduce) {
-    .pb-dot,
-    .control-btn,
-    .leaflet-control-zoom a {
-        transition: none !important;
-        animation: none !important;
-    }
-}
-
-/* ПЕЧАТЬ */
-@media print {
-    .leaflet-control-container,
-    .control-btn,
-    .pb-notification {
-        display: none !important;
-    }
-    
-    #map {
-        height: 400px !important;
-        width: 100% !important;
+        max-width: 300px;
+        padding: 14px;
     }
 }
