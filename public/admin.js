@@ -1,6 +1,3 @@
-// ОБНОВЛЕННЫЙ ADMIN.JS с поддержкой серверного кэширования
-// Оптимизирован для работы с новой системой кэша
-
 // Переменные для админ панели
 let adminMap;
 let adminMarkers = [];
@@ -11,20 +8,6 @@ let currentQRCode = '';
 
 // Координаты Алматы
 const ALMATY_CENTER = [43.2220, 76.8512];
-
-// Кэш для админских данных
-const AdminCache = {
-    lastUpdate: 0,
-    cacheStats: null,
-    
-    shouldRefresh() {
-        return Date.now() - this.lastUpdate > 30000; // 30 секунд
-    },
-    
-    updateTimestamp() {
-        this.lastUpdate = Date.now();
-    }
-};
 
 // Инициализация админ панели
 document.addEventListener('DOMContentLoaded', function() {
@@ -37,9 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Инициализация кнопок админа
     initAdminControlButtons();
-    
-    // Периодическое обновление статистики кэша
-    setInterval(loadCacheStats, 60000); // каждую минуту
 });
 
 // Инициализация кнопок управления для админа
@@ -86,11 +66,8 @@ async function showAdminPanel() {
     // Инициализируем карту
     initAdminMap();
     
-    // Загружаем точки и статистику кэша
-    await Promise.all([
-        loadAdminPoints(),
-        loadCacheStats()
-    ]);
+    // Загружаем точки
+    await loadAdminPoints();
 }
 
 // Инициализация админ карты
@@ -258,29 +235,20 @@ function getAdminLocation() {
     );
 }
 
-// Загрузка точек для админа с поддержкой кэша
-async function loadAdminPoints(forceRefresh = false) {
+// Загрузка точек для админа
+async function loadAdminPoints() {
     try {
-        console.log('🛡️ Загрузка админских точек...');
-        
-        const headers = {
-            'Accept': 'application/json',
-            'X-Admin-Password': encodeURIComponent(currentPassword)
-        };
-        
-        // Добавляем заголовок для принудительного обновления кэша
-        if (forceRefresh) {
-            headers['Cache-Control'] = 'no-cache';
-        }
-        
         const response = await fetch('/api/admin/points', {
             method: 'GET',
-            headers: headers
+            headers: {
+                'Accept': 'application/json',
+                'X-Admin-Password': encodeURIComponent(currentPassword)
+            }
         });
         
         if (!response.ok) {
             if (response.status === 401) {
-                showNotification('Неверный пароль', 'error');
+                showNotification('Invalid password', 'error');
                 sessionStorage.removeItem('adminPassword');
                 location.reload();
                 return;
@@ -289,143 +257,13 @@ async function loadAdminPoints(forceRefresh = false) {
         }
         
         allPoints = await response.json();
-        
-        // Проверяем заголовки кэша
-        const cacheStatus = response.headers.get('X-Cache');
-        const cacheKey = response.headers.get('X-Cache-Key');
-        
-        if (cacheStatus) {
-            console.log(`💾 Админские точки: Cache ${cacheStatus} (${cacheKey})`);
-        }
-        
         updateAdminMap();
         updateAdminStats();
         updatePointsList();
         
-        AdminCache.updateTimestamp();
-        
-        console.log(`✅ Загружено ${allPoints.length} админских точек`);
-        
     } catch (error) {
-        console.error('❌ Ошибка загрузки админских точек:', error);
-        showNotification('Ошибка загрузки данных', 'error');
-    }
-}
-
-// Загрузка статистики кэша
-async function loadCacheStats() {
-    try {
-        const response = await fetch('/api/admin/cache/stats', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Admin-Password': encodeURIComponent(currentPassword)
-            }
-        });
-        
-        if (response.ok) {
-            const stats = await response.json();
-            AdminCache.cacheStats = stats;
-            displayCacheStats(stats);
-            console.log('📊 Статистика кэша загружена:', stats.cache);
-        }
-    } catch (error) {
-        console.warn('⚠️ Не удалось загрузить статистику кэша:', error);
-    }
-}
-
-// Отображение статистики кэша в админ панели
-function displayCacheStats(stats) {
-    // Добавляем блок статистики кэша если его нет
-    let cacheStatsElement = document.getElementById('cacheStats');
-    if (!cacheStatsElement) {
-        const adminStatsContainer = document.querySelector('.admin-stats');
-        if (adminStatsContainer) {
-            const cacheStatsHTML = `
-                <div id="cacheStats" class="cache-stats" style="
-                    background: rgba(255, 255, 255, 0.95);
-                    border-radius: 15px;
-                    padding: 15px;
-                    margin-top: 15px;
-                    backdrop-filter: blur(10px);
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                ">
-                    <h4 style="margin-bottom: 10px; color: #333;">📊 Статистика кэша</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
-                        <div>Размер: <strong id="cacheSize">-</strong></div>
-                        <div>Попадания: <strong id="cacheHits">-</strong></div>
-                        <div>Промахи: <strong id="cacheMisses">-</strong></div>
-                        <div>Hit Rate: <strong id="cacheHitRate">-</strong></div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <button onclick="clearServerCache()" style="
-                            background: #f44336; 
-                            color: white; 
-                            border: none; 
-                            padding: 5px 10px; 
-                            border-radius: 5px; 
-                            cursor: pointer;
-                            font-size: 0.8rem;
-                            margin-right: 10px;
-                        ">Очистить кэш</button>
-                        <button onclick="loadAdminPoints(true)" style="
-                            background: #4CAF50; 
-                            color: white; 
-                            border: none; 
-                            padding: 5px 10px; 
-                            border-radius: 5px; 
-                            cursor: pointer;
-                            font-size: 0.8rem;
-                        ">Обновить</button>
-                    </div>
-                </div>
-            `;
-            adminStatsContainer.insertAdjacentHTML('afterend', cacheStatsHTML);
-        }
-    }
-    
-    // Обновляем значения
-    const updateElement = (id, value) => {
-        const element = document.getElementById(id);
-        if (element) element.textContent = value;
-    };
-    
-    if (stats.cache) {
-        updateElement('cacheSize', stats.cache.size);
-        updateElement('cacheHits', stats.cache.hits);
-        updateElement('cacheMisses', stats.cache.misses);
-        updateElement('cacheHitRate', stats.cache.hitRate);
-    }
-}
-
-// Очистка серверного кэша
-async function clearServerCache() {
-    if (!confirm('Вы уверены, что хотите очистить серверный кэш?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/admin/cache/clear', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'X-Admin-Password': encodeURIComponent(currentPassword)
-            }
-        });
-        
-        if (response.ok) {
-            showNotification('Серверный кэш очищен', 'success');
-            // Обновляем данные после очистки кэша
-            setTimeout(() => {
-                loadAdminPoints(true);
-                loadCacheStats();
-            }, 500);
-        } else {
-            throw new Error('Failed to clear cache');
-        }
-    } catch (error) {
-        console.error('❌ Ошибка очистки кэша:', error);
-        showNotification('Ошибка очистки кэша', 'error');
+        console.error('Error loading points:', error);
+        showNotification('Error loading data', 'error');
     }
 }
 
@@ -644,6 +482,103 @@ function showQRCodeForNewPoint(point) {
     document.getElementById('qrCodeDisplay').innerHTML = `
         <img src="${point.qrCode}" alt="QR код для ${point.name}" style="max-width: 280px; border-radius: 12px;">
         <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
+        <p style="color: #666;">ID: ${point.id}</p>
+    `;
+    
+    document.getElementById('qrModal').style.display = 'block';
+}
+
+// Обработка формы добавления точки
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('addPointForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('modelName').value;
+        const delayMinutes = document.getElementById('delayMinutes').value;
+        
+        if (!window.tempCoordinates) {
+            showNotification('Coordinate error', 'error');
+            return;
+        }
+        
+        try {
+            const requestData = {
+                name: name,
+                coordinates: {
+                    lat: window.tempCoordinates.lat,
+                    lng: window.tempCoordinates.lng
+                },
+                delayMinutes: delayMinutes || 0
+            };
+
+            // Сначала пробуем основной метод
+            let response;
+            let newPoint;
+            
+            try {
+                response = await fetch('/api/admin/points', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'X-Admin-Password': encodeURIComponent(currentPassword)
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Server error');
+                }
+                
+                newPoint = await response.json();
+                
+            } catch (fetchError) {
+                // Если основной метод не работает, используем альтернативный
+                console.log('Using alternative method...');
+                newPoint = await createPointAlternative(requestData);
+            }
+            
+            closeAddModal();
+            showNotification('Point created successfully!', 'success');
+            
+            // Показываем QR код для новой точки
+            showQRCodeForNewPoint(newPoint);
+            
+            // Обновляем данные
+            await loadAdminPoints();
+            
+        } catch (error) {
+            console.error('Error creating point:', error);
+            showNotification(error.message, 'error');
+        }
+    });
+});
+
+// Показать QR код для существующих точек
+function showQRCode(pointId, qrCodeData = null) {
+    // Если передан готовый QR код (для новых точек), используем его
+    if (qrCodeData) {
+        currentQRCode = qrCodeData;
+        document.getElementById('qrCodeDisplay').innerHTML = `
+            <img src="${qrCodeData}" alt="QR код" style="max-width: 280px; border-radius: 12px;">
+            <p style="color: #666; margin-top: 15px;">ID: ${pointId}</p>
+        `;
+        document.getElementById('qrModal').style.display = 'block';
+        return;
+    }
+    
+    // Для существующих точек ищем в списке
+    const point = allPoints.find(p => p.id === pointId);
+    if (!point) {
+        showNotification('Точка не найдена', 'error');
+        return;
+    }
+    
+    currentQRCode = point.qrCode;
+    
+    document.getElementById('qrCodeDisplay').innerHTML = `
+        <img src="${point.qrCode}" alt="QR код для ${point.name}" style="max-width: 280px; border-radius: 12px;">
+        <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
         <p style="color: #666;">ID: ${pointId}</p>
     `;
     
@@ -665,9 +600,9 @@ function downloadQR() {
     link.click();
 }
 
-// Удалить точку с инвалидацией кэша
+// Удалить точку
 async function deletePoint(pointId) {
-    if (!confirm('Вы уверены, что хотите удалить эту точку?')) {
+    if (!confirm('Are you sure you want to delete this point?')) {
         return;
     }
     
@@ -676,8 +611,7 @@ async function deletePoint(pointId) {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
-                'X-Admin-Password': encodeURIComponent(currentPassword),
-                'Cache-Control': 'no-cache' // Принудительно обновляем кэш
+                'X-Admin-Password': encodeURIComponent(currentPassword)
             }
         });
         
@@ -685,15 +619,12 @@ async function deletePoint(pointId) {
             throw new Error('Failed to delete point');
         }
         
-        showNotification('Точка удалена', 'success');
-        
-        // Обновляем данные с принудительным обновлением кэша
-        await loadAdminPoints(true);
-        await loadCacheStats();
+        showNotification('Point deleted', 'success');
+        await loadAdminPoints();
         
     } catch (error) {
-        console.error('❌ Ошибка удаления:', error);
-        showNotification('Ошибка удаления точки', 'error');
+        console.error('Delete error:', error);
+        showNotification('Error deleting point', 'error');
     }
 }
 
@@ -827,15 +758,6 @@ function addAdminMarkerStyles() {
                 margin-top: 12px;
                 padding-top: 12px;
                 border-top: 1px solid #eee;
-            }
-            
-            .cache-stats {
-                animation: fadeIn 0.5s ease-in;
-            }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
             }
         `;
         document.head.appendChild(style);
@@ -1013,128 +935,4 @@ document.addEventListener('keydown', function(event) {
             toggleAddMode();
         }
     }
-    
-    // Принудительное обновление данных по Ctrl+R
-    if (event.ctrlKey && event.key === 'r') {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && adminPanel.style.display !== 'none') {
-            event.preventDefault();
-            loadAdminPoints(true);
-            loadCacheStats();
-        }
-    }
-    
-    // Очистка кэша по Ctrl+Shift+C
-    if (event.ctrlKey && event.shiftKey && event.key === 'C') {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && adminPanel.style.display !== 'none') {
-            event.preventDefault();
-            clearServerCache();
-        }
-    }
 });
-
-// Автообновление данных для админ панели
-setInterval(() => {
-    const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel && adminPanel.style.display !== 'none' && AdminCache.shouldRefresh()) {
-        loadAdminPoints();
-        loadCacheStats();
-    }
-}, 60000); // каждую минуту
-
-console.log('🛡️ Админская панель с поддержкой кэширования готова');<p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
-        <p style="color: #666;">ID: ${point.id}</p>
-    `;
-    
-    document.getElementById('qrModal').style.display = 'block';
-}
-
-// Обработка формы добавления точки с инвалидацией кэша
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('addPointForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('modelName').value;
-        const delayMinutes = document.getElementById('delayMinutes').value;
-        
-        if (!window.tempCoordinates) {
-            showNotification('Ошибка координат', 'error');
-            return;
-        }
-        
-        try {
-            const requestData = {
-                name: name,
-                coordinates: {
-                    lat: window.tempCoordinates.lat,
-                    lng: window.tempCoordinates.lng
-                },
-                delayMinutes: delayMinutes || 0
-            };
-
-            let response;
-            let newPoint;
-            
-            try {
-                response = await fetch('/api/admin/points', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json; charset=utf-8',
-                        'X-Admin-Password': encodeURIComponent(currentPassword),
-                        'Cache-Control': 'no-cache' // Принудительно обновляем кэш
-                    },
-                    body: JSON.stringify(requestData)
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Server error');
-                }
-                
-                newPoint = await response.json();
-                
-            } catch (fetchError) {
-                console.log('Использование альтернативного метода...');
-                newPoint = await createPointAlternative(requestData);
-            }
-            
-            closeAddModal();
-            showNotification('Точка успешно создана!', 'success');
-            
-            // Показываем QR код для новой точки
-            showQRCodeForNewPoint(newPoint);
-            
-            // Обновляем данные с принудительным обновлением кэша
-            await loadAdminPoints(true);
-            await loadCacheStats();
-            
-        } catch (error) {
-            console.error('❌ Ошибка создания точки:', error);
-            showNotification(error.message, 'error');
-        }
-    });
-});
-
-// Показать QR код для существующих точек
-function showQRCode(pointId, qrCodeData = null) {
-    if (qrCodeData) {
-        currentQRCode = qrCodeData;
-        document.getElementById('qrCodeDisplay').innerHTML = `
-            <img src="${qrCodeData}" alt="QR код" style="max-width: 280px; border-radius: 12px;">
-            <p style="color: #666; margin-top: 15px;">ID: ${pointId}</p>
-        `;
-        document.getElementById('qrModal').style.display = 'block';
-        return;
-    }
-    
-    const point = allPoints.find(p => p.id === pointId);
-    if (!point) {
-        showNotification('Точка не найдена', 'error');
-        return;
-    }
-    
-    currentQRCode = point.qrCode;
-    
-    document.getElementById('qrCodeDisplay').innerHTML = `
-        <img src="${point.qrCode}" alt="QR код для ${point.name}" style="max-width: 280px; border-radius: 12px;">
