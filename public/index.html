@@ -2,16 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlasticBoy - Карта моделей Алматы</title>
-    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
-    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* Оптимизированные стили загрузочного экрана */
+        /* Стили для загрузочного экрана */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -35,7 +33,7 @@
             pointer-events: none;
         }
         
-        /* Упрощенный матричный фон */
+        /* Простой матричный фон */
         .matrix-bg {
             position: absolute;
             top: 0;
@@ -113,7 +111,7 @@
             }
         }
         
-        /* Простой прогресс бар */
+        /* Прогресс бар */
         .progress-container {
             width: 320px;
             background: #000;
@@ -183,7 +181,7 @@
             71%, 100% { opacity: 0.6; }
         }
         
-        /* Простая пиксельная анимация */
+        /* Пиксельная анимация */
         .pixel-loader {
             display: flex;
             gap: 3px;
@@ -214,7 +212,7 @@
             }
         }
         
-        /* Упрощенные сканлинии */
+        /* Сканлинии */
         .scanlines {
             position: absolute;
             top: 0;
@@ -291,12 +289,12 @@
     </style>
 </head>
 <body>
-    <!-- ОПТИМИЗИРОВАННЫЙ ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
     <div class="loading-screen" id="loadingScreen">
-        <!-- Упрощенный матричный фон -->
+        <!-- Матричный фон -->
         <div class="matrix-bg" id="matrixBg"></div>
         
-        <!-- Упрощенные сканлинии -->
+        <!-- Сканлинии -->
         <div class="scanlines"></div>
         
         <!-- Логотип -->
@@ -305,7 +303,7 @@
             <div class="logo-subtitle">Almighty Edition</div>
         </div>
         
-        <!-- Простая пиксельная анимация -->
+        <!-- Пиксельная анимация -->
         <div class="pixel-loader">
             <div class="pixel-dot"></div>
             <div class="pixel-dot"></div>
@@ -377,15 +375,14 @@
 
     <!-- Скрипт системы загрузки -->
     <script>
-        // ОПТИМИЗИРОВАННАЯ СИСТЕМА ЗАГРУЗКИ
+        // ПРОСТАЯ И НАДЕЖНАЯ СИСТЕМА ЗАГРУЗКИ
+        console.log('🎯 PlasticBoy - Запуск системы');
+        
         let loadingSteps = [
             "INITIALIZING...",
-            "LOADING ASSETS...", 
-            "CONNECTING...",
-            "PREPARING MAP...",
             "LOADING LEAFLET...",
-            "SCANNING POINTS...",
-            "SYNCING DATA...",
+            "PREPARING MAP...",
+            "LOADING POINTS...",
             "READY!"
         ];
 
@@ -395,12 +392,117 @@
         let arePointsLoaded = false;
         let isLeafletReady = false;
 
-        // Создание упрощенного матричного фона
-        function createSimpleMatrix() {
+        // Создание простого матричного фона
+        function createMatrix() {
             const matrixBg = document.getElementById('matrixBg');
-            const numberOfDots = window.innerWidth < 768 ? 15 : 25; // Меньше для мобильных
+            const numberOfDots = window.innerWidth < 768 ? 10 : 20;
             
             for (let i = 0; i < numberOfDots; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'matrix-dot';
+                dot.style.left = Math.random() * 100 + '%';
+                dot.style.animationDelay = Math.random() * 3 + 's';
+                dot.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                matrixBg.appendChild(dot);
+            }
+        }
+
+        // Обновление загрузочного экрана
+        function updateLoader() {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const loadingStatus = document.getElementById('loadingStatus');
+            
+            // Простое увеличение прогресса
+            if (isLeafletReady && progress < 40) {
+                progress = 40;
+            }
+            if (isMapReady && progress < 70) {
+                progress = 70;
+            }
+            if (arePointsLoaded && progress < 100) {
+                progress = 100;
+            } else if (progress < 95) {
+                progress += 5;
+            }
+            
+            if (progress > 100) progress = 100;
+            
+            progressBar.style.width = progress + '%';
+            progressText.textContent = Math.floor(progress) + '%';
+            
+            // Обновление статуса
+            const targetStep = Math.floor(progress / 25);
+            if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
+                currentStep = targetStep;
+                loadingStatus.textContent = loadingSteps[currentStep];
+            }
+            
+            // Завершение загрузки
+            if (arePointsLoaded && progress >= 100) {
+                loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
+                setTimeout(finishLoading, 500);
+                return true;
+            }
+            return false;
+        }
+
+        // Завершение загрузки
+        function finishLoading() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainContent = document.getElementById('mainContent');
+            
+            loadingScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                mainContent.classList.add('loaded');
+            }, 600);
+        }
+
+        // Экспорт для использования в script.js
+        window.AppLoader = {
+            onLeafletReady: () => { 
+                isLeafletReady = true; 
+                console.log('✅ Leaflet готов');
+            },
+            onMapReady: () => { 
+                isMapReady = true; 
+                console.log('✅ Карта готова');
+            },
+            onPointsLoaded: () => { 
+                arePointsLoaded = true; 
+                console.log('✅ Точки загружены');
+            },
+            updateLoader: updateLoader
+        };
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            createMatrix();
+            
+            // Основной цикл загрузки
+            const loaderInterval = setInterval(() => {
+                if (updateLoader()) {
+                    clearInterval(loaderInterval);
+                }
+            }, 300);
+            
+            // Таймаут безопасности
+            setTimeout(() => {
+                arePointsLoaded = true;
+                progress = 100;
+            }, 15000);
+        });
+    </script>
+    
+    <!-- Подключение Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Основной скрипт приложения -->
+    <script src="script.js"></script>
+</body>
+</html> i = 0; i < numberOfDots; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'matrix-dot';
                 dot.style.left = Math.random() * 100 + '%';
