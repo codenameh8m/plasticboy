@@ -1,4 +1,4 @@
-// ИСПРАВЛЕННЫЙ SCRIPT.JS для PlasticBoy - Мобильная версия
+// УЛЬТРА-БЫСТРЫЙ SCRIPT.JS с кэшированием для PlasticBoy
 let map;
 let markers = [];
 
@@ -12,77 +12,233 @@ let pointsLoaded = false;
 // Определение мобильного устройства
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-console.log('PlasticBoy loading - Mobile:', isMobile);
+// === СИСТЕМА КЭШИРОВАНИЯ ===
+const CACHE_KEY = 'plasticboy_points_cache';
+const CACHE_TIMESTAMP_KEY = 'plasticboy_cache_timestamp';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+const QUICK_CACHE_KEY = 'plasticboy_quick_cache';
 
-// Инициализация приложения
+// Кэш для быстрого доступа
+let pointsCache = null;
+let markersPool = []; // Пул переиспользуемых маркеров
+
+console.log('PlasticBoy Ultra-Fast loading - Mobile:', isMobile);
+
+// === БЫСТРОЕ КЭШИРОВАНИЕ ===
+function saveToCache(points) {
+    try {
+        const cacheData = {
+            points: points,
+            timestamp: Date.now(),
+            version: '1.0'
+        };
+        
+        // Основной кэш
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+        
+        // Быстрый кэш (упрощенные данные)
+        const quickData = points.map(p => ({
+            id: p.id,
+            name: p.name,
+            coordinates: p.coordinates,
+            status: p.status,
+            collectorInfo: p.collectorInfo ? {
+                name: p.collectorInfo.name,
+                signature: p.collectorInfo.signature
+            } : null,
+            collectedAt: p.collectedAt
+        }));
+        
+        sessionStorage.setItem(QUICK_CACHE_KEY, JSON.stringify(quickData));
+        pointsCache = points;
+        
+        console.log(`💾 Cached ${points.length} points`);
+    } catch (error) {
+        console.warn('Cache save error:', error);
+    }
+}
+
+function loadFromCache() {
+    try {
+        // Сначала пробуем быстрый кэш
+        const quickCache = sessionStorage.getItem(QUICK_CACHE_KEY);
+        if (quickCache) {
+            const quickPoints = JSON.parse(quickCache);
+            console.log(`⚡ Quick cache loaded: ${quickPoints.length} points`);
+            return quickPoints;
+        }
+        
+        // Затем основной кэш
+        const cached = localStorage.getItem(CACHE_KEY);
+        const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+        
+        if (cached && timestamp) {
+            const age = Date.now() - parseInt(timestamp);
+            if (age < CACHE_DURATION) {
+                const cacheData = JSON.parse(cached);
+                console.log(`💾 Cache loaded: ${cacheData.points.length} points (age: ${Math.round(age/1000)}s)`);
+                pointsCache = cacheData.points;
+                return cacheData.points;
+            } else {
+                console.log('🗑️ Cache expired, clearing');
+                clearCache();
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.warn('Cache load error:', error);
+        clearCache();
+        return null;
+    }
+}
+
+function clearCache() {
+    try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+        sessionStorage.removeItem(QUICK_CACHE_KEY);
+        pointsCache = null;
+        console.log('🗑️ Cache cleared');
+    } catch (error) {
+        console.warn('Cache clear error:', error);
+    }
+}
+
+// === ПУЛ МАРКЕРОВ ДЛЯ ПЕРЕИСПОЛЬЗОВАНИЯ ===
+function createMarkerPool(size = 50) {
+    markersPool = [];
+    for (let i = 0; i < size; i++) {
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div class="marker-dot available"></div>',
+            iconSize: isMobile ? [16, 16] : [20, 20],
+            iconAnchor: isMobile ? [8, 8] : [10, 10]
+        });
+        
+        const marker = L.marker([0, 0], { icon });
+        markersPool.push(marker);
+    }
+    console.log(`🎯 Created marker pool: ${size} markers`);
+}
+
+function getMarkerFromPool() {
+    if (markersPool.length > 0) {
+        return markersPool.pop();
+    }
+    
+    // Создаем новый если пул пуст
+    const icon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div class="marker-dot available"></div>',
+        iconSize: isMobile ? [16, 16] : [20, 20],
+        iconAnchor: isMobile ? [8, 8] : [10, 10]
+    });
+    
+    return L.marker([0, 0], { icon });
+}
+
+function returnMarkerToPool(marker) {
+    if (markersPool.length < 100) { // Ограничиваем размер пула
+        markersPool.push(marker);
+    }
+}
+
+// === ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ===
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, starting PlasticBoy');
+    console.log('🚀 Ultra-Fast PlasticBoy starting');
+    
+    // Создаем пул маркеров заранее
+    setTimeout(() => createMarkerPool(), 100);
     
     if (isMobile) {
-        // Для мобильных - упрощенная инициализация
         initMobileApp();
     } else {
-        // Для десктопа - обычная инициализация
         initControlButtons();
-        setTimeout(initMap, 500);
+        setTimeout(initMap, 200);
     }
 });
 
-// Мобильная инициализация
+// === МОБИЛЬНАЯ ИНИЦИАЛИЗАЦИЯ ===
 function initMobileApp() {
-    console.log('Starting mobile app initialization');
+    console.log('📱 Starting mobile app initialization');
     
-    // Быстро скрываем загрузочный экран для мобильных
+    // Пробуем загрузить из кэша сразу
+    const cachedPoints = loadFromCache();
+    if (cachedPoints && cachedPoints.length > 0) {
+        console.log('⚡ Found cached points, pre-loading...');
+        // Предзагружаем маркеры из кэша в фоне
+        preloadMarkersFromCache(cachedPoints);
+    }
+    
+    // Быстро скрываем загрузочный экран
     setTimeout(() => {
-        const loadingScreen = document.getElementById('loadingScreen');
-        const mainContent = document.getElementById('mainContent');
-        
-        if (loadingScreen) {
-            loadingScreen.style.transition = 'opacity 0.3s ease';
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 300);
-        }
-        
-        if (mainContent) {
-            mainContent.style.opacity = '1';
-            mainContent.classList.add('loaded');
-        }
-        
-        // Инициализируем карту после скрытия загрузчика
-        setTimeout(initMap, 200);
-        
-    }, 1000);
+        hideLoadingScreen();
+        setTimeout(initMap, 100);
+    }, 800);
 }
 
-// Инициализация карты
+function preloadMarkersFromCache(points) {
+    // Подготавливаем маркеры в фоне пока карта не готова
+    window.preloadedMarkers = points.map(point => {
+        const isAvailable = point.status === 'available';
+        return {
+            point: point,
+            isAvailable: isAvailable,
+            lat: point.coordinates.lat,
+            lng: point.coordinates.lng
+        };
+    });
+    console.log(`⚡ Pre-loaded ${points.length} markers data`);
+}
+
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (loadingScreen) {
+        loadingScreen.style.transition = 'opacity 0.2s ease';
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 200);
+    }
+    
+    if (mainContent) {
+        mainContent.style.opacity = '1';
+        mainContent.classList.add('loaded');
+    }
+}
+
+// === ИНИЦИАЛИЗАЦИЯ КАРТЫ ===
 function initMap() {
     if (isMapInitialized) {
         console.log('Map already initialized');
         return;
     }
     
-    console.log('Initializing map...');
+    console.log('🗺️ Initializing map...');
     
     try {
-        // Проверяем наличие Leaflet
         if (typeof L === 'undefined') {
-            console.error('Leaflet not loaded');
-            setTimeout(initMap, 1000);
+            console.error('Leaflet not loaded, retrying...');
+            setTimeout(initMap, 500);
             return;
         }
         
-        // Настройки карты
+        // Быстрые настройки карты
         const mapOptions = {
             zoomControl: true,
             attributionControl: !isMobile,
             preferCanvas: true,
             maxZoom: 18,
-            minZoom: 10
+            minZoom: 10,
+            zoomAnimation: !isMobile, // Отключаем анимации на мобильных
+            fadeAnimation: !isMobile,
+            markerZoomAnimation: !isMobile
         };
         
-        // Мобильные настройки
         if (isMobile) {
             mapOptions.tap = true;
             mapOptions.touchZoom = true;
@@ -93,71 +249,86 @@ function initMap() {
             mapOptions.keyboard = false;
         }
         
-        // Создаем карту
         map = L.map('map', mapOptions);
         map.setView(ALMATY_CENTER, 13);
         
-        // Добавляем тайлы
+        // Быстрые тайлы
         const tileOptions = {
             attribution: isMobile ? '© OSM' : '© OpenStreetMap contributors',
             maxZoom: 18,
             keepBuffer: isMobile ? 1 : 2,
             updateWhenIdle: isMobile,
-            updateWhenZooming: !isMobile
+            updateWhenZooming: !isMobile,
+            crossOrigin: true
         };
         
-        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
-        tileLayer.addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions).addTo(map);
         
-        // Применяем стили
         addMapStyles();
         
-        // Обновляем размер карты
         setTimeout(() => {
             if (map) {
                 map.invalidateSize();
                 window.map = map;
                 isMapInitialized = true;
-                console.log('Map initialized successfully');
+                console.log('✅ Map initialized');
                 
-                // Загружаем точки
-                loadPoints();
-                
-                // Инициализируем кнопки
+                // Сначала пробуем кэш, потом сеть
+                loadPointsFast();
                 initControlButtons();
             }
-        }, 100);
+        }, 50);
         
     } catch (error) {
         console.error('Map initialization error:', error);
         showNotification('Ошибка инициализации карты', 'error');
-        
-        // Повторная попытка через 2 секунды
-        setTimeout(initMap, 2000);
+        setTimeout(initMap, 1000);
     }
 }
 
-// Загрузка точек
-async function loadPoints() {
-    if (pointsLoaded) {
-        console.log('Points already loaded');
+// === УЛЬТРА-БЫСТРАЯ ЗАГРУЗКА ТОЧЕК ===
+async function loadPointsFast() {
+    if (pointsLoaded) return;
+    
+    console.log('⚡ Fast loading points...');
+    
+    // 1. Сначала загружаем из кэша
+    const cachedPoints = loadFromCache();
+    if (cachedPoints && cachedPoints.length > 0) {
+        console.log('⚡ Using cached points');
+        updateMapFast(cachedPoints);
+        updateStats(cachedPoints);
+        pointsLoaded = true;
+        
+        // Показываем кэшированные данные мгновенно
+        showNotification(`Загружено ${cachedPoints.length} точек (кэш)`, 'success');
+        
+        // В фоне обновляем кэш
+        setTimeout(() => {
+            loadPointsFromNetwork(true);
+        }, 1000);
+        
         return;
     }
     
-    console.log('Loading points...');
-    
+    // 2. Если кэша нет, загружаем из сети
+    loadPointsFromNetwork(false);
+}
+
+async function loadPointsFromNetwork(isBackgroundUpdate = false) {
     try {
+        console.log(isBackgroundUpdate ? '🔄 Background update...' : '🌐 Loading from network...');
+        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
             controller.abort();
-            console.log('Request timeout');
-        }, 15000);
+        }, isMobile ? 8000 : 5000); // Быстрые таймауты
         
         const response = await fetch('/api/points', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': isBackgroundUpdate ? 'no-cache' : 'max-age=300'
             },
             signal: controller.signal
         });
@@ -165,132 +336,139 @@ async function loadPoints() {
         clearTimeout(timeoutId);
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP ${response.status}`);
         }
         
         const points = await response.json();
-        console.log(`Successfully loaded ${points.length} points`);
+        console.log(`📡 Network loaded: ${points.length} points`);
         
         if (Array.isArray(points)) {
-            updateMap(points);
-            updateStats(points);
-            pointsLoaded = true;
+            // Сохраняем в кэш
+            saveToCache(points);
             
-            if (typeof window.PlasticBoyLoader !== 'undefined' && 
-                typeof window.PlasticBoyLoader.onPointsLoaded === 'function') {
-                window.PlasticBoyLoader.onPointsLoaded();
+            if (!isBackgroundUpdate) {
+                updateMapFast(points);
+                updateStats(points);
+                pointsLoaded = true;
+                showNotification(`Загружено ${points.length} точек`, 'success');
+            } else {
+                // Проверяем изменения
+                const hasChanges = checkForChanges(pointsCache, points);
+                if (hasChanges) {
+                    console.log('🔄 Changes detected, updating map');
+                    updateMapFast(points);
+                    updateStats(points);
+                    showNotification('Карта обновлена', 'info');
+                }
             }
             
-            showNotification(`Загружено ${points.length} точек`, 'success');
-        } else {
-            throw new Error('Invalid response format');
+            if (typeof window.PlasticBoyLoader !== 'undefined') {
+                window.PlasticBoyLoader.onPointsLoaded();
+            }
         }
         
     } catch (error) {
-        console.error('Error loading points:', error);
+        console.error('Network error:', error);
         
-        if (error.name === 'AbortError') {
-            showNotification('Превышено время ожидания', 'warning');
-        } else {
-            showNotification('Ошибка загрузки точек', 'error');
-        }
-        
-        setTimeout(() => {
-            if (!pointsLoaded) {
-                console.log('Retrying to load points...');
-                loadPoints();
+        if (!isBackgroundUpdate) {
+            if (error.name === 'AbortError') {
+                showNotification('Медленное соединение', 'warning');
+            } else {
+                showNotification('Ошибка загрузки точек', 'error');
             }
-        }, 5000);
+            
+            // Retry через 3 секунды
+            setTimeout(() => {
+                if (!pointsLoaded) {
+                    loadPointsFromNetwork(false);
+                }
+            }, 3000);
+        }
     }
 }
 
-// Обновление карты
-function updateMap(points) {
+function checkForChanges(oldPoints, newPoints) {
+    if (!oldPoints || !newPoints) return true;
+    if (oldPoints.length !== newPoints.length) return true;
+    
+    // Быстрая проверка по хэшу статусов
+    const oldHash = oldPoints.map(p => `${p.id}:${p.status}`).join(',');
+    const newHash = newPoints.map(p => `${p.id}:${p.status}`).join(',');
+    
+    return oldHash !== newHash;
+}
+
+// === УЛЬТРА-БЫСТРОЕ ОБНОВЛЕНИЕ КАРТЫ ===
+function updateMapFast(points) {
     if (!map || !isMapInitialized) {
-        console.warn('Map not ready for update');
-        setTimeout(() => updateMap(points), 1000);
+        console.warn('Map not ready, retrying...');
+        setTimeout(() => updateMapFast(points), 500);
         return;
     }
     
-    console.log(`Updating map with ${points.length} points`);
+    const startTime = performance.now();
+    console.log(`⚡ Ultra-fast updating map with ${points.length} points`);
     
     try {
-        // Очищаем старые маркеры
-        markers.forEach(marker => {
-            try {
-                map.removeLayer(marker);
-            } catch (e) {
-                console.warn('Error removing marker:', e);
-            }
-        });
-        markers = [];
+        // Используем пул маркеров для переиспользования
+        clearMarkersFast();
         
-        // Добавляем новые маркеры
-        points.forEach((point, index) => {
+        // Пакетное добавление маркеров
+        const fragment = document.createDocumentFragment();
+        const newMarkers = [];
+        
+        // Если есть предзагруженные маркеры, используем их
+        const markerData = window.preloadedMarkers || points.map(point => ({
+            point: point,
+            isAvailable: point.status === 'available',
+            lat: point.coordinates.lat,
+            lng: point.coordinates.lng
+        }));
+        
+        markerData.forEach((data, index) => {
             try {
-                if (!point.coordinates || 
-                    typeof point.coordinates.lat !== 'number' || 
-                    typeof point.coordinates.lng !== 'number') {
-                    console.warn('Invalid point coordinates:', point);
+                const { point, isAvailable, lat, lng } = data;
+                
+                if (typeof lat !== 'number' || typeof lng !== 'number') {
+                    console.warn('Invalid coordinates:', point);
                     return;
                 }
                 
-                const isAvailable = point.status === 'available';
+                // Получаем маркер из пула
+                const marker = getMarkerFromPool();
                 
-                const icon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}"></div>`,
-                    iconSize: isMobile ? [16, 16] : [20, 20],
-                    iconAnchor: isMobile ? [8, 8] : [10, 10]
-                });
+                // Быстро обновляем позицию и стиль
+                marker.setLatLng([lat, lng]);
                 
-                const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon });
+                // Обновляем иконку
+                const iconHtml = `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}"></div>`;
+                marker.getElement().innerHTML = iconHtml;
                 
-                let popupContent = `
-                    <div class="popup-content">
-                        <h3>${point.name || 'Модель'}</h3>
-                        <div class="status ${point.status}">
-                            ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
-                        </div>
-                `;
-                
-                if (!isAvailable && point.collectorInfo) {
-                    popupContent += `
-                        <div class="collector-info">
-                            <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>
-                            ${point.collectorInfo.signature ? 
-                                `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>` : ''
-                            }
-                            ${point.collectedAt ? 
-                                `<p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>` : ''
-                            }
-                        </div>
-                    `;
-                    
-                    if (point.collectorInfo.selfie) {
-                        popupContent += `<button onclick="showPointDetails('${point.id}')" class="details-btn">Посмотреть селфи</button>`;
-                    }
-                }
-                
-                popupContent += '</div>';
-                
+                // Быстрый popup
+                const popupContent = createPopupContentFast(point, isAvailable);
                 marker.bindPopup(popupContent, {
                     maxWidth: isMobile ? 250 : 300,
                     className: 'custom-popup'
                 });
                 
                 marker.addTo(map);
-                markers.push(marker);
+                newMarkers.push(marker);
                 
             } catch (error) {
                 console.error(`Error adding marker ${index}:`, error);
             }
         });
         
-        addMarkerStyles();
+        markers = newMarkers;
         window.markers = markers;
         
-        console.log(`Successfully added ${markers.length} markers to map`);
+        // Очищаем предзагруженные данные
+        delete window.preloadedMarkers;
+        
+        addMarkerStyles();
+        
+        const endTime = performance.now();
+        console.log(`✅ Map updated in ${Math.round(endTime - startTime)}ms with ${markers.length} markers`);
         
     } catch (error) {
         console.error('Error updating map:', error);
@@ -298,7 +476,51 @@ function updateMap(points) {
     }
 }
 
-// Обновление статистики
+function clearMarkersFast() {
+    markers.forEach(marker => {
+        try {
+            map.removeLayer(marker);
+            returnMarkerToPool(marker);
+        } catch (e) {
+            console.warn('Error removing marker:', e);
+        }
+    });
+    markers = [];
+}
+
+function createPopupContentFast(point, isAvailable) {
+    let content = `
+        <div class="popup-content">
+            <h3>${point.name || 'Модель'}</h3>
+            <div class="status ${point.status}">
+                ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
+            </div>`;
+    
+    if (!isAvailable && point.collectorInfo) {
+        content += `
+            <div class="collector-info">
+                <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>`;
+        
+        if (point.collectorInfo.signature) {
+            content += `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>`;
+        }
+        
+        if (point.collectedAt) {
+            content += `<p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>`;
+        }
+        
+        content += '</div>';
+        
+        if (point.collectorInfo.selfie) {
+            content += `<button onclick="showPointDetails('${point.id}')" class="details-btn">Посмотреть селфи</button>`;
+        }
+    }
+    
+    content += '</div>';
+    return content;
+}
+
+// === ОСТАЛЬНЫЕ ФУНКЦИИ (ОПТИМИЗИРОВАННЫЕ) ===
 function updateStats(points) {
     try {
         const available = points.filter(p => p.status === 'available').length;
@@ -310,27 +532,22 @@ function updateStats(points) {
         if (availableEl) availableEl.textContent = available;
         if (collectedEl) collectedEl.textContent = collected;
         
-        console.log(`Stats updated: ${available} available, ${collected} collected`);
+        console.log(`📊 Stats: ${available} available, ${collected} collected`);
         
     } catch (error) {
         console.error('Error updating stats:', error);
     }
 }
 
-// Инициализация кнопок
 function initControlButtons() {
-    console.log('Initializing control buttons');
-    
     const locationBtn = document.querySelector('.location-btn');
-    if (locationBtn) {
+    if (locationBtn && !locationBtn.hasAttribute('data-initialized')) {
+        locationBtn.setAttribute('data-initialized', 'true');
         locationBtn.addEventListener('click', getCurrentLocation);
     }
 }
 
-// Геолокация
 function getCurrentLocation() {
-    console.log('Getting current location');
-    
     const locationBtn = document.querySelector('.location-btn');
     
     if (!navigator.geolocation) {
@@ -339,14 +556,13 @@ function getCurrentLocation() {
     }
     
     if (locationBtn) {
-        const originalText = locationBtn.innerHTML;
         locationBtn.innerHTML = '⏳ Определение...';
         locationBtn.disabled = true;
     }
     
     const options = {
         enableHighAccuracy: true,
-        timeout: isMobile ? 20000 : 10000,
+        timeout: isMobile ? 15000 : 8000,
         maximumAge: 300000
     };
     
@@ -354,8 +570,6 @@ function getCurrentLocation() {
         function(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            
-            console.log(`Location found: ${lat}, ${lng}`);
             
             if (map && isMapInitialized) {
                 if (window.userMarker) {
@@ -385,10 +599,7 @@ function getCurrentLocation() {
                         </div>
                     `);
                 
-                map.flyTo([lat, lng], 15, {
-                    duration: 1.5
-                });
-                
+                map.flyTo([lat, lng], 15, { duration: 1 });
                 showNotification('Местоположение найдено', 'success');
             }
             
@@ -424,13 +635,10 @@ function getCurrentLocation() {
     );
 }
 
-// Показать детали точки
 async function showPointDetails(pointId) {
     try {
         const response = await fetch(`/api/point/${pointId}/info`);
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки информации');
-        }
+        if (!response.ok) throw new Error('Ошибка загрузки');
         
         const point = await response.json();
         
@@ -442,8 +650,7 @@ async function showPointDetails(pointId) {
                         ${point.status === 'collected' ? 'Собрана' : 'Доступна'}
                     </span>
                 </p>
-            </div>
-        `;
+            </div>`;
         
         if (point.status === 'collected' && point.collectorInfo) {
             modalContent += `
@@ -451,10 +658,8 @@ async function showPointDetails(pointId) {
                     <h4>Сборщик:</h4>
                     <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
                     ${point.collectorInfo.signature ? 
-                        `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>` : ''
-                    }
-                </div>
-            `;
+                        `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>` : ''}
+                </div>`;
             
             if (point.collectorInfo.selfie) {
                 modalContent += `
@@ -462,8 +667,7 @@ async function showPointDetails(pointId) {
                         <img src="${point.collectorInfo.selfie}" 
                              style="max-width: 100%; max-height: 250px; border-radius: 8px;"
                              alt="Селфи сборщика">
-                    </div>
-                `;
+                    </div>`;
             }
         }
         
@@ -477,46 +681,34 @@ async function showPointDetails(pointId) {
     }
 }
 
-// Закрыть модальное окно
 function closeModal() {
     document.getElementById('infoModal').style.display = 'none';
 }
 
-// Показать уведомление
 function showNotification(message, type = 'info') {
-    console.log(`Notification [${type}]: ${message}`);
-    
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     
-    const icons = {
-        error: '❌',
-        success: '✅',
-        info: 'ℹ️',
-        warning: '⚠️'
-    };
+    const icons = { error: '❌', success: '✅', info: 'ℹ️', warning: '⚠️' };
     
     notification.innerHTML = `
         <div class="notification-content">
             <span>${icons[type] || icons.info} ${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: #999; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
-        </div>
-    `;
+            <button onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>`;
     
     addNotificationStyles();
-    
     document.body.appendChild(notification);
     
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.opacity = '0';
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => notification.remove(), 300);
+            setTimeout(() => notification.remove(), 200);
         }
-    }, 4000);
+    }, 3000);
 }
 
-// Стили для карты
+// === СТИЛИ ===
 function addMapStyles() {
     if (!document.getElementById('map-styles')) {
         const style = document.createElement('style');
@@ -525,39 +717,28 @@ function addMapStyles() {
             .leaflet-tile-pane {
                 filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
             }
-            
-            .leaflet-marker-pane,
-            .leaflet-popup-pane,
-            .leaflet-control-container {
+            .leaflet-marker-pane, .leaflet-popup-pane, .leaflet-control-container {
                 filter: none !important;
             }
-            
             .leaflet-container {
                 background: #f8f9fa !important;
             }
-            
             .leaflet-control-zoom a {
                 width: ${isMobile ? '35px' : '26px'} !important;
                 height: ${isMobile ? '35px' : '26px'} !important;
                 line-height: ${isMobile ? '35px' : '26px'} !important;
                 font-size: 18px !important;
-            }
-        `;
+            }`;
         document.head.appendChild(style);
     }
 }
 
-// Стили для маркеров
 function addMarkerStyles() {
     if (!document.getElementById('marker-styles')) {
         const style = document.createElement('style');
         style.id = 'marker-styles';
         style.textContent = `
-            .custom-marker {
-                background: none !important;
-                border: none !important;
-            }
-            
+            .custom-marker { background: none !important; border: none !important; }
             .marker-dot {
                 width: ${isMobile ? '16px' : '20px'};
                 height: ${isMobile ? '16px' : '20px'};
@@ -567,175 +748,25 @@ function addMarkerStyles() {
                 transition: transform 0.2s ease;
                 cursor: pointer;
             }
-            
-            .marker-dot:hover {
-                transform: scale(1.1);
-            }
-            
-            .marker-dot.available {
-                background: linear-gradient(45deg, #4CAF50, #45a049);
-            }
-            
-            .marker-dot.collected {
-                background: linear-gradient(45deg, #f44336, #e53935);
-            }
-            
-            .popup-content {
-                min-width: ${isMobile ? '200px' : '220px'};
-                font-size: ${isMobile ? '14px' : '15px'};
-            }
-            
-            .popup-content h3 {
-                margin: 0 0 10px 0;
-                color: #333;
-                font-size: ${isMobile ? '16px' : '18px'};
-                font-weight: 600;
-            }
-            
-            .status {
-                margin: 8px 0;
-                font-weight: 600;
-            }
-            
-            .status.available {
-                color: #4CAF50;
-            }
-            
-            .status.collected {
-                color: #f44336;
-            }
-            
-            .collector-info {
-                background: #f8f9fa;
-                padding: 10px;
-                border-radius: 6px;
-                margin: 10px 0;
-                font-size: ${isMobile ? '12px' : '13px'};
-            }
-            
-            .collector-info p {
-                margin: 4px 0;
-            }
-            
-            .details-btn {
-                background: linear-gradient(45deg, #667eea, #764ba2);
-                color: white;
-                border: none;
-                padding: ${isMobile ? '8px 12px' : '10px 16px'};
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: ${isMobile ? '12px' : '14px'};
-                width: 100%;
-                margin-top: 8px;
-            }
-        `;
+            .marker-dot:hover { transform: scale(1.1); }
+            .marker-dot.available { background: linear-gradient(45deg, #4CAF50, #45a049); }
+            .marker-dot.collected { background: linear-gradient(45deg, #f44336, #e53935); }
+            .popup-content { min-width: ${isMobile ? '200px' : '220px'}; font-size: ${isMobile ? '14px' : '15px'}; }
+            .popup-content h3 { margin: 0 0 10px 0; color: #333; font-size: ${isMobile ? '16px' : '18px'}; font-weight: 600; }
+            .status { margin: 8px 0; font-weight: 600; }
+            .status.available { color: #4CAF50; }
+            .status.collected { color: #f44336; }
+            .collector-info { background: #f8f9fa; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: ${isMobile ? '12px' : '13px'}; }
+            .collector-info p { margin: 4px 0; }
+            .details-btn { background: linear-gradient(45deg, #667eea, #764ba2); color: white; border: none; padding: ${isMobile ? '8px 12px' : '10px 16px'}; border-radius: 6px; cursor: pointer; font-size: ${isMobile ? '12px' : '14px'}; width: 100%; margin-top: 8px; }`;
         document.head.appendChild(style);
     }
 }
 
-// Стили для уведомлений
 function addNotificationStyles() {
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
         style.id = 'notification-styles';
         style.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 2000;
-                background: rgba(255, 255, 255, 0.98);
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                padding: 12px 16px;
-                min-width: 250px;
-                max-width: 350px;
-                font-size: ${isMobile ? '14px' : '15px'};
-                transition: all 0.3s ease;
-            }
-            
-            .notification.error {
-                border-left: 4px solid #f44336;
-            }
-            
-            .notification.success {
-                border-left: 4px solid #4CAF50;
-            }
-            
-            .notification.info {
-                border-left: 4px solid #2196F3;
-            }
-            
-            .notification.warning {
-                border-left: 4px solid #ff9800;
-            }
-            
-            .notification-content {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            @media (max-width: 480px) {
-                .notification {
-                    top: 10px;
-                    right: 10px;
-                    left: 10px;
-                    min-width: auto;
-                    max-width: none;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Обработчики событий
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('infoModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-});
-
-window.addEventListener('error', function(e) {
-    if (e.target && e.target.src && e.target.src.includes('openstreetmap')) {
-        console.warn('Map tile loading error');
-    }
-});
-
-let resizeTimeout;
-window.addEventListener('resize', function() {
-    if (map && isMapInitialized) {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            map.invalidateSize();
-        }, 250);
-    }
-});
-
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeModal();
-    }
-});
-
-// Экспорт
-window.PlasticBoy = {
-    map,
-    markers,
-    loadPoints,
-    showNotification,
-    getCurrentLocation,
-    showPointDetails,
-    closeModal,
-    initMap,
-    updateMap,
-    updateStats
-};
-
-window.showNotification = showNotification;
-window.updateMap = updateMap;
-window.updateStats = updateStats;
-
-console.log('PlasticBoy script loaded successfully');
+            .notification { position: fixed; top: 20px; right: 20px; z-index: 2000; background: rgba(255, 255, 255, 0.98); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 12px 16px; min-width: 250px; max-width: 350px; font-size: ${isMobile ? '14px' : '15px'}; transition: all 0.3s ease; }
+            .notification.error { border-left: 4px solid #f44336; }
