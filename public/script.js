@@ -1,4 +1,4 @@
-// ИСПРАВЛЕННАЯ версия script.js для PlasticBoy - решение проблемы с отображением точек
+// МОБИЛЬНО-ОПТИМИЗИРОВАННАЯ версия script.js для PlasticBoy
 let map;
 let markers = [];
 let markersLayer;
@@ -10,195 +10,355 @@ const ALMATY_CENTER = [43.2220, 76.8512];
 let isAppInitialized = false;
 let pointsCache = null;
 let abortController = null;
+let isMobile = false;
 
-// Диагностическая функция
-function debugLog(message, data = null) {
-    console.log(`🔍 [PlasticBoy] ${message}`, data || '');
+// Определение мобильного устройства
+function detectMobile() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallScreen = window.innerWidth <= 768;
+    
+    isMobile = isMobileUA || (isTouchDevice && isSmallScreen);
+    
+    console.log('🔍 [Mobile Detection]', {
+        userAgent: userAgent.substring(0, 50),
+        isMobileUA,
+        isTouchDevice,
+        isSmallScreen,
+        screenSize: `${window.innerWidth}x${window.innerHeight}`,
+        devicePixelRatio: window.devicePixelRatio,
+        isMobile
+    });
+    
+    return isMobile;
 }
 
-// Проверка координат
+// Мобильное логирование
+function mobileLog(message, data = null) {
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`📱 [${timestamp}] ${message}`, data || '');
+    
+    // Дополнительное логирование для мобильных устройств
+    if (isMobile && window.location.search.includes('debug')) {
+        // Показываем критичные сообщения как алерты на мобильных (только в debug режиме)
+        if (message.includes('ОШИБКА') || message.includes('ERROR')) {
+            setTimeout(() => {
+                alert(`PlasticBoy Debug: ${message}`);
+            }, 100);
+        }
+    }
+}
+
+// Проверка координат с усиленной валидацией для мобильных
 function validateCoordinates(lat, lng) {
-    const isValidLat = typeof lat === 'number' && lat >= -90 && lat <= 90 && !isNaN(lat);
-    const isValidLng = typeof lng === 'number' && lng >= -180 && lng <= 180 && !isNaN(lng);
+    // Проверяем что это числа
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+    
+    const isValidLat = !isNaN(numLat) && isFinite(numLat) && numLat >= -90 && numLat <= 90;
+    const isValidLng = !isNaN(numLng) && isFinite(numLng) && numLng >= -180 && numLng <= 180;
+    
+    mobileLog(`Валидация координат: lat=${lat} (${typeof lat}) -> ${numLat} valid=${isValidLat}, lng=${lng} (${typeof lng}) -> ${numLng} valid=${isValidLng}`);
+    
     return isValidLat && isValidLng;
 }
 
-// Безопасный вызов функций загрузчика
+// Безопасное уведомление загрузчика
 function safeNotifyLoader() {
     try {
         if (typeof window.PlasticBoyLoader !== 'undefined' && 
             typeof window.PlasticBoyLoader.onPointsLoaded === 'function') {
             window.PlasticBoyLoader.onPointsLoaded();
-            debugLog('✅ Загрузчик уведомлен о готовности точек');
+            mobileLog('✅ Загрузчик уведомлен о готовности точек');
         }
     } catch (error) {
-        debugLog('❌ Ошибка при уведомлении загрузчика:', error);
+        mobileLog('❌ Ошибка при уведомлении загрузчика:', error);
     }
 }
 
-// Инициализация при загрузке DOM
+// Инициализация при загрузке DOM с мобильными задержками
 document.addEventListener('DOMContentLoaded', function() {
-    debugLog('DOM загружен, запуск PlasticBoy');
+    detectMobile();
+    mobileLog('DOM загружен, запуск PlasticBoy (мобильная версия)');
     
+    // Увеличенная задержка для мобильных устройств
+    const initDelay = isMobile ? 500 : 200;
     setTimeout(() => {
         initializeApp();
-    }, 100);
+    }, initDelay);
 });
 
 // Основная инициализация приложения
 function initializeApp() {
-    debugLog('Инициализация PlasticBoy...');
+    mobileLog('Инициализация PlasticBoy (мобильная оптимизация включена)...');
     
-    // Добавляем стили для маркеров
-    addMarkerStyles();
+    // Добавляем мобильные стили
+    addMobileOptimizedStyles();
     
     // Инициализируем кнопки управления
     initControlButtons();
     
+    // Настраиваем viewport для мобильных
+    setupMobileViewport();
+    
     // Проверяем доступность Leaflet
     if (typeof L !== 'undefined') {
-        debugLog('Leaflet доступен, инициализируем карту');
+        mobileLog('Leaflet доступен, инициализируем карту');
         initMap();
     } else {
-        debugLog('Ожидание загрузки Leaflet...');
+        mobileLog('Ожидание загрузки Leaflet...');
         waitForLeaflet();
     }
 }
 
-// Ожидание загрузки Leaflet
-function waitForLeaflet() {
-    let attempts = 0;
-    const maxAttempts = 50; // 5 секунд максимум
+// Настройка viewport для мобильных устройств
+function setupMobileViewport() {
+    if (!isMobile) return;
     
-    const checkInterval = setInterval(() => {
-        attempts++;
-        
-        if (typeof L !== 'undefined') {
-            clearInterval(checkInterval);
-            debugLog('Leaflet загружен, инициализируем карту');
-            initMap();
-        } else if (attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            debugLog('❌ КРИТИЧЕСКАЯ ОШИБКА: Leaflet не загрузился');
-            showErrorNotification('Ошибка загрузки карты. Обновите страницу.');
-        }
-    }, 100);
+    mobileLog('Настройка мобильного viewport');
+    
+    // Улучшаем viewport meta tag
+    let viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (viewportMeta) {
+        viewportMeta.setAttribute('content', 
+            'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+        );
+    }
+    
+    // Предотвращаем zoom на input focus
+    document.addEventListener('touchstart', function() {}, {passive: true});
+    
+    // Обработка изменения ориентации
+    window.addEventListener('orientationchange', function() {
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+                mobileLog('Карта обновлена после поворота экрана');
+            }
+        }, 300);
+    });
 }
 
-// Добавление стилей для маркеров
-function addMarkerStyles() {
-    if (document.getElementById('plasticboy-marker-styles')) {
+// Мобильные стили
+function addMobileOptimizedStyles() {
+    if (document.getElementById('mobile-plasticboy-styles')) {
         return; // Стили уже добавлены
     }
     
     const style = document.createElement('style');
-    style.id = 'plasticboy-marker-styles';
+    style.id = 'mobile-plasticboy-styles';
     style.textContent = `
-        .plasticboy-marker {
+        /* Мобильные маркеры - увеличенные для лучшего взаимодействия */
+        .mobile-plasticboy-marker {
             background: none !important;
             border: none !important;
         }
         
-        .plasticboy-dot {
-            width: 24px;
-            height: 24px;
+        .mobile-plasticboy-dot {
+            width: ${isMobile ? '32px' : '24px'};
+            height: ${isMobile ? '32px' : '24px'};
             border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: ${isMobile ? '4px' : '3px'} solid white;
+            box-shadow: 0 ${isMobile ? '6px' : '4px'} ${isMobile ? '16px' : '12px'} rgba(0,0,0,0.3);
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: ${isMobile ? '16px' : '14px'};
             font-weight: bold;
             color: white;
             position: relative;
+            touch-action: manipulation; /* Улучшение touch взаимодействия */
         }
         
-        .plasticboy-dot:hover {
-            transform: scale(1.2);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        .mobile-plasticboy-dot:hover,
+        .mobile-plasticboy-dot:active {
+            transform: scale(${isMobile ? '1.1' : '1.2'});
+            box-shadow: 0 ${isMobile ? '8px' : '6px'} ${isMobile ? '20px' : '16px'} rgba(0,0,0,0.4);
         }
         
-        .plasticboy-dot.available {
+        .mobile-plasticboy-dot.available {
             background: linear-gradient(45deg, #4CAF50, #45a049);
         }
         
-        .plasticboy-dot.collected {
+        .mobile-plasticboy-dot.collected {
             background: linear-gradient(45deg, #f44336, #e53935);
         }
         
-        .plasticboy-dot.available::before {
+        .mobile-plasticboy-dot.available::before {
             content: '📦';
-            font-size: 12px;
+            font-size: ${isMobile ? '14px' : '12px'};
         }
         
-        .plasticboy-dot.collected::before {
+        .mobile-plasticboy-dot.collected::before {
             content: '✅';
-            font-size: 12px;
+            font-size: ${isMobile ? '14px' : '12px'};
         }
         
-        .plasticboy-popup {
-            min-width: 220px;
+        /* Мобильные popup */
+        .mobile-plasticboy-popup {
+            min-width: ${isMobile ? '250px' : '220px'};
+            max-width: ${isMobile ? '300px' : '280px'};
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: ${isMobile ? '16px' : '14px'}; /* Увеличенный шрифт для мобильных */
         }
         
-        .plasticboy-popup h3 {
+        .mobile-plasticboy-popup h3 {
             margin: 0 0 12px 0;
             color: #333;
-            font-size: 1.1rem;
+            font-size: ${isMobile ? '1.2rem' : '1.1rem'};
             font-weight: 600;
+            line-height: 1.3;
         }
         
-        .plasticboy-status {
-            margin: 8px 0;
+        .mobile-plasticboy-status {
+            margin: 10px 0;
             font-weight: 600;
-            padding: 6px 12px;
+            padding: ${isMobile ? '8px 16px' : '6px 12px'};
             border-radius: 20px;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: ${isMobile ? '1rem' : '0.9rem'};
         }
         
-        .plasticboy-status.available { 
+        .mobile-plasticboy-status.available { 
             background: #e8f5e8;
             color: #2e7d32; 
         }
         
-        .plasticboy-status.collected { 
+        .mobile-plasticboy-status.collected { 
             background: #ffebee;
             color: #c62828; 
         }
         
-        .plasticboy-collector-info {
+        .mobile-plasticboy-collector-info {
             background: #f8f9fa;
-            padding: 12px;
+            padding: ${isMobile ? '16px' : '12px'};
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 12px 0;
             border-left: 4px solid #667eea;
         }
         
-        .plasticboy-collector-info p {
-            margin: 4px 0;
-            font-size: 0.9rem;
+        .mobile-plasticboy-collector-info p {
+            margin: 6px 0;
+            font-size: ${isMobile ? '0.95rem' : '0.9rem'};
+            line-height: 1.4;
         }
         
-        .plasticboy-collector-info strong {
-            color: #333;
+        /* Улучшенные popup для мобильных */
+        .leaflet-popup-content-wrapper {
+            border-radius: ${isMobile ? '16px' : '12px'} !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        .leaflet-popup-close-button {
+            width: ${isMobile ? '32px' : '24px'} !important;
+            height: ${isMobile ? '32px' : '24px'} !important;
+            font-size: ${isMobile ? '20px' : '18px'} !important;
+            line-height: ${isMobile ? '30px' : '22px'} !important;
+            touch-action: manipulation;
+        }
+        
+        /* Мобильные уведомления */
+        .mobile-notification {
+            position: fixed;
+            top: ${isMobile ? '10px' : '20px'};
+            left: ${isMobile ? '10px' : 'auto'};
+            right: ${isMobile ? '10px' : '20px'};
+            z-index: 3000;
+            background: white;
+            border-radius: ${isMobile ? '12px' : '8px'};
+            padding: ${isMobile ? '16px 20px' : '12px 16px'};
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            font-size: ${isMobile ? '16px' : '14px'};
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInNotification 0.3s ease-out;
+            max-width: none;
+        }
+        
+        /* Пульсация для лучшей видимости на мобильных */
+        @keyframes mobilePulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        
+        .mobile-pulse-ring {
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border: 2px solid #4CAF50;
+            border-radius: 50%;
+            opacity: 0;
+            animation: mobilePulse 2s infinite;
+        }
+        
+        /* Улучшения для touch устройств */
+        @media (hover: none) and (pointer: coarse) {
+            .mobile-plasticboy-dot:hover {
+                transform: none; /* Убираем hover эффекты на touch устройствах */
+            }
+            
+            .leaflet-container {
+                touch-action: pan-x pan-y; /* Улучшаем панорамирование */
+            }
+        }
+        
+        /* Дополнительные стили для очень маленьких экранов */
+        @media (max-width: 360px) {
+            .mobile-plasticboy-popup {
+                min-width: 200px;
+                font-size: 14px;
+            }
+            
+            .mobile-plasticboy-popup h3 {
+                font-size: 1rem;
+            }
         }
     `;
     document.head.appendChild(style);
-    debugLog('✅ Стили маркеров добавлены');
+    mobileLog('✅ Мобильные стили добавлены');
 }
 
-// Инициализация карты
+// Ожидание загрузки Leaflet с увеличенным таймаутом для мобильных
+function waitForLeaflet() {
+    let attempts = 0;
+    const maxAttempts = isMobile ? 100 : 50; // Больше времени для мобильных
+    const checkInterval = isMobile ? 150 : 100; // Более редкие проверки
+    
+    mobileLog(`Ожидание Leaflet (максимум ${maxAttempts * checkInterval}ms)`);
+    
+    const checkLeafletInterval = setInterval(() => {
+        attempts++;
+        
+        if (typeof L !== 'undefined') {
+            clearInterval(checkLeafletInterval);
+            mobileLog('✅ Leaflet загружен, инициализируем карту');
+            initMap();
+        } else if (attempts >= maxAttempts) {
+            clearInterval(checkLeafletInterval);
+            mobileLog('❌ КРИТИЧЕСКАЯ ОШИБКА: Leaflet не загрузился');
+            showMobileNotification('Ошибка загрузки карты. Обновите страницу.', 'error');
+        }
+        
+        // Логируем прогресс каждые 20 попыток
+        if (attempts % 20 === 0) {
+            mobileLog(`Ожидание Leaflet... попытка ${attempts}/${maxAttempts}`);
+        }
+    }, checkInterval);
+}
+
+// Мобильно-оптимизированная инициализация карты
 function initMap() {
     if (isAppInitialized) {
-        debugLog('⚠️ Карта уже инициализирована');
+        mobileLog('⚠️ Карта уже инициализирована');
         return;
     }
     
-    debugLog('Создание карты...');
+    mobileLog('Создание мобильно-оптимизированной карты...');
     
     try {
         // Проверяем существование элемента карты
@@ -207,58 +367,104 @@ function initMap() {
             throw new Error('Элемент #map не найден в DOM');
         }
         
-        // Создаем карту
-        map = L.map('map', {
+        // Мобильно-оптимизированные настройки карты
+        const mapOptions = {
             center: ALMATY_CENTER,
-            zoom: 13,
+            zoom: isMobile ? 12 : 13, // Чуть меньший zoom для мобильных
             zoomControl: true,
-            attributionControl: true,
-            preferCanvas: false,
+            attributionControl: !isMobile, // Скрываем attribution на мобильных для экономии места
+            preferCanvas: isMobile, // Canvas режим для лучшей производительности на мобильных
             maxZoom: 18,
-            minZoom: 10
-        });
+            minZoom: isMobile ? 9 : 10,
+            zoomSnap: isMobile ? 0.5 : 1, // Более плавный zoom на мобильных
+            zoomDelta: isMobile ? 0.5 : 1,
+            wheelPxPerZoomLevel: isMobile ? 120 : 60,
+            // Настройки для touch устройств
+            tap: isMobile,
+            tapTolerance: isMobile ? 20 : 15,
+            touchZoom: isMobile,
+            doubleClickZoom: true,
+            scrollWheelZoom: !isMobile, // Отключаем scroll zoom на мобильных
+            boxZoom: !isMobile,
+            keyboard: !isMobile
+        };
         
-        debugLog('✅ Объект карты создан');
+        // Создаем карту
+        map = L.map('map', mapOptions);
         
-        // Добавляем тайлы
-        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 18
-        });
+        mobileLog('✅ Объект карты создан с мобильными настройками');
         
+        // Добавляем тайлы с оптимизацией для мобильных
+        const tileOptions = {
+            attribution: isMobile ? '' : '© OpenStreetMap contributors',
+            maxZoom: 18,
+            detectRetina: true, // Поддержка retina дисплеев
+            tileSize: isMobile ? 256 : 256,
+            zoomOffset: 0
+        };
+        
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', tileOptions);
         tileLayer.addTo(map);
-        debugLog('✅ Тайлы добавлены');
+        mobileLog('✅ Тайлы добавлены с мобильной оптимизацией');
         
         // Создаем группу для маркеров
         markersLayer = L.layerGroup();
         markersLayer.addTo(map);
-        debugLog('✅ Группа маркеров создана');
+        mobileLog('✅ Группа маркеров создана');
+        
+        // Мобильные обработчики событий карты
+        if (isMobile) {
+            // Предотвращаем случайные клики при панорамировании
+            let isPanning = false;
+            
+            map.on('movestart', function() {
+                isPanning = true;
+            });
+            
+            map.on('moveend', function() {
+                setTimeout(() => {
+                    isPanning = false;
+                }, 100);
+            });
+            
+            // Улучшенная обработка touch событий
+            map.on('click', function(e) {
+                if (isPanning) {
+                    e.originalEvent.preventDefault();
+                    return false;
+                }
+            });
+        }
         
         // Глобальный доступ к карте
         window.map = map;
         window.markersLayer = markersLayer;
         
         // Обновляем размер карты после инициализации
+        const resizeDelay = isMobile ? 500 : 200;
         setTimeout(() => {
             map.invalidateSize();
-            debugLog('✅ Размер карты обновлен');
-        }, 200);
+            mobileLog('✅ Размер карты обновлен');
+        }, resizeDelay);
         
         isAppInitialized = true;
-        debugLog('✅ Карта готова, загружаем точки');
+        mobileLog('✅ Карта готова, загружаем точки');
         
-        // Загружаем точки
-        loadPoints();
+        // Загружаем точки с задержкой для мобильных
+        const loadDelay = isMobile ? 300 : 100;
+        setTimeout(() => {
+            loadPoints();
+        }, loadDelay);
         
     } catch (error) {
-        debugLog('❌ КРИТИЧЕСКАЯ ОШИБКА при создании карты:', error);
-        showErrorNotification('Ошибка инициализации карты: ' + error.message);
+        mobileLog('❌ КРИТИЧЕСКАЯ ОШИБКА при создании карты:', error);
+        showMobileNotification('Ошибка инициализации карты: ' + error.message, 'error');
     }
 }
 
-// Загрузка точек
+// Мобильно-оптимизированная загрузка точек
 async function loadPoints() {
-    debugLog('Начинаем загрузку точек...');
+    mobileLog('Начинаем мобильную загрузку точек...');
     
     // Отменяем предыдущий запрос
     if (abortController) {
@@ -267,77 +473,49 @@ async function loadPoints() {
     abortController = new AbortController();
     
     try {
-        debugLog('Отправляем запрос к /api/points');
+        mobileLog('Отправляем запрос к /api/points');
         
-        const response = await fetch('/api/points', {
+        const fetchOptions = {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
                 'Cache-Control': 'no-cache'
             },
             signal: abortController.signal
-        });
+        };
         
-        debugLog('Ответ получен:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Сервер вернул не JSON ответ: ' + contentType);
-        }
-        
-        const points = await response.json();
-        debugLog('Данные точек получены:', {
-            type: typeof points,
-            isArray: Array.isArray(points),
-            length: points ? points.length : 'undefined',
-            sample: points ? points.slice(0, 2) : 'none'
-        });
-        
-        if (!Array.isArray(points)) {
-            throw new Error('Полученные данные не являются массивом: ' + typeof points);
-        }
-        
-        pointsCache = points;
-        
-        // Обновляем карту и статистику
-        updateMapMarkers(points);
-        updateStatistics(points);
-        
-        // Уведомляем систему загрузки
-        safeNotifyLoader();
-        
-        debugLog(`✅ Загрузка завершена: ${points.length} точек`);
-        
-        if (points.length === 0) {
-            showInfoNotification('На карте пока нет точек для сбора');
+        // Увеличенный таймаут для медленных мобильных соединений
+        if (isMobile) {
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Timeout: медленное соединение')), 15000);
+            });
+            
+            const fetchPromise = fetch('/api/points', fetchOptions);
+            const response = await Promise.race([fetchPromise, timeoutPromise]);
+            
+            await handlePointsResponse(response);
         } else {
-            showSuccessNotification(`Загружено ${points.length} точек на карту`);
+            const response = await fetch('/api/points', fetchOptions);
+            await handlePointsResponse(response);
         }
         
     } catch (error) {
         if (error.name === 'AbortError') {
-            debugLog('⚠️ Запрос отменен');
+            mobileLog('⚠️ Запрос отменен');
             return;
         }
         
-        debugLog('❌ ОШИБКА при загрузке точек:', error);
+        mobileLog('❌ ОШИБКА при загрузке точек:', error);
         
         // Показываем ошибку пользователю
-        showErrorNotification('Ошибка загрузки данных: ' + error.message);
+        showMobileNotification('Ошибка загрузки данных: ' + error.message, 'error');
         
         // Для отладки создаем тестовые точки
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            debugLog('Создаем тестовые точки для локальной отладки');
-            createTestPoints();
+        if (window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' ||
+            window.location.search.includes('debug')) {
+            mobileLog('Создаем тестовые точки для отладки');
+            createMobileTestPoints();
         }
         
         // Уведомляем загрузчик даже при ошибке
@@ -345,63 +523,111 @@ async function loadPoints() {
     }
 }
 
-// Создание тестовых точек для отладки
-function createTestPoints() {
+// Обработка ответа с точками
+async function handlePointsResponse(response) {
+    mobileLog('Ответ получен:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Сервер вернул не JSON ответ: ' + contentType);
+    }
+    
+    const points = await response.json();
+    mobileLog('Данные точек получены:', {
+        type: typeof points,
+        isArray: Array.isArray(points),
+        length: points ? points.length : 'undefined',
+        sample: points ? points.slice(0, 1) : 'none'
+    });
+    
+    if (!Array.isArray(points)) {
+        throw new Error('Полученные данные не являются массивом: ' + typeof points);
+    }
+    
+    pointsCache = points;
+    
+    // Обновляем карту и статистику
+    updateMobileMapMarkers(points);
+    updateMobileStatistics(points);
+    
+    // Уведомляем систему загрузки
+    safeNotifyLoader();
+    
+    mobileLog(`✅ Мобильная загрузка завершена: ${points.length} точек`);
+    
+    if (points.length === 0) {
+        showMobileNotification('На карте пока нет точек для сбора', 'info');
+    } else {
+        showMobileNotification(`Загружено ${points.length} точек на карту`, 'success');
+    }
+}
+
+// Создание тестовых точек для мобильной отладки
+function createMobileTestPoints() {
     const testPoints = [
         {
-            id: 'test1',
-            name: 'Тестовая модель - Парк Горького',
+            id: 'mobile-test1',
+            name: 'Мобильная тестовая точка 1 - Парк Горького',
             coordinates: { lat: 43.2220, lng: 76.8512 },
             status: 'available',
             createdAt: new Date().toISOString()
         },
         {
-            id: 'test2',
-            name: 'Тестовая модель - Площадь Республики',
+            id: 'mobile-test2',
+            name: 'Мобильная тестовая точка 2 - Площадь Республики',
             coordinates: { lat: 43.2380, lng: 76.8840 },
             status: 'collected',
             collectorInfo: {
-                name: 'Тестовый пользователь',
-                signature: 'Первая находка!'
+                name: 'Мобильный пользователь',
+                signature: 'Найдено через мобильное приложение!'
             },
             collectedAt: new Date(Date.now() - 3600000).toISOString()
         },
         {
-            id: 'test3',
-            name: 'Тестовая модель - Кок-Тобе',
+            id: 'mobile-test3',
+            name: 'Мобильная тестовая точка 3 - Кок-Тобе',
             coordinates: { lat: 43.2050, lng: 76.9080 },
             status: 'available',
             createdAt: new Date().toISOString()
         }
     ];
     
-    debugLog('Создаем тестовые точки:', testPoints);
+    mobileLog('Создаем мобильные тестовые точки:', testPoints);
     
     pointsCache = testPoints;
-    updateMapMarkers(testPoints);
-    updateStatistics(testPoints);
+    updateMobileMapMarkers(testPoints);
+    updateMobileStatistics(testPoints);
     safeNotifyLoader();
     
-    showInfoNotification('Загружены тестовые точки для отладки');
+    showMobileNotification('Загружены тестовые точки для мобильной отладки', 'info');
 }
 
-// Обновление маркеров на карте
-function updateMapMarkers(points) {
+// Мобильно-оптимизированное обновление маркеров
+function updateMobileMapMarkers(points) {
     if (!map || !markersLayer) {
-        debugLog('❌ Карта или группа маркеров не готовы');
+        mobileLog('❌ Карта или группа маркеров не готовы');
         return;
     }
     
-    debugLog('Обновляем маркеры на карте...');
+    mobileLog('Обновляем мобильные маркеры на карте...');
     
     try {
         // Очищаем существующие маркеры
         markersLayer.clearLayers();
         markers.length = 0;
-        debugLog('Существующие маркеры очищены');
+        mobileLog('Существующие маркеры очищены');
         
         if (points.length === 0) {
-            debugLog('⚠️ Нет точек для отображения');
+            mobileLog('⚠️ Нет точек для отображения');
             return;
         }
         
@@ -410,63 +636,72 @@ function updateMapMarkers(points) {
         
         points.forEach((point, index) => {
             try {
-                // Валидация точки
+                // Усиленная валидация для мобильных
                 if (!point.coordinates) {
                     throw new Error('Отсутствуют координаты');
                 }
                 
-                const lat = parseFloat(point.coordinates.lat);
-                const lng = parseFloat(point.coordinates.lng);
+                // Убеждаемся что координаты - числа
+                const lat = Number(point.coordinates.lat);
+                const lng = Number(point.coordinates.lng);
                 
                 if (!validateCoordinates(lat, lng)) {
-                    throw new Error(`Неверные координаты: lat=${lat}, lng=${lng}`);
+                    throw new Error(`Неверные координаты: lat=${lat} (${typeof lat}), lng=${lng} (${typeof lng})`);
                 }
                 
                 const isAvailable = point.status === 'available';
                 
-                debugLog(`Создаем маркер ${index + 1}: ${point.name} [${lat}, ${lng}] - ${point.status}`);
+                mobileLog(`Создаем мобильный маркер ${index + 1}: ${point.name} [${lat}, ${lng}] - ${point.status}`);
                 
-                // Создаем иконку маркера
+                // Создаем мобильную иконку маркера
                 const icon = L.divIcon({
-                    className: 'plasticboy-marker',
-                    html: `<div class="plasticboy-dot ${isAvailable ? 'available' : 'collected'}"></div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
+                    className: 'mobile-plasticboy-marker',
+                    html: `
+                        <div class="mobile-plasticboy-dot ${isAvailable ? 'available' : 'collected'}">
+                            ${isAvailable ? '<div class="mobile-pulse-ring"></div>' : ''}
+                        </div>
+                    `,
+                    iconSize: [isMobile ? 32 : 24, isMobile ? 32 : 24],
+                    iconAnchor: [isMobile ? 16 : 12, isMobile ? 16 : 12]
                 });
                 
                 // Создаем маркер
                 const marker = L.marker([lat, lng], { icon });
                 
-                // Создаем содержимое popup
+                // Создаем мобильное содержимое popup
                 let popupContent = `
-                    <div class="plasticboy-popup">
+                    <div class="mobile-plasticboy-popup">
                         <h3>${point.name}</h3>
-                        <div class="plasticboy-status ${point.status}">
+                        <div class="mobile-plasticboy-status ${point.status}">
                             ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
                         </div>
-                        <p><strong>Координаты:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                        <p><strong>Координаты:</strong><br>${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
                 `;
                 
                 if (point.createdAt) {
-                    popupContent += `<p><strong>Создана:</strong> ${new Date(point.createdAt).toLocaleString('ru-RU')}</p>`;
+                    popupContent += `<p><strong>Создана:</strong><br>${new Date(point.createdAt).toLocaleString('ru-RU')}</p>`;
                 }
                 
                 if (!isAvailable && point.collectorInfo) {
                     popupContent += `
-                        <div class="plasticboy-collector-info">
+                        <div class="mobile-plasticboy-collector-info">
                             <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>
                             ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
-                            ${point.collectedAt ? `<p><strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>` : ''}
+                            ${point.collectedAt ? `<p><strong>Время сбора:</strong><br>${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>` : ''}
                         </div>
                     `;
                 }
                 
                 popupContent += '</div>';
                 
-                // Привязываем popup к маркеру
+                // Привязываем popup к маркеру с мобильными настройками
                 marker.bindPopup(popupContent, {
-                    maxWidth: 300,
-                    className: 'plasticboy-popup-wrapper'
+                    maxWidth: isMobile ? 300 : 280,
+                    className: 'mobile-plasticboy-popup-wrapper',
+                    closeButton: true,
+                    autoPan: isMobile,
+                    keepInView: isMobile,
+                    autoPanPadding: isMobile ? [20, 20] : [10, 10]
                 });
                 
                 // Добавляем маркер на карту
@@ -474,57 +709,71 @@ function updateMapMarkers(points) {
                 markers.push(marker);
                 successCount++;
                 
-                debugLog(`✅ Маркер ${index + 1} добавлен успешно`);
+                mobileLog(`✅ Мобильный маркер ${index + 1} добавлен успешно`);
                 
             } catch (error) {
                 errorCount++;
-                debugLog(`❌ Ошибка при создании маркера ${index + 1}:`, error);
+                mobileLog(`❌ Ошибка при создании мобильного маркера ${index + 1}:`, error);
             }
         });
         
         // Обновляем глобальный доступ
         window.markers = markers;
         
-        debugLog(`Обновление маркеров завершено: успешно=${successCount}, ошибок=${errorCount}`);
+        mobileLog(`Обновление мобильных маркеров завершено: успешно=${successCount}, ошибок=${errorCount}`);
         
         if (successCount > 0) {
-            debugLog(`✅ На карте отображено ${successCount} маркеров`);
+            mobileLog(`✅ На карте отображено ${successCount} мобильных маркеров`);
+            
+            // Автоматически фокусируемся на маркерах для мобильных
+            if (isMobile && successCount > 0) {
+                setTimeout(() => {
+                    const group = new L.featureGroup(markers);
+                    if (group.getBounds().isValid()) {
+                        map.fitBounds(group.getBounds(), {
+                            padding: [20, 20],
+                            maxZoom: 15
+                        });
+                        mobileLog('✅ Карта автоматически сфокусирована на маркерах');
+                    }
+                }, 500);
+            }
         }
         
         if (errorCount > 0) {
-            debugLog(`⚠️ Ошибок при создании маркеров: ${errorCount}`);
+            mobileLog(`⚠️ Ошибок при создании мобильных маркеров: ${errorCount}`);
         }
         
     } catch (error) {
-        debugLog('❌ КРИТИЧЕСКАЯ ОШИБКА при обновлении маркеров:', error);
-        showErrorNotification('Ошибка отображения точек на карте');
+        mobileLog('❌ КРИТИЧЕСКАЯ ОШИБКА при обновлении мобильных маркеров:', error);
+        showMobileNotification('Ошибка отображения точек на карте', 'error');
     }
 }
 
-// Обновление статистики
-function updateStatistics(points) {
-    debugLog('Обновляем статистику...');
+// Мобильное обновление статистики
+function updateMobileStatistics(points) {
+    mobileLog('Обновляем мобильную статистику...');
     
     try {
         const available = points.filter(p => p.status === 'available').length;
         const collected = points.filter(p => p.status === 'collected').length;
         
-        debugLog('Статистика:', { available, collected, total: points.length });
+        mobileLog('Мобильная статистика:', { available, collected, total: points.length });
         
-        // Обновляем элементы с анимацией
-        updateStatElement('availableCount', available);
-        updateStatElement('collectedCount', collected);
+        // Обновляем элементы с мобильной анимацией
+        updateMobileStatElement('availableCount', available);
+        updateMobileStatElement('collectedCount', collected);
         
     } catch (error) {
-        debugLog('❌ Ошибка при обновлении статистики:', error);
+        mobileLog('❌ Ошибка при обновлении мобильной статистики:', error);
     }
 }
 
-// Обновление элемента статистики с анимацией
-function updateStatElement(elementId, newValue) {
+// Мобильное обновление элемента статистики
+function updateMobileStatElement(elementId, newValue) {
     const element = document.getElementById(elementId);
     if (!element) {
-        debugLog(`⚠️ Элемент ${elementId} не найден`);
+        mobileLog(`⚠️ Элемент ${elementId} не найден`);
         return;
     }
     
@@ -534,95 +783,118 @@ function updateStatElement(elementId, newValue) {
         return; // Значение не изменилось
     }
     
-    // Простая анимация изменения числа
-    const duration = 800;
-    const steps = 20;
-    const stepValue = (newValue - currentValue) / steps;
-    const stepDuration = duration / steps;
-    
-    let current = currentValue;
-    let step = 0;
-    
-    const timer = setInterval(() => {
-        step++;
-        current += stepValue;
+    // Упрощенная анимация для мобильных (более производительная)
+    if (isMobile) {
+        element.style.transform = 'scale(1.1)';
+        element.style.transition = 'transform 0.2s ease';
         
-        if (step >= steps) {
+        setTimeout(() => {
             element.textContent = newValue;
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.round(current);
-        }
-    }, stepDuration);
+            element.style.transform = 'scale(1)';
+        }, 100);
+    } else {
+        // Полная анимация для десктопа
+        const duration = 600;
+        const steps = 15;
+        const stepValue = (newValue - currentValue) / steps;
+        const stepDuration = duration / steps;
+        
+        let current = currentValue;
+        let step = 0;
+        
+        const timer = setInterval(() => {
+            step++;
+            current += stepValue;
+            
+            if (step >= steps) {
+                element.textContent = newValue;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.round(current);
+            }
+        }, stepDuration);
+    }
 }
 
-// Геолокация пользователя
+// Мобильная геолокация с улучшенной обработкой
 function getCurrentLocation() {
-    debugLog('Запрос геолокации пользователя');
+    mobileLog('Запрос мобильной геолокации пользователя');
     
     const locationBtn = document.querySelector('.location-btn');
     if (!locationBtn) {
-        debugLog('❌ Кнопка геолокации не найдена');
+        mobileLog('❌ Кнопка геолокации не найдена');
         return;
     }
     
     if (!navigator.geolocation) {
-        debugLog('❌ Геолокация не поддерживается браузером');
-        showErrorNotification('Геолокация не поддерживается вашим браузером');
+        mobileLog('❌ Геолокация не поддерживается браузером');
+        showMobileNotification('Геолокация не поддерживается вашим браузером', 'error');
         return;
     }
     
     const originalText = locationBtn.innerHTML;
-    locationBtn.innerHTML = '⏳ Определение местоположения...';
+    locationBtn.innerHTML = isMobile ? '⏳ Поиск...' : '⏳ Определение местоположения...';
     locationBtn.disabled = true;
+    
+    // Мобильные настройки геолокации
+    const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: isMobile ? 20000 : 15000, // Больше времени для мобильных
+        maximumAge: 300000 // 5 минут
+    };
     
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+            const accuracy = Math.round(position.coords.accuracy);
             
-            debugLog('Геолокация получена:', { lat, lng, accuracy: position.coords.accuracy });
+            mobileLog('Мобильная геолокация получена:', { 
+                lat, lng, accuracy, 
+                timestamp: new Date(position.timestamp).toLocaleTimeString()
+            });
             
-            // Создаем иконку пользователя
+            // Создаем мобильную иконку пользователя
             const userIcon = L.divIcon({
-                className: 'plasticboy-user-marker',
+                className: 'mobile-user-marker',
                 html: `<div style="
                     background: linear-gradient(45deg, #2196F3, #1976D2);
-                    width: 20px; 
-                    height: 20px; 
+                    width: ${isMobile ? '24px' : '20px'}; 
+                    height: ${isMobile ? '24px' : '20px'}; 
                     border-radius: 50%; 
-                    border: 3px solid white; 
-                    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+                    border: ${isMobile ? '4px' : '3px'} solid white; 
+                    box-shadow: 0 ${isMobile ? '6px' : '4px'} ${isMobile ? '16px' : '12px'} rgba(33, 150, 243, 0.4);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
                     font-weight: bold;
-                    font-size: 10px;
+                    font-size: ${isMobile ? '12px' : '10px'};
                     position: relative;
                 ">👤
                     <div style="
                         position: absolute;
-                        top: -3px; left: -3px; right: -3px; bottom: -3px;
+                        top: -${isMobile ? '4px' : '3px'}; left: -${isMobile ? '4px' : '3px'}; 
+                        right: -${isMobile ? '4px' : '3px'}; bottom: -${isMobile ? '4px' : '3px'};
                         border: 2px solid #2196F3;
                         border-radius: 50%;
                         opacity: 0.6;
                         animation: userPulse 2s infinite;
                     "></div>
                 </div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                iconSize: [isMobile ? 24 : 20, isMobile ? 24 : 20],
+                iconAnchor: [isMobile ? 12 : 10, isMobile ? 12 : 10]
             });
             
-            // Добавляем стиль для анимации если его нет
-            if (!document.getElementById('user-pulse-animation')) {
+            // Добавляем стиль для мобильной анимации если его нет
+            if (!document.getElementById('mobile-user-pulse-animation')) {
                 const style = document.createElement('style');
-                style.id = 'user-pulse-animation';
+                style.id = 'mobile-user-pulse-animation';
                 style.textContent = `
                     @keyframes userPulse {
                         0% { transform: scale(1); opacity: 0.7; }
                         50% { opacity: 0.3; }
-                        100% { transform: scale(2); opacity: 0; }
+                        100% { transform: scale(${isMobile ? '1.8' : '2'}); opacity: 0; }
                     }
                 `;
                 document.head.appendChild(style);
@@ -637,21 +909,34 @@ function getCurrentLocation() {
             window.userMarker = L.marker([lat, lng], { icon: userIcon })
                 .addTo(map)
                 .bindPopup(`
-                    <div style="text-align: center; min-width: 150px;">
+                    <div style="text-align: center; min-width: ${isMobile ? '180px' : '150px'};">
                         <strong>📍 Ваше местоположение</strong><br>
-                        <small style="color: #666;">
-                            Координаты: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
-                            Точность: ±${Math.round(position.coords.accuracy)}м
+                        <small style="color: #666; font-size: ${isMobile ? '14px' : '12px'};">
+                            Координаты:<br>${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                            Точность: ±${accuracy}м
                         </small>
                     </div>
                 `, {
-                    className: 'user-location-popup'
+                    className: 'mobile-user-location-popup',
+                    maxWidth: isMobile ? 250 : 200
                 });
             
-            // Центрируем карту на пользователе
-            map.setView([lat, lng], Math.max(map.getZoom(), 15));
+            // Мобильное центрирование карты
+            const targetZoom = isMobile ? 
+                Math.max(map.getZoom(), 14) : 
+                Math.max(map.getZoom(), 15);
+                
+            if (isMobile) {
+                // Плавная анимация для мобильных
+                map.flyTo([lat, lng], targetZoom, {
+                    duration: 1.5,
+                    easeLinearity: 0.5
+                });
+            } else {
+                map.setView([lat, lng], targetZoom);
+            }
             
-            showSuccessNotification('Местоположение определено!');
+            showMobileNotification('Местоположение определено!', 'success');
             
             // Восстанавливаем кнопку
             locationBtn.innerHTML = originalText;
@@ -659,36 +944,38 @@ function getCurrentLocation() {
             
         },
         function(error) {
-            debugLog('❌ Ошибка геолокации:', error);
+            mobileLog('❌ Ошибка мобильной геолокации:', error);
             
             let errorMessage = 'Не удалось определить местоположение';
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    errorMessage = 'Доступ к геолокации запрещен. Разрешите доступ в настройках браузера.';
+                    errorMessage = isMobile ? 
+                        'Разрешите доступ к геолокации в настройках' : 
+                        'Доступ к геолокации запрещен. Разрешите доступ в настройках браузера.';
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Местоположение недоступно. Проверьте подключение к интернету.';
+                    errorMessage = isMobile ?
+                        'Местоположение недоступно. Включите GPS' :
+                        'Местоположение недоступно. Проверьте подключение к интернету.';
                     break;
                 case error.TIMEOUT:
-                    errorMessage = 'Время ожидания истекло. Попробуйте еще раз.';
+                    errorMessage = isMobile ?
+                        'Поиск занял слишком много времени' :
+                        'Время ожидания истекло. Попробуйте еще раз.';
                     break;
             }
             
-            showErrorNotification(errorMessage);
+            showMobileNotification(errorMessage, 'error');
             
             // Восстанавливаем кнопку
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 300000 // 5 минут
-        }
+        geoOptions
     );
 }
 
-// Инициализация кнопок управления
+// Мобильная инициализация кнопок управления
 function initControlButtons() {
     const locationBtn = document.querySelector('.location-btn');
     if (locationBtn) {
@@ -696,28 +983,33 @@ function initControlButtons() {
         locationBtn.removeEventListener('click', getCurrentLocation);
         // Добавляем новый обработчик
         locationBtn.addEventListener('click', getCurrentLocation);
-        debugLog('✅ Кнопка геолокации настроена');
+        
+        // Дополнительные мобильные обработчики
+        if (isMobile) {
+            // Предотвращаем двойное нажатие
+            locationBtn.addEventListener('touchstart', function(e) {
+                e.stopPropagation();
+            }, {passive: true});
+            
+            // Улучшаем touch feedback
+            locationBtn.addEventListener('touchend', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        }
+        
+        mobileLog('✅ Мобильная кнопка геолокации настроена');
     } else {
-        debugLog('⚠️ Кнопка геолокации не найдена в DOM');
+        mobileLog('⚠️ Кнопка геолокации не найдена в DOM');
     }
 }
 
-// Уведомления
-function showSuccessNotification(message) {
-    showNotification(message, 'success');
-}
-
-function showErrorNotification(message) {
-    showNotification(message, 'error');
-}
-
-function showInfoNotification(message) {
-    showNotification(message, 'info');
-}
-
-function showNotification(message, type = 'info') {
+// Мобильные уведомления
+function showMobileNotification(message, type = 'info') {
     const notification = document.createElement('div');
-    notification.className = `plasticboy-notification ${type}`;
+    notification.className = `mobile-notification ${type}`;
     
     const icons = {
         error: '❌',
@@ -733,97 +1025,74 @@ function showNotification(message, type = 'info') {
         warning: '#ff9800'
     };
     
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 3000;
-        background: white;
-        border-left: 4px solid ${colors[type]};
-        border-radius: 8px;
-        padding: 16px 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        max-width: 350px;
-        font-size: 14px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        animation: slideInNotification 0.3s ease-out;
-    `;
+    notification.style.borderLeftColor = colors[type];
     
     notification.innerHTML = `
-        <span>${icons[type]}</span>
-        <span style="flex: 1;">${message}</span>
+        <span style="font-size: ${isMobile ? '18px' : '16px'};">${icons[type]}</span>
+        <span style="flex: 1; line-height: 1.4;">${message}</span>
         <button onclick="this.parentElement.remove()" style="
-            background: none; border: none; font-size: 18px; 
+            background: none; border: none; font-size: ${isMobile ? '20px' : '18px'}; 
             cursor: pointer; color: #999; padding: 0; margin: 0;
+            min-width: ${isMobile ? '32px' : '24px'};
+            min-height: ${isMobile ? '32px' : '24px'};
+            display: flex; align-items: center; justify-content: center;
         ">×</button>
     `;
     
-    // Добавляем стиль анимации если его нет
-    if (!document.getElementById('notification-animation')) {
-        const style = document.createElement('style');
-        style.id = 'notification-animation';
-        style.textContent = `
-            @keyframes slideInNotification {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
     document.body.appendChild(notification);
     
-    // Автоматическое удаление через 5 секунд
+    // Автоматическое удаление через время (больше для мобильных)
+    const autoHideDelay = isMobile ? 6000 : 5000;
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideInNotification 0.3s ease-out reverse';
             setTimeout(() => notification.remove(), 300);
         }
-    }, 5000);
+    }, autoHideDelay);
     
-    debugLog(`Уведомление показано: [${type}] ${message}`);
+    mobileLog(`Мобильное уведомление показано: [${type}] ${message}`);
 }
 
-// Обработчики событий
+// Мобильные обработчики событий
 window.addEventListener('resize', function() {
     if (map) {
-        debugLog('Изменение размера окна - обновляем карту');
+        mobileLog('Изменение размера окна - обновляем мобильную карту');
         setTimeout(() => {
             map.invalidateSize();
-        }, 100);
+        }, isMobile ? 200 : 100);
     }
 });
 
-// Горячие клавиши
+// Мобильные горячие клавиши (упрощенные)
 document.addEventListener('keydown', function(event) {
-    // Ctrl + L - определить местоположение
+    // Только основные горячие клавиши для мобильных
     if (event.ctrlKey && event.key === 'l') {
         event.preventDefault();
         getCurrentLocation();
     }
     
-    // Ctrl + R - перезагрузить точки
     if (event.ctrlKey && event.key === 'r') {
         event.preventDefault();
         if (isAppInitialized) {
-            debugLog('Принудительная перезагрузка точек');
+            mobileLog('Принудительная перезагрузка мобильных точек');
             loadPoints();
         }
     }
     
-    // Ctrl + D - диагностика (только в режиме разработки)
+    // Диагностика (всегда доступна)
     if (event.ctrlKey && event.key === 'd') {
         event.preventDefault();
-        showDiagnostics();
+        showMobileDiagnostics();
     }
 });
 
-// Диагностическая информация
-function showDiagnostics() {
+// Мобильная диагностическая информация
+function showMobileDiagnostics() {
     const diagnostics = {
+        'Устройство': isMobile ? 'Мобильное' : 'Десктоп',
+        'Размер экрана': `${window.innerWidth}x${window.innerHeight}`,
+        'Device Pixel Ratio': window.devicePixelRatio,
+        'Touch поддержка': 'ontouchstart' in window,
         'Приложение инициализировано': isAppInitialized,
         'Leaflet доступен': typeof L !== 'undefined',
         'Карта создана': !!map,
@@ -831,20 +1100,29 @@ function showDiagnostics() {
         'Количество маркеров': markers ? markers.length : 0,
         'Кэш точек': pointsCache ? pointsCache.length : 'нет',
         'URL страницы': window.location.href,
-        'User Agent': navigator.userAgent.substring(0, 50) + '...'
+        'User Agent': navigator.userAgent.substring(0, 80) + '...'
     };
     
-    console.group('🔍 PlasticBoy Диагностика');
+    console.group('📱 PlasticBoy Мобильная Диагностика');
     Object.entries(diagnostics).forEach(([key, value]) => {
         console.log(`${key}:`, value);
     });
     console.groupEnd();
     
-    showInfoNotification('Диагностическая информация выведена в консоль');
+    showMobileNotification('Мобильная диагностика выведена в консоль', 'info');
+    
+    // Дополнительная диагностика для мобильных
+    if (isMobile) {
+        console.group('📱 Дополнительная мобильная информация');
+        console.log('Ориентация экрана:', screen.orientation ? screen.orientation.type : 'неизвестно');
+        console.log('Сетевое подключение:', navigator.connection ? navigator.connection.effectiveType : 'неизвестно');
+        console.log('Standalone режим:', window.navigator.standalone);
+        console.groupEnd();
+    }
 }
 
-// Экспорт основных функций для глобального доступа
-window.PlasticBoy = {
+// Экспорт мобильных функций для глобального доступа
+window.PlasticBoyMobile = {
     // Основные объекты
     map: () => map,
     markers: () => markers,
@@ -855,23 +1133,28 @@ window.PlasticBoy = {
     getCurrentLocation,
     initMap,
     
+    // Мобильные функции
+    isMobile: () => isMobile,
+    detectMobile,
+    showMobileNotification,
+    
     // Служебные функции
-    debugLog,
-    showNotification,
+    mobileLog,
     isInitialized: () => isAppInitialized,
     
     // Диагностика
-    diagnostics: showDiagnostics,
+    diagnostics: showMobileDiagnostics,
     getPointsCache: () => pointsCache
 };
 
-// Псевдонимы для совместимости с загрузчиком
-window.showNotification = showNotification;
-window.updateMap = updateMapMarkers;
-window.updateStats = updateStatistics;
+// Псевдонимы для совместимости
+window.showNotification = showMobileNotification;
+window.updateMap = updateMobileMapMarkers;
+window.updateStats = updateMobileStatistics;
 window.loadPoints = loadPoints;
 window.initMap = initMap;
 
 // Финальная инициализация
-debugLog('✅ PlasticBoy script.js загружен и готов к работе');
-debugLog('Используйте горячие клавиши: Ctrl+L (геолокация), Ctrl+R (перезагрузить), Ctrl+D (диагностика)');
+mobileLog('✅ PlasticBoy мобильно-оптимизированный script.js загружен');
+mobileLog(`Устройство: ${isMobile ? 'МОБИЛЬНОЕ' : 'ДЕСКТОП'}`);
+mobileLog('Используйте горячие клавиши: Ctrl+L (геолокация), Ctrl+R (перезагрузить), Ctrl+D (диагностика)');
