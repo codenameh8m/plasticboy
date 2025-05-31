@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* ОРИГИНАЛЬНЫЕ СТИЛИ ДЛЯ ЗАГРУЗОЧНОГО ЭКРАНА */
+        /* Стили для загрузочного экрана */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -310,7 +310,7 @@
     </style>
 </head>
 <body>
-    <!-- ОРИГИНАЛЬНЫЙ ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
     <div class="loading-screen" id="loadingScreen">
         <!-- Анимированный фон матрицы -->
         <div class="matrix-bg" id="matrixBg"></div>
@@ -403,10 +403,10 @@
     <!-- Подключение библиотек -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- ОРИГИНАЛЬНАЯ СИСТЕМА ЗАГРУЗКИ + КЭШИРОВАНИЕ -->
+    <!-- Оптимизированная система загрузки -->
     <script>
-        // ОРИГИНАЛЬНАЯ БЫСТРАЯ СИСТЕМА ЗАГРУЗКИ PlasticBoy
-        // С добавленным кэшированием для ультра-быстрого появления точек
+        // БЫСТРАЯ СИСТЕМА ЗАГРУЗКИ PlasticBoy
+        // Оптимизирована для быстрой синхронизации с точками карты
 
         // Флаги состояния загрузки
         let isMapReady = false;
@@ -414,52 +414,10 @@
         let isLeafletReady = false;
         let loadingTimeout;
 
-        // Определение мобильного устройства
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        // === КЭШИРОВАНИЕ ДЛЯ БЫСТРОГО ПОЯВЛЕНИЯ ТОЧЕК ===
-        const CACHE_KEY = 'plasticboy_points_cache';
-        const CACHE_TIMESTAMP_KEY = 'plasticboy_cache_timestamp';
-        const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
-
-        function savePointsToCache(points) {
-            try {
-                const cacheData = {
-                    points: points,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-                console.log(`💾 Cached ${points.length} points`);
-            } catch (error) {
-                console.warn('Cache save error:', error);
-            }
-        }
-
-        function loadPointsFromCache() {
-            try {
-                const cached = localStorage.getItem(CACHE_KEY);
-                const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
-                
-                if (cached && timestamp) {
-                    const age = Date.now() - parseInt(timestamp);
-                    if (age < CACHE_DURATION) {
-                        const cacheData = JSON.parse(cached);
-                        console.log(`⚡ Cache loaded: ${cacheData.points.length} points (age: ${Math.round(age/1000)}s)`);
-                        return cacheData.points;
-                    }
-                }
-                return null;
-            } catch (error) {
-                console.warn('Cache load error:', error);
-                return null;
-            }
-        }
-
-        // Создание матричного фона
+        // Создание матричного фона (уменьшенное количество)
         function createMatrixDots() {
             const matrixBg = document.getElementById('matrixBg');
-            const numberOfDots = isMobile ? 20 : 30; // Меньше для мобильных
+            const numberOfDots = 30; // Уменьшено для производительности
             
             for (let i = 0; i < numberOfDots; i++) {
                 const dot = document.createElement('div');
@@ -507,29 +465,29 @@
             
             if (progress > 100) progress = 100;
             
-            if (progressBar) progressBar.style.width = progress + '%';
-            if (progressText) progressText.textContent = Math.floor(progress) + '%';
+            progressBar.style.width = progress + '%';
+            progressText.textContent = Math.floor(progress) + '%';
             
             // Обновляем статус быстрее
             updateLoadingStatus(loadingStatus);
             
             // Быстрое завершение
             if (arePointsLoaded && progress >= 100) {
-                if (loadingStatus) loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
+                loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
                 setTimeout(() => {
                     finishLoading();
-                }, 300);
+                }, 300); // Уменьшена задержка
                 clearInterval(loadingInterval);
                 return;
             }
         }
 
         function updateLoadingStatus(loadingStatus) {
-            let targetStep = Math.floor(progress / 14);
+            let targetStep = Math.floor(progress / 14); // Быстрее переключение статусов
             
             if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
                 currentStep = targetStep;
-                if (loadingStatus) loadingStatus.textContent = loadingSteps[currentStep];
+                loadingStatus.textContent = loadingSteps[currentStep];
                 playLoadingSound();
             }
         }
@@ -554,7 +512,7 @@
                     oscillator.stop(audioContext.currentTime + 0.05);
                 }
             } catch (e) {
-                // Игнорируем ошибки аудио
+                // Игнорируем ошибки аудио для производительности
             }
         }
 
@@ -563,25 +521,25 @@
             // Проверяем готовность Leaflet
             if (typeof L !== 'undefined' && !isLeafletReady) {
                 isLeafletReady = true;
-                console.log('✅ Leaflet готов');
+                console.log('✅ Leaflet готов (быстро)');
             }
             
             // Проверяем готовность карты
             if (window.map && !isMapReady) {
                 isMapReady = true;
-                console.log('✅ Карта готова');
+                console.log('✅ Карта готова (быстро)');
             }
             
-            // Быстрая проверка точек
+            // Быстрая проверка точек - несколько способов
             if (!arePointsLoaded) {
-                // Проверяем маркеры
+                // Способ 1: проверяем маркеры
                 if (window.markers && window.markers.length > 0) {
                     arePointsLoaded = true;
                     console.log('✅ Точки загружены через маркеры');
                     return;
                 }
                 
-                // Проверяем статистику
+                // Способ 2: проверяем статистику
                 const availableElement = document.getElementById('availableCount');
                 const collectedElement = document.getElementById('collectedCount');
                 if (availableElement && collectedElement) {
@@ -594,7 +552,7 @@
                     }
                 }
                 
-                // Проверяем DOM карты
+                // Способ 3: проверяем DOM карты на наличие маркеров
                 const mapElement = document.getElementById('map');
                 if (mapElement && mapElement.querySelector('.leaflet-marker-pane .leaflet-marker-icon')) {
                     arePointsLoaded = true;
@@ -608,127 +566,62 @@
             const loadingScreen = document.getElementById('loadingScreen');
             const mainContent = document.getElementById('mainContent');
             
-            console.log('🚀 Завершение загрузки!');
+            console.log('🚀 Быстрое завершение загрузки!');
             
-            if (loadingScreen) {
-                loadingScreen.classList.add('fade-out');
-                
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 600);
-            }
+            // Быстрое скрытие загрузочного экрана
+            loadingScreen.classList.add('fade-out');
             
-            if (mainContent) {
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
                 mainContent.classList.add('loaded');
                 
-                // Уведомление о готовности
+                // Быстрое уведомление
                 setTimeout(() => {
                     if (typeof showNotification === 'function') {
                         showNotification('PlasticBoy готов! ⚡', 'success');
                     }
-                }, 800);
-            }
+                }, 200);
+            }, 600); // Уменьшена задержка
         }
 
         // Быстрое уведомление о загрузке точек
         function onPointsLoaded() {
             if (!arePointsLoaded) {
                 arePointsLoaded = true;
-                console.log('⚡ Точки загружены!');
+                console.log('⚡ Точки загружены мгновенно!');
             }
         }
 
-        // Улучшенная загрузка точек с кэшированием
+        // Быстрая загрузка точек
         function fastLoadPoints() {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    // 1. Сначала пробуем кэш
-                    const cachedPoints = loadPointsFromCache();
-                    if (cachedPoints && cachedPoints.length > 0) {
-                        console.log('⚡ Используем кэшированные точки');
-                        
-                        // Быстро показываем кэшированные точки
-                        if (typeof updateMap === 'function') updateMap(cachedPoints);
-                        if (typeof updateStats === 'function') updateStats(cachedPoints);
-                        onPointsLoaded();
-                        
-                        // В фоне обновляем с сервера
-                        setTimeout(() => {
-                            loadFromNetwork(true);
-                        }, 1000);
-                        
-                        resolve(cachedPoints);
-                        return;
-                    }
-                    
-                    // 2. Если кэша нет, загружаем с сервера
-                    loadFromNetwork(false).then(resolve).catch(reject);
-                    
-                } catch (error) {
-                    console.error('Error in fastLoadPoints:', error);
-                    reject(error);
+            return fetch('/api/points', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
                 }
-            });
-        }
-
-        async function loadFromNetwork(isBackgroundUpdate = false) {
-            try {
-                console.log(isBackgroundUpdate ? '🔄 Фоновое обновление...' : '🌐 Загрузка с сервера...');
-                
-                const response = await fetch('/api/points', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
+            })
+            .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to load points');
                 }
+                return response.json();
+            })
+            .then(points => {
+                console.log(`⚡ Быстро загружено ${points.length} точек`);
                 
-                const points = await response.json();
-                console.log(`📡 Загружено с сервера: ${points.length} точек`);
+                // Быстрое обновление карты и статистики
+                if (typeof updateMap === 'function') updateMap(points);
+                if (typeof updateStats === 'function') updateStats(points);
                 
-                // Сохраняем в кэш
-                savePointsToCache(points);
-                
-                if (!isBackgroundUpdate) {
-                    // Быстрое обновление карты и статистики
-                    if (typeof updateMap === 'function') updateMap(points);
-                    if (typeof updateStats === 'function') updateStats(points);
-                    onPointsLoaded();
-                } else {
-                    // Проверяем изменения при фоновом обновлении
-                    const hasChanges = true; // Упрощенно считаем что есть изменения
-                    if (hasChanges) {
-                        console.log('🔄 Обнаружены изменения, обновляем карту');
-                        if (typeof updateMap === 'function') updateMap(points);
-                        if (typeof updateStats === 'function') updateStats(points);
-                        if (typeof showNotification === 'function') {
-                            showNotification('Карта обновлена', 'info');
-                        }
-                    }
-                }
-                
+                // Мгновенное уведомление
+                onPointsLoaded();
                 return points;
-                
-            } catch (error) {
-                console.error('Network error:', error);
-                
-                if (!isBackgroundUpdate) {
-                    // Помечаем как загруженные даже при ошибке
-                    onPointsLoaded();
-                    
-                    // Повтор через 3 секунды
-                    setTimeout(() => {
-                        if (!arePointsLoaded) {
-                            loadFromNetwork(false);
-                        }
-                    }, 3000);
-                }
-                
-                throw error;
-            }
+            })
+            .catch(error => {
+                console.error('Error loading points:', error);
+                // Помечаем как загруженные даже при ошибке
+                onPointsLoaded();
+            });
         }
 
         // Быстрый запуск системы
@@ -737,16 +630,16 @@
             
             createMatrixDots();
             
-            // Переопределяем функцию загрузки точек для добавления кэширования
+            // Переопределяем функцию загрузки точек
             if (typeof loadPoints === 'function') {
                 window.originalLoadPoints = loadPoints;
                 window.loadPoints = fastLoadPoints;
             }
             
             // Быстрая проверка состояния
-            const quickCheck = setInterval(checkMapAndPointsReady, 100);
+            const quickCheck = setInterval(checkMapAndPointsReady, 100); // Увеличена частота
             
-            // Таймаут безопасности
+            // Таймаут безопасности - принудительно завершаем через 8 секунд
             loadingTimeout = setTimeout(() => {
                 console.log('⏰ Таймаут загрузки - принудительное завершение');
                 arePointsLoaded = true;
@@ -755,14 +648,14 @@
             
             // Быстрая инициализация
             Promise.all([
-                // Ждем Leaflet
+                // Ждем Leaflet (быстрее)
                 new Promise((resolve) => {
                     const checkLeaflet = () => {
                         if (typeof L !== 'undefined') {
                             isLeafletReady = true;
                             resolve();
                         } else {
-                            setTimeout(checkLeaflet, 25);
+                            setTimeout(checkLeaflet, 25); // Увеличена частота проверки
                         }
                     };
                     checkLeaflet();
@@ -781,7 +674,7 @@
                 
                 // Быстрый запуск анимации
                 setTimeout(() => {
-                    loadingInterval = setInterval(updateLoadingScreen, 100);
+                    loadingInterval = setInterval(updateLoadingScreen, 100); // Увеличена частота
                 }, 100);
                 
                 // Быстрая инициализация приложения
@@ -822,7 +715,7 @@
                             }
                         }, 100);
                     }
-                }, 50);
+                }, 50); // Очень быстрая проверка
                 
                 // Таймаут для быстрой проверки
                 setTimeout(() => clearInterval(quickMapCheck), 2000);
@@ -834,7 +727,7 @@
             if (!arePointsLoaded) {
                 switch(e.key) {
                     case 'Enter':
-                        progress += 20;
+                        progress += 20; // Большее ускорение
                         playLoadingSound();
                         break;
                     case ' ':
