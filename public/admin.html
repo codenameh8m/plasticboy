@@ -1,18 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>PlasticBoy - Admin Panel v2.0</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
     <div class="container">
         <header class="header">
-            <h1>🛡️ PlasticBoy Admin v2.0</h1>
-            <p>Управление точками сбора с кэшированием</p>
+            <h1>🛡️ PlasticBoy Admin</h1>
+            <p>Управление точками сбора</p>
         </header>
 
         <!-- Форма входа -->
@@ -45,89 +37,21 @@
                 </div>
             </div>
 
-            <!-- Статистика кэша будет добавлена динамически -->
-
             <!-- УВЕЛИЧЕННАЯ КАРТА ДЛЯ АДМИНА -->
             <div class="map-container">
                 <div id="adminMap"></div>
             </div>
 
-            <!-- КНОПКИ УПРАВЛЕНИЯ ДЛЯ АДМИНА -->
+            <!-- КНОПКА ГЕОЛОКАЦИИ ДЛЯ АДМИНА -->
             <div class="map-controls">
                 <button class="control-btn location-btn" onclick="getAdminLocation()">
                     📍 Моё местоположение
                 </button>
             </div>
 
-            <!-- Дополнительные кнопки управления кэшем -->
-            <div class="admin-cache-controls" style="
-                display: flex; 
-                gap: 10px; 
-                justify-content: center; 
-                background: rgba(255, 255, 255, 0.95);
-                border-radius: 15px;
-                padding: 15px;
-                margin-top: 15px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            ">
-                <button onclick="loadAdminPoints(true)" style="
-                    background: linear-gradient(45deg, #4CAF50, #45a049);
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                ">🔄 Обновить данные</button>
-                
-                <button onclick="clearServerCache()" style="
-                    background: linear-gradient(45deg, #f44336, #e53935);
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                ">🗑️ Очистить кэш</button>
-                
-                <button onclick="loadCacheStats()" style="
-                    background: linear-gradient(45deg, #2196F3, #1976D2);
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                ">📊 Статистика</button>
-            </div>
-
             <div class="points-list">
                 <h3>Список точек</h3>
                 <div id="pointsList"></div>
-            </div>
-
-            <!-- Информационный блок -->
-            <div class="admin-info" style="
-                background: rgba(255, 255, 255, 0.95);
-                border-radius: 15px;
-                padding: 15px;
-                margin-top: 15px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                font-size: 0.9rem;
-                color: #666;
-            ">
-                <h4 style="color: #333; margin-bottom: 10px;">⌨️ Горячие клавиши:</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                    <div><kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">Ctrl+L</kbd> - Геолокация</div>
-                    <div><kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">Ctrl+A</kbd> - Режим добавления</div>
-                    <div><kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">Ctrl+R</kbd> - Обновить данные</div>
-                    <div><kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">Ctrl+Shift+C</kbd> - Очистить кэш</div>
-                </div>
             </div>
         </div>
     </div>
@@ -141,9 +65,6 @@
                 <input type="text" id="modelName" placeholder="Название модели" required>
                 <input type="number" id="delayMinutes" placeholder="Задержка в минутах (необязательно)" min="0">
                 <button type="submit">Создать точку</button>
-                <p style="font-size: 0.85rem; color: #666; margin-top: 10px;">
-                    💡 После создания кэш сервера будет автоматически обновлен
-                </p>
             </form>
         </div>
     </div>
@@ -161,59 +82,12 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="admin.js"></script>
-
-    <style>
-        /* Дополнительные стили для новых элементов */
-        .admin-cache-controls button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        }
-        
-        .admin-cache-controls button:active {
-            transform: translateY(0);
-        }
-        
-        .cache-stats {
-            border-left: 4px solid #2196F3;
-        }
-        
-        .cache-stats h4 {
-            color: #2196F3;
-        }
-        
-        kbd {
-            font-family: monospace;
-            font-size: 0.8rem;
-        }
-        
-        .admin-info {
-            border-left: 4px solid #667eea;
-        }
-        
-        /* Анимация для кнопок управления кэшем */
-        @keyframes buttonSuccess {
-            0% { background: linear-gradient(45deg, #4CAF50, #45a049); }
-            50% { background: linear-gradient(45deg, #66BB6A, #5CBF60); }
-            100% { background: linear-gradient(45deg, #4CAF50, #45a049); }
-        }
-        
-        .button-success {
-            animation: buttonSuccess 0.6s ease;
-        }
-        
-        /* Улучшенный стиль для статистики кэша */
-        .cache-stats {
-            background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(255, 255, 255, 0.98)) !important;
-        }
-        
-        .cache-stats button {
-            transition: all 0.3s ease;
-        }
-        
-        .cache-stats button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-    </style>
 </body>
-</html>
+</html><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>PlasticBoy - Admin Panel</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
