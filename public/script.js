@@ -1,657 +1,607 @@
-// PlasticBoy script.js - Финальная версия
-let map;
-let markers = [];
-
-// Координаты Алматы
-const ALMATY_CENTER = [43.2220, 76.8512];
-
-// Флаги состояния
-let isMapInitialized = false;
-let pointsLoaded = false;
-
-// Определение мобильного устройства
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-// Кэширование
-const CACHE_KEY = 'plasticboy_points_cache';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
-let pointsCache = null;
-
-// Простое кэширование
-function saveToCache(points) {
-    try {
-        const cacheData = {
-            points: points,
-            timestamp: Date.now()
-        };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        pointsCache = points;
-    } catch (error) {
-        console.warn('Cache save error:', error);
-    }
-}
-
-function loadFromCache() {
-    try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-            const cacheData = JSON.parse(cached);
-            const age = Date.now() - cacheData.timestamp;
-            
-            if (age < CACHE_DURATION) {
-                pointsCache = cacheData.points;
-                return cacheData.points;
-            } else {
-                localStorage.removeItem(CACHE_KEY);
-            }
-        }
-        return null;
-    } catch (error) {
-        console.warn('Cache load error:', error);
-        return null;
-    }
-}
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', function() {
-    if (isMobile) {
-        setTimeout(initMobileApp, 500);
-    } else {
-        initControlButtons();
-        setTimeout(initMap, 300);
-    }
-});
-
-function initMobileApp() {
-    setTimeout(() => {
-        const loadingScreen = document.getElementById('loadingScreen');
-        const mainContent = document.getElementById('mainContent');
-        
-        if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 300);
-        }
-        
-        if (mainContent) {
-            mainContent.style.opacity = '1';
-            mainContent.classList.add('loaded');
-        }
-        
-        setTimeout(initMap, 200);
-    }, 1000);
-}
-
-// Инициализация карты
-function initMap() {
-    if (isMapInitialized) return;
+// ОПТИМИЗИРОВАННАЯ версия PlasticBoy - универсальная для всех устройств
+(function() {
+    'use strict';
     
-    try {
-        if (typeof L === 'undefined') {
-            setTimeout(initMap, 1000);
-            return;
-        }
-        
-        const mapOptions = {
-            zoomControl: true,
-            attributionControl: !isMobile,
-            preferCanvas: true,
-            maxZoom: 18,
-            minZoom: 10
-        };
-        
-        if (isMobile) {
-            mapOptions.tap = true;
-            mapOptions.touchZoom = true;
-            mapOptions.dragging = true;
-            mapOptions.scrollWheelZoom = false;
-        }
-        
-        map = L.map('map', mapOptions);
-        map.setView(ALMATY_CENTER, 13);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: isMobile ? '© OSM' : '© OpenStreetMap contributors',
-            maxZoom: 18,
-            keepBuffer: isMobile ? 1 : 2,
-            updateWhenIdle: isMobile,
-            updateWhenZooming: !isMobile
-        }).addTo(map);
-        
-        addMapStyles();
-        
-        setTimeout(() => {
-            if (map) {
-                map.invalidateSize();
-                window.map = map;
-                isMapInitialized = true;
-                
-                initControlButtons();
-                loadPoints();
-            }
-        }, 100);
-        
-    } catch (error) {
-        console.error('Map initialization error:', error);
-        showNotification('Ошибка инициализации карты', 'error');
-        setTimeout(initMap, 2000);
-    }
-}
-
-// Загрузка точек
-async function loadPoints() {
-    if (pointsLoaded) return;
-    
-    try {
-        // Сначала пробуем кэш
-        const cachedPoints = loadFromCache();
-        if (cachedPoints && cachedPoints.length > 0) {
-            updateMap(cachedPoints);
-            updateStats(cachedPoints);
-            pointsLoaded = true;
-            
-            if (typeof window.PlasticBoyLoader !== 'undefined') {
-                window.PlasticBoyLoader.onPointsLoaded();
-            }
-            
-            showNotification(`Загружено ${cachedPoints.length} точек (кэш)`, 'success');
-            
-            setTimeout(() => {
-                loadPointsFromNetwork(true);
-            }, 2000);
-            
-            return;
-        }
-        
-        await loadPointsFromNetwork(false);
-        
-    } catch (error) {
-        console.error('Error in loadPoints:', error);
-        showNotification('Ошибка загрузки точек', 'error');
-    }
-}
-
-async function loadPointsFromNetwork(isBackgroundUpdate = false) {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            controller.abort();
-        }, isMobile ? 15000 : 10000);
-        
-        const response = await fetch('/api/points', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            },
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const points = await response.json();
-        
-        if (!Array.isArray(points)) {
-            throw new Error('Invalid response format');
-        }
-        
-        saveToCache(points);
-        
-        if (!isBackgroundUpdate) {
-            updateMap(points);
-            updateStats(points);
-            pointsLoaded = true;
-            
-            if (typeof window.PlasticBoyLoader !== 'undefined') {
-                window.PlasticBoyLoader.onPointsLoaded();
-            }
-            
-            showNotification(`Загружено ${points.length} точек`, 'success');
-        } else {
-            updateMap(points);
-            updateStats(points);
-            showNotification('Карта обновлена', 'info');
-        }
-        
-        return points;
-        
-    } catch (error) {
-        console.error('Network error:', error);
-        
-        if (error.name === 'AbortError') {
-            showNotification('Превышено время ожидания', 'warning');
-        } else {
-            showNotification(`Ошибка сети: ${error.message}`, 'error');
-        }
-        
-        if (!isBackgroundUpdate) {
-            if (typeof window.PlasticBoyLoader !== 'undefined') {
-                window.PlasticBoyLoader.onPointsLoaded();
-            }
-            
-            setTimeout(() => {
-                if (!pointsLoaded) {
-                    loadPointsFromNetwork(false);
-                }
-            }, 5000);
-        }
-        
-        throw error;
-    }
-}
-
-// Обновление карты
-function updateMap(points) {
-    if (!map || !isMapInitialized) {
-        setTimeout(() => updateMap(points), 1000);
-        return;
-    }
-    
-    try {
-        markers.forEach(marker => {
-            try {
-                map.removeLayer(marker);
-            } catch (e) {
-                console.warn('Error removing marker:', e);
-            }
-        });
-        markers = [];
-        
-        let addedMarkers = 0;
-        
-        points.forEach((point, index) => {
-            try {
-                if (!point.coordinates || 
-                    typeof point.coordinates.lat !== 'number' || 
-                    typeof point.coordinates.lng !== 'number') {
-                    return;
-                }
-                
-                const isAvailable = point.status === 'available';
-                
-                const icon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}"></div>`,
-                    iconSize: isMobile ? [16, 16] : [20, 20],
-                    iconAnchor: isMobile ? [8, 8] : [10, 10]
-                });
-                
-                const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon });
-                
-                const popupContent = createPopupContent(point, isAvailable);
-                marker.bindPopup(popupContent, {
-                    maxWidth: isMobile ? 250 : 300,
-                    className: 'custom-popup'
-                });
-                
-                marker.addTo(map);
-                markers.push(marker);
-                addedMarkers++;
-                
-            } catch (error) {
-                console.error(`Error adding marker ${index}:`, error);
-            }
-        });
-        
-        addMarkerStyles();
-        window.markers = markers;
-        
-    } catch (error) {
-        console.error('Error updating map:', error);
-        showNotification('Ошибка обновления карты', 'error');
-    }
-}
-
-function createPopupContent(point, isAvailable) {
-    let content = `
-        <div class="popup-content">
-            <h3>${point.name || 'Модель'}</h3>
-            <div class="status ${point.status}">
-                ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
-            </div>`;
-    
-    if (!isAvailable && point.collectorInfo) {
-        content += `
-            <div class="collector-info">
-                <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>`;
-        
-        if (point.collectorInfo.signature) {
-            content += `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>`;
-        }
-        
-        if (point.collectedAt) {
-            content += `<p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>`;
-        }
-        
-        content += '</div>';
-        
-        if (point.collectorInfo.selfie) {
-            content += `<button onclick="showPointDetails('${point.id}')" class="details-btn">Посмотреть селфи</button>`;
-        }
-    }
-    
-    content += '</div>';
-    return content;
-}
-
-// Обновление статистики
-function updateStats(points) {
-    try {
-        const available = points.filter(p => p.status === 'available').length;
-        const collected = points.filter(p => p.status === 'collected').length;
-        
-        const availableEl = document.getElementById('availableCount');
-        const collectedEl = document.getElementById('collectedCount');
-        
-        if (availableEl) availableEl.textContent = available;
-        if (collectedEl) collectedEl.textContent = collected;
-        
-    } catch (error) {
-        console.error('Error updating stats:', error);
-    }
-}
-
-// Кнопки управления
-function initControlButtons() {
-    const locationBtn = document.querySelector('.location-btn');
-    if (locationBtn && !locationBtn.hasAttribute('data-initialized')) {
-        locationBtn.setAttribute('data-initialized', 'true');
-        locationBtn.addEventListener('click', getCurrentLocation);
-    }
-}
-
-// Геолокация
-function getCurrentLocation() {
-    const locationBtn = document.querySelector('.location-btn');
-    
-    if (!navigator.geolocation) {
-        showNotification('Геолокация не поддерживается', 'error');
-        return;
-    }
-    
-    if (locationBtn) {
-        locationBtn.innerHTML = '⏳ Определение...';
-        locationBtn.disabled = true;
-    }
-    
-    const options = {
-        enableHighAccuracy: true,
-        timeout: isMobile ? 20000 : 10000,
-        maximumAge: 300000
+    // Конфигурация
+    const CONFIG = {
+        ALMATY_CENTER: [43.2220, 76.8512],
+        API_TIMEOUT: 15000,
+        LEAFLET_TIMEOUT: 10000,
+        NOTIFICATION_DURATION: 5000,
+        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                 ('ontouchstart' in window && window.innerWidth <= 768)
     };
     
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
+    // Глобальные переменные
+    let map, markersLayer, markers = [], pointsCache = null, isInitialized = false;
+    
+    // Утилиты
+    const Utils = {
+        log: (msg, data) => console.log(`🎯 [PlasticBoy] ${msg}`, data || ''),
+        
+        validateCoords: (lat, lng) => {
+            const numLat = Number(lat), numLng = Number(lng);
+            return !isNaN(numLat) && !isNaN(numLng) && 
+                   numLat >= -90 && numLat <= 90 && 
+                   numLng >= -180 && numLng <= 180;
+        },
+        
+        createElement: (tag, className, innerHTML) => {
+            const el = document.createElement(tag);
+            if (className) el.className = className;
+            if (innerHTML) el.innerHTML = innerHTML;
+            return el;
+        },
+        
+        addStyles: (id, css) => {
+            if (document.getElementById(id)) return;
+            const style = Utils.createElement('style');
+            style.id = id;
+            style.textContent = css;
+            document.head.appendChild(style);
+        },
+        
+        debounce: (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(null, args), delay);
+            };
+        }
+    };
+    
+    // Стили (объединенные и минимизированные)
+    const STYLES = `
+        .pb-marker{background:none!important;border:none!important}
+        .pb-dot{
+            width:${CONFIG.isMobile ? '32px' : '24px'};
+            height:${CONFIG.isMobile ? '32px' : '24px'};
+            border-radius:50%;border:3px solid white;
+            box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;
+            transition:all 0.3s ease;display:flex;align-items:center;
+            justify-content:center;font-size:${CONFIG.isMobile ? '14px' : '12px'};
+            font-weight:bold;color:white;position:relative;
+            touch-action:manipulation
+        }
+        .pb-dot:hover,.pb-dot:active{transform:scale(1.1);box-shadow:0 6px 16px rgba(0,0,0,0.4)}
+        .pb-dot.available{background:linear-gradient(45deg,#4CAF50,#45a049)}
+        .pb-dot.collected{background:linear-gradient(45deg,#f44336,#e53935)}
+        .pb-dot.available::before{content:'📦'}
+        .pb-dot.collected::before{content:'✅'}
+        .pb-popup{
+            min-width:${CONFIG.isMobile ? '250px' : '220px'};
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            font-size:${CONFIG.isMobile ? '15px' : '14px'}
+        }
+        .pb-popup h3{margin:0 0 10px 0;color:#333;font-size:1.1rem;font-weight:600}
+        .pb-status{
+            margin:8px 0;font-weight:600;padding:6px 12px;
+            border-radius:20px;text-align:center;font-size:0.9rem
+        }
+        .pb-status.available{background:#e8f5e8;color:#2e7d32}
+        .pb-status.collected{background:#ffebee;color:#c62828}
+        .pb-collector{
+            background:#f8f9fa;padding:12px;border-radius:8px;
+            margin:10px 0;border-left:4px solid #667eea
+        }
+        .pb-collector p{margin:4px 0;font-size:0.9rem}
+        .pb-notification{
+            position:fixed;top:20px;right:20px;z-index:3000;
+            background:white;border-radius:8px;padding:16px 20px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:350px;
+            font-size:14px;font-weight:500;display:flex;align-items:center;
+            gap:10px;animation:slideIn 0.3s ease-out
+        }
+        .pb-notification.error{border-left:4px solid #f44336}
+        .pb-notification.success{border-left:4px solid #4CAF50}
+        .pb-notification.info{border-left:4px solid #2196F3}
+        .pb-notification button{
+            background:none;border:none;font-size:18px;cursor:pointer;
+            color:#999;padding:0;margin:0;margin-left:10px
+        }
+        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes userPulse{0%{transform:scale(1);opacity:0.7}50%{opacity:0.3}100%{transform:scale(2);opacity:0}}
+        ${CONFIG.isMobile ? `
+            .pb-notification{left:10px;right:10px}
+            .leaflet-popup-close-button{width:32px!important;height:32px!important;font-size:20px!important}
+        ` : ''}
+    `;
+    
+    // Уведомления
+    const Notification = {
+        show: (message, type = 'info') => {
+            const icons = { error: '❌', success: '✅', info: 'ℹ️', warning: '⚠️' };
+            const notification = Utils.createElement('div', `pb-notification ${type}`);
             
-            if (map && isMapInitialized) {
-                if (window.userMarker) {
-                    map.removeLayer(window.userMarker);
-                }
-                
-                const userIcon = L.divIcon({
-                    className: 'user-marker',
-                    html: `<div style="
-                        background: linear-gradient(45deg, #007bff, #0056b3);
-                        width: ${isMobile ? '18px' : '22px'}; 
-                        height: ${isMobile ? '18px' : '22px'}; 
-                        border-radius: 50%; 
-                        border: 2px solid white; 
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    "></div>`,
-                    iconSize: isMobile ? [18, 18] : [22, 22],
-                    iconAnchor: isMobile ? [9, 9] : [11, 11]
+            notification.innerHTML = `
+                <span>${icons[type]}</span>
+                <span style="flex:1">${message}</span>
+                <button onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), CONFIG.NOTIFICATION_DURATION);
+            Utils.log(`Уведомление: [${type}] ${message}`);
+        }
+    };
+    
+    // API
+    const API = {
+        async fetchPoints() {
+            Utils.log('Загрузка точек...');
+            
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
+            
+            try {
+                const response = await fetch('/api/points', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
+                    signal: controller.signal
                 });
                 
-                window.userMarker = L.marker([lat, lng], { icon: userIcon })
-                    .addTo(map)
-                    .bindPopup(`
-                        <div style="text-align: center;">
-                            <strong>📍 Ваше местоположение</strong><br>
-                            <small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small>
-                        </div>
-                    `);
+                clearTimeout(timeout);
                 
-                map.flyTo([lat, lng], 15, { duration: 1.5 });
-                showNotification('Местоположение найдено', 'success');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const points = await response.json();
+                if (!Array.isArray(points)) throw new Error('Неверный формат данных');
+                
+                Utils.log(`✅ Загружено ${points.length} точек`);
+                return points;
+                
+            } catch (error) {
+                clearTimeout(timeout);
+                if (error.name === 'AbortError') throw new Error('Таймаут загрузки');
+                throw error;
+            }
+        }
+    };
+    
+    // Карта
+    const MapManager = {
+        async init() {
+            if (isInitialized) return;
+            Utils.log('Инициализация карты...');
+            
+            if (!document.getElementById('map')) throw new Error('Элемент #map не найден');
+            
+            // Ожидание Leaflet
+            await this.waitForLeaflet();
+            
+            // Создание карты
+            map = L.map('map', {
+                center: CONFIG.ALMATY_CENTER,
+                zoom: CONFIG.isMobile ? 12 : 13,
+                zoomControl: true,
+                attributionControl: !CONFIG.isMobile,
+                preferCanvas: CONFIG.isMobile,
+                maxZoom: 18,
+                minZoom: 10,
+                tap: CONFIG.isMobile,
+                touchZoom: CONFIG.isMobile,
+                scrollWheelZoom: !CONFIG.isMobile
+            });
+            
+            // Тайлы
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: CONFIG.isMobile ? '' : '© OpenStreetMap contributors',
+                maxZoom: 18,
+                detectRetina: true
+            }).addTo(map);
+            
+            // Группа маркеров
+            markersLayer = L.layerGroup().addTo(map);
+            
+            // Глобальный доступ
+            window.map = map;
+            window.markersLayer = markersLayer;
+            
+            // Обновление размера
+            setTimeout(() => map.invalidateSize(), 200);
+            
+            isInitialized = true;
+            Utils.log('✅ Карта готова');
+        },
+        
+        async waitForLeaflet() {
+            if (typeof L !== 'undefined') return;
+            
+            Utils.log('Ожидание Leaflet...');
+            const startTime = Date.now();
+            
+            return new Promise((resolve, reject) => {
+                const check = setInterval(() => {
+                    if (typeof L !== 'undefined') {
+                        clearInterval(check);
+                        resolve();
+                    } else if (Date.now() - startTime > CONFIG.LEAFLET_TIMEOUT) {
+                        clearInterval(check);
+                        reject(new Error('Leaflet не загрузился'));
+                    }
+                }, 100);
+            });
+        },
+        
+        updateMarkers(points) {
+            if (!map || !markersLayer) return;
+            
+            Utils.log('Обновление маркеров...');
+            
+            // Очистка
+            markersLayer.clearLayers();
+            markers.length = 0;
+            
+            let successCount = 0;
+            
+            points.forEach((point, index) => {
+                try {
+                    const lat = Number(point.coordinates.lat);
+                    const lng = Number(point.coordinates.lng);
+                    
+                    if (!Utils.validateCoords(lat, lng)) {
+                        throw new Error(`Неверные координаты: ${lat}, ${lng}`);
+                    }
+                    
+                    const isAvailable = point.status === 'available';
+                    
+                    // Иконка
+                    const icon = L.divIcon({
+                        className: 'pb-marker',
+                        html: `<div class="pb-dot ${isAvailable ? 'available' : 'collected'}"></div>`,
+                        iconSize: [CONFIG.isMobile ? 32 : 24, CONFIG.isMobile ? 32 : 24],
+                        iconAnchor: [CONFIG.isMobile ? 16 : 12, CONFIG.isMobile ? 16 : 12]
+                    });
+                    
+                    // Маркер
+                    const marker = L.marker([lat, lng], { icon });
+                    
+                    // Popup
+                    let popup = `
+                        <div class="pb-popup">
+                            <h3>${point.name}</h3>
+                            <div class="pb-status ${point.status}">
+                                ${isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана'}
+                            </div>
+                            <p><strong>Координаты:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                    `;
+                    
+                    if (point.createdAt) {
+                        popup += `<p><strong>Создана:</strong> ${new Date(point.createdAt).toLocaleString('ru-RU')}</p>`;
+                    }
+                    
+                    if (!isAvailable && point.collectorInfo) {
+                        popup += `
+                            <div class="pb-collector">
+                                <p><strong>Собрал:</strong> ${point.collectorInfo.name}</p>
+                                ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
+                                ${point.collectedAt ? `<p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    popup += '</div>';
+                    
+                    marker.bindPopup(popup, {
+                        maxWidth: CONFIG.isMobile ? 300 : 280,
+                        autoPan: CONFIG.isMobile,
+                        autoPanPadding: [20, 20]
+                    });
+                    
+                    markersLayer.addLayer(marker);
+                    markers.push(marker);
+                    successCount++;
+                    
+                } catch (error) {
+                    Utils.log(`❌ Ошибка маркера ${index + 1}:`, error.message);
+                }
+            });
+            
+            window.markers = markers;
+            
+            Utils.log(`✅ Добавлено ${successCount} маркеров`);
+            
+            // Автофокус для мобильных
+            if (CONFIG.isMobile && successCount > 0) {
+                setTimeout(() => {
+                    const group = new L.featureGroup(markers);
+                    if (group.getBounds().isValid()) {
+                        map.fitBounds(group.getBounds(), { padding: [20, 20], maxZoom: 15 });
+                    }
+                }, 500);
             }
             
-            if (locationBtn) {
-                locationBtn.innerHTML = '📍 Моё местоположение';
-                locationBtn.disabled = false;
+            if (successCount > 0) {
+                Notification.show(`Загружено ${successCount} точек на карту`, 'success');
+            }
+        }
+    };
+    
+    // Статистика
+    const Stats = {
+        update(points) {
+            const available = points.filter(p => p.status === 'available').length;
+            const collected = points.filter(p => p.status === 'collected').length;
+            
+            this.updateElement('availableCount', available);
+            this.updateElement('collectedCount', collected);
+            
+            Utils.log('Статистика:', { available, collected });
+        },
+        
+        updateElement(id, value) {
+            const element = document.getElementById(id);
+            if (!element) return;
+            
+            const current = parseInt(element.textContent) || 0;
+            if (current === value) return;
+            
+            // Простая анимация
+            element.style.transform = 'scale(1.1)';
+            element.style.transition = 'transform 0.2s ease';
+            
+            setTimeout(() => {
+                element.textContent = value;
+                element.style.transform = 'scale(1)';
+            }, 100);
+        }
+    };
+    
+    // Геолокация
+    const Location = {
+        getCurrentPosition() {
+            Utils.log('Запрос геолокации...');
+            
+            const locationBtn = document.querySelector('.location-btn');
+            if (!locationBtn) return;
+            
+            if (!navigator.geolocation) {
+                Notification.show('Геолокация не поддерживается', 'error');
+                return;
+            }
+            
+            const originalText = locationBtn.innerHTML;
+            locationBtn.innerHTML = '⏳ Поиск...';
+            locationBtn.disabled = true;
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: CONFIG.isMobile ? 20000 : 15000,
+                maximumAge: 300000
+            };
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => this.onLocationSuccess(position, locationBtn, originalText),
+                (error) => this.onLocationError(error, locationBtn, originalText),
+                options
+            );
+        },
+        
+        onLocationSuccess(position, btn, originalText) {
+            const { latitude: lat, longitude: lng, accuracy } = position.coords;
+            
+            Utils.log('Геолокация получена:', { lat, lng, accuracy });
+            
+            // Иконка пользователя
+            const userIcon = L.divIcon({
+                className: 'pb-user-marker',
+                html: `<div style="
+                    background:linear-gradient(45deg,#2196F3,#1976D2);
+                    width:${CONFIG.isMobile ? '24px' : '20px'};
+                    height:${CONFIG.isMobile ? '24px' : '20px'};
+                    border-radius:50%;border:3px solid white;
+                    box-shadow:0 4px 12px rgba(33,150,243,0.4);
+                    display:flex;align-items:center;justify-content:center;
+                    color:white;font-weight:bold;font-size:10px;position:relative
+                ">👤<div style="
+                    position:absolute;top:-3px;left:-3px;right:-3px;bottom:-3px;
+                    border:2px solid #2196F3;border-radius:50%;opacity:0.6;
+                    animation:userPulse 2s infinite
+                "></div></div>`,
+                iconSize: [CONFIG.isMobile ? 24 : 20, CONFIG.isMobile ? 24 : 20],
+                iconAnchor: [CONFIG.isMobile ? 12 : 10, CONFIG.isMobile ? 12 : 10]
+            });
+            
+            // Удаляем предыдущий маркер
+            if (window.userMarker) map.removeLayer(window.userMarker);
+            
+            // Добавляем новый
+            window.userMarker = L.marker([lat, lng], { icon: userIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="text-align:center;min-width:150px">
+                        <strong>📍 Ваше местоположение</strong><br>
+                        <small style="color:#666">
+                            ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                            Точность: ±${Math.round(accuracy)}м
+                        </small>
+                    </div>
+                `);
+            
+            // Центрируем карту
+            const zoom = Math.max(map.getZoom(), CONFIG.isMobile ? 14 : 15);
+            map.setView([lat, lng], zoom);
+            
+            Notification.show('Местоположение определено!', 'success');
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        },
+        
+        onLocationError(error, btn, originalText) {
+            Utils.log('❌ Ошибка геолокации:', error);
+            
+            const messages = {
+                1: 'Разрешите доступ к геолокации',
+                2: 'Местоположение недоступно',
+                3: 'Время ожидания истекло'
+            };
+            
+            Notification.show(messages[error.code] || 'Ошибка геолокации', 'error');
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    };
+    
+    // Тестовые данные
+    const TestData = {
+        createPoints() {
+            Utils.log('Создание тестовых точек...');
+            
+            const testPoints = [
+                {
+                    id: 'test1',
+                    name: 'Тестовая модель - Парк Горького',
+                    coordinates: { lat: 43.2220, lng: 76.8512 },
+                    status: 'available',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'test2',
+                    name: 'Тестовая модель - Площадь Республики',
+                    coordinates: { lat: 43.2380, lng: 76.8840 },
+                    status: 'collected',
+                    collectorInfo: { name: 'Тестовый пользователь', signature: 'Первая находка!' },
+                    collectedAt: new Date(Date.now() - 3600000).toISOString()
+                },
+                {
+                    id: 'test3',
+                    name: 'Тестовая модель - Кок-Тобе',
+                    coordinates: { lat: 43.2050, lng: 76.9080 },
+                    status: 'available',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            pointsCache = testPoints;
+            MapManager.updateMarkers(testPoints);
+            Stats.update(testPoints);
+            
+            Notification.show('Загружены тестовые точки', 'info');
+        }
+    };
+    
+    // Главное приложение
+    const App = {
+        async init() {
+            Utils.log('Запуск PlasticBoy...');
+            
+            try {
+                // Стили
+                Utils.addStyles('pb-styles', STYLES);
+                
+                // Кнопки
+                this.initButtons();
+                
+                // Карта
+                await MapManager.init();
+                
+                // Точки
+                await this.loadPoints();
+                
+                Utils.log('✅ PlasticBoy готов');
+                
+            } catch (error) {
+                Utils.log('❌ Ошибка инициализации:', error);
+                Notification.show('Ошибка загрузки приложения', 'error');
             }
         },
-        function(error) {
-            console.error('Geolocation error:', error);
-            
-            let errorMessage = 'Не удалось найти местоположение';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = 'Доступ к геолокации запрещен';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Местоположение недоступно';
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = 'Превышено время ожидания';
-                    break;
-            }
-            
-            showNotification(errorMessage, 'error');
-            
-            if (locationBtn) {
-                locationBtn.innerHTML = '📍 Моё местоположение';
-                locationBtn.disabled = false;
+        
+        async loadPoints() {
+            try {
+                const points = await API.fetchPoints();
+                pointsCache = points;
+                MapManager.updateMarkers(points);
+                Stats.update(points);
+                
+                // Уведомляем загрузчик
+                if (typeof window.PlasticBoyLoader?.onPointsLoaded === 'function') {
+                    window.PlasticBoyLoader.onPointsLoaded();
+                }
+                
+            } catch (error) {
+                Utils.log('❌ Ошибка загрузки точек:', error);
+                Notification.show('Ошибка загрузки данных: ' + error.message, 'error');
+                
+                // Тестовые данные для отладки
+                if (location.hostname === 'localhost' || location.search.includes('debug')) {
+                    TestData.createPoints();
+                }
+                
+                // Уведомляем загрузчик даже при ошибке
+                if (typeof window.PlasticBoyLoader?.onPointsLoaded === 'function') {
+                    window.PlasticBoyLoader.onPointsLoaded();
+                }
             }
         },
-        options
-    );
-}
-
-// Детали точки
-async function showPointDetails(pointId) {
-    try {
-        const response = await fetch(`/api/point/${pointId}/info`);
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки информации');
-        }
         
-        const point = await response.json();
-        
-        let modalContent = `
-            <h3 style="color: #667eea; margin-bottom: 15px;">${point.name}</h3>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <p><strong>Статус:</strong> 
-                    <span style="color: ${point.status === 'collected' ? '#f44336' : '#4CAF50'}">
-                        ${point.status === 'collected' ? 'Собрана' : 'Доступна'}
-                    </span>
-                </p>
-            </div>`;
-        
-        if (point.status === 'collected' && point.collectorInfo) {
-            modalContent += `
-                <div style="border-left: 3px solid #667eea; padding-left: 15px; margin: 15px 0;">
-                    <h4>Сборщик:</h4>
-                    <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
-                    ${point.collectorInfo.signature ? 
-                        `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>` : ''}
-                </div>`;
-            
-            if (point.collectorInfo.selfie) {
-                modalContent += `
-                    <div style="text-align: center; margin-top: 15px;">
-                        <img src="${point.collectorInfo.selfie}" 
-                             style="max-width: 100%; max-height: 250px; border-radius: 8px;"
-                             alt="Селфи сборщика">
-                    </div>`;
+        initButtons() {
+            const locationBtn = document.querySelector('.location-btn');
+            if (locationBtn) {
+                locationBtn.addEventListener('click', Location.getCurrentPosition);
+                Utils.log('✅ Кнопка геолокации настроена');
             }
         }
+    };
+    
+    // События
+    window.addEventListener('resize', Utils.debounce(() => {
+        if (map) map.invalidateSize();
+    }, 250));
+    
+    // Горячие клавиши
+    document.addEventListener('keydown', (e) => {
+        if (!e.ctrlKey) return;
         
-        document.getElementById('modalTitle').innerHTML = 'Информация о модели';
-        document.getElementById('modalBody').innerHTML = modalContent;
-        document.getElementById('infoModal').style.display = 'block';
-        
-    } catch (error) {
-        console.error('Error loading point details:', error);
-        showNotification('Ошибка загрузки информации', 'error');
-    }
-}
-
-// Модальное окно
-function closeModal() {
-    document.getElementById('infoModal').style.display = 'none';
-}
-
-// Уведомления
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    
-    const icons = { error: '❌', success: '✅', info: 'ℹ️', warning: '⚠️' };
-    
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span>${icons[type] || icons.info} ${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()">×</button>
-        </div>`;
-    
-    addNotificationStyles();
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 200);
+        switch (e.key) {
+            case 'l':
+                e.preventDefault();
+                Location.getCurrentPosition();
+                break;
+            case 'r':
+                e.preventDefault();
+                if (isInitialized) App.loadPoints();
+                break;
+            case 'd':
+                e.preventDefault();
+                console.group('🎯 PlasticBoy Диагностика');
+                console.log('Устройство:', CONFIG.isMobile ? 'Мобильное' : 'Десктоп');
+                console.log('Инициализировано:', isInitialized);
+                console.log('Карта:', !!map);
+                console.log('Маркеры:', markers.length);
+                console.log('Кэш точек:', pointsCache?.length || 0);
+                console.groupEnd();
+                Notification.show('Диагностика в консоли', 'info');
+                break;
         }
-    }, 4000);
-}
-
-// Стили карты
-function addMapStyles() {
-    if (!document.getElementById('map-styles')) {
-        const style = document.createElement('style');
-        style.id = 'map-styles';
-        style.textContent = `
-            .leaflet-tile-pane {
-                filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
-            }
-            .leaflet-marker-pane, .leaflet-popup-pane, .leaflet-control-container {
-                filter: none !important;
-            }
-            .leaflet-container {
-                background: #f8f9fa !important;
-            }
-            .leaflet-control-zoom a {
-                width: ${isMobile ? '35px' : '26px'} !important;
-                height: ${isMobile ? '35px' : '26px'} !important;
-                line-height: ${isMobile ? '35px' : '26px'} !important;
-                font-size: 18px !important;
-            }`;
-        document.head.appendChild(style);
+    });
+    
+    // Экспорт
+    window.PlasticBoy = {
+        map: () => map,
+        markers: () => markers,
+        loadPoints: () => App.loadPoints(),
+        getLocation: Location.getCurrentPosition,
+        isReady: () => isInitialized,
+        getCache: () => pointsCache
+    };
+    
+    // Псевдонимы для совместимости
+    window.showNotification = Notification.show;
+    window.updateMap = MapManager.updateMarkers;
+    window.updateStats = Stats.update;
+    window.loadPoints = () => App.loadPoints();
+    window.getCurrentLocation = Location.getCurrentPosition;
+    
+    // Автозапуск
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(App.init, 100));
+    } else {
+        setTimeout(App.init, 100);
     }
-}
-
-// Стили маркеров
-function addMarkerStyles() {
-    if (!document.getElementById('marker-styles')) {
-        const style = document.createElement('style');
-        style.id = 'marker-styles';
-        style.textContent = `
-            .custom-marker { background: none !important; border: none !important; }
-            .marker-dot {
-                width: ${isMobile ? '16px' : '20px'};
-                height: ${isMobile ? '16px' : '20px'};
-                border-radius: 50%;
-                border: 2px solid white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                transition: transform 0.2s ease;
-                cursor: pointer;
-            }
-            .marker-dot:hover { transform: scale(1.1); }
-            .marker-dot.available { background: linear-gradient(45deg, #4CAF50, #45a049); }
-            .marker-dot.collected { background: linear-gradient(45deg, #f44336, #e53935); }
-            .popup-content { min-width: ${isMobile ? '200px' : '220px'}; font-size: ${isMobile ? '14px' : '15px'}; }
-            .popup-content h3 { margin: 0 0 10px 0; color: #333; font-size: ${isMobile ? '16px' : '18px'}; font-weight: 600; }
-            .status { margin: 8px 0; font-weight: 600; }
-            .status.available { color: #4CAF50; }
-            .status.collected { color: #f44336; }
-            .collector-info { background: #f8f9fa; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: ${isMobile ? '12px' : '13px'}; }
-            .collector-info p { margin: 4px 0; }
-            .details-btn { background: linear-gradient(45deg, #667eea, #764ba2); color: white; border: none; padding: ${isMobile ? '8px 12px' : '10px 16px'}; border-radius: 6px; cursor: pointer; font-size: ${isMobile ? '12px' : '14px'}; width: 100%; margin-top: 8px; }`;
-        document.head.appendChild(style);
-    }
-}
-
-// Стили уведомлений
-function addNotificationStyles() {
-    if (!document.getElementById('notification-styles')) {
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            .notification { position: fixed; top: 20px; right: 20px; z-index: 2000; background: rgba(255, 255, 255, 0.98); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 12px 16px; min-width: 250px; max-width: 350px; font-size: ${isMobile ? '14px' : '15px'}; transition: all 0.3s ease; }
-            .notification.error { border-left: 4px solid #f44336; }
-            .notification.success { border-left: 4px solid #4CAF50; }
-            .notification.info { border-left: 4px solid #2196F3; }
-            .notification.warning { border-left: 4px solid #ff9800; }
-            .notification-content { display: flex; justify-content: space-between; align-items: center; }
-            .notification-content button { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #999; padding: 0; margin: 0; width: auto; margin-left: 10px; }`;
-        document.head.appendChild(style);
-    }
-}
-
-// Обработчики событий
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('infoModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-});
-
-let resizeTimeout;
-window.addEventListener('resize', function() {
-    if (map && isMapInitialized) {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            map.invalidateSize();
-        }, 250);
-    }
-});
-
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeModal();
-    }
-});
-
-// Периодическое обновление
-setInterval(() => {
-    if (isMapInitialized && pointsLoaded) {
-        loadPointsFromNetwork(true);
-    }
-}, 60000);
-
-// Экспорт
-window.PlasticBoy = {
-    map,
-    markers,
-    loadPoints,
-    showNotification,
-    getCurrentLocation,
-    showPointDetails,
-    closeModal,
-    initMap,
-    updateMap,
-    updateStats,
-    isMapInitialized: () => isMapInitialized,
-    isPointsLoaded: () => pointsLoaded
-};
-
-window.showNotification = showNotification;
-window.updateMap = updateMap;
-window.updateStats = updateStats;
+    
+    Utils.log('✅ PlasticBoy оптимизированный скрипт загружен');
+    Utils.log(`Режим: ${CONFIG.isMobile ? 'МОБИЛЬНЫЙ' : 'ДЕСКТОП'}`);
+    
+})();
