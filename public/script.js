@@ -1,5 +1,5 @@
-// ОПТИМИЗИРОВАННЫЙ SCRIPT.JS для PlasticBoy
-// Упрощен для мобильных устройств и быстрой загрузки
+// ПЕРЕРАБОТАННЫЙ SCRIPT.JS для PlasticBoy
+// Упрощен и оптимизирован для надежной работы
 
 let map;
 let markers = [];
@@ -9,8 +9,460 @@ const ALMATY_CENTER = [43.2220, 76.8512];
 
 // Флаги состояния
 let isAppInitialized = false;
-let pointsCache = null;
-let isRetrying = false;
+
+// СИСТЕМА КЭШИРОВАНИЯ
+const Cache = {
+    key: 'plasticboy_points_v2',
+    ttl: 5 * 60 * 1000, // 5 минут
+    
+    save(data) {
+        try {
+            const item = {
+                data: data,
+                timestamp: Date.now(),
+                version: '2.0'
+            };
+            localStorage.setItem(this.key, JSON.stringify(item));
+            console.log(`💾 Кэшировано ${data.length} точек`);
+        } catch (e) {
+            console.warn('⚠️ Ошибка сохранения в кэш:', e);
+        }
+    },
+    
+    load() {
+        try {
+            const item = localStorage.getItem(this.key);
+            if (!item) return null;
+            
+            const parsed = JSON.parse(item);
+            const age = Date.now() - parsed.timestamp;
+            
+            if (age > this.ttl) {
+                console.log('⏰ Кэш устарел');
+                return null;
+            }
+            
+            console.log(`📦 Загружено ${parsed.data.length} точек из кэша`);
+            return parsed.data;
+        } catch (e) {
+            console.warn('⚠️ Ошибка чтения кэша:', e);
+            return null;
+        }
+    },
+    
+    clear() {
+        localStorage.removeItem(this.key);
+        console.log('🗑️ Кэш очищен');
+    }
+};
+
+// Ожидание готовности DOM и Leaflet
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM загружен');
+    
+    // Уведомляем систему загрузки о готовности Leaflet
+    if (typeof L !== 'undefined') {
+        if (window.AppLoader) window.AppLoader.onLeafletReady();
+        initApp();
+    } else {
+        // Ожидаем загрузки Leaflet
+        const checkLeaflet = setInterval(() => {
+            if (typeof L !== 'undefined') {
+                clearInterval(checkLeaflet);
+                if (window.AppLoader) window.AppLoader.onLeafletReady();
+                initApp();
+            }
+        }, 100);
+    }
+});
+
+// Инициализация приложения
+function initApp() {
+    console.log('🚀 Инициализация приложения');
+    
+    // Инициализируем карту
+    setTimeout(() => {
+        try {
+            initMap();
+            if (window.AppLoader) window.AppLoader.onMapReady();
+            
+            // Загружаем точки
+            setTimeout(() => {
+                loadPoints();
+            }, 500);
+        } catch (error) {
+            console.error('❌ Ошибка инициализации:', error);
+            // Повторная попытка через 2 секунды
+            setTimeout(initApp, 2000);
+        }
+    }, 300);
+}
+
+// Инициализация карты
+function initMap() {
+    if (isAppInitialized) return;
+    
+    console.log('🗺️ Создание карты');
+    
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+        throw new Error('Элемент карты не найден');
+    }
+    
+    map = L.map('map', {
+        center: ALMATY_CENTER,
+        zoom: 13,
+        zoomControl: true,
+        attributionControl: true
+    });
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(map);
+    
+    // Добавляем стили
+    addMapStyles();
+    
+    // Обновляем размер карты
+    setTimeout(() => {
+        if (map) {
+            map.invalidateSize();
+            console.log('✅ Карта готова');
+        }
+    }, 200);
+    
+    isAppInitialized = true;
+}
+
+// Стили для карты
+function addMapStyles() {
+    if (document.getElementById('map-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'map-styles';
+    style.textContent = `
+        .leaflet-tile-pane {
+            filter: grayscale(100%) contrast(1.1) brightness(1.05);
+        }
+        
+        .leaflet-marker-pane, .leaflet-popup-pane, .leaflet-control-container {
+            filter: none;
+        }
+        
+        .custom-marker {
+            background: none !important;
+            border: none !important;
+        }
+        
+        .marker-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .marker-dot:hover {
+            transform: scale(1.2);
+        }
+        
+        .marker-dot.available {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+        
+        .marker-dot.collected {
+            background: linear-gradient(45deg, #f44336, #e53935);
+        }
+        
+        .user-marker {
+            background: none !important;
+            border: none !important;
+        }
+        
+        .user-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            border: 2px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Загрузка точек
+async function loadPoints() {
+    console.log('📍 Загрузка точек');
+    
+    // Сначала проверяем кэш
+    const cachedPoints = Cache.load();
+    if (cachedPoints) {
+        updateMap(cachedPoints);
+        updateStats(cachedPoints);
+        if (window.AppLoader) {
+            window.AppLoader.onPointsLoaded();
+            window.AppLoader.updateLoader();
+        }
+        
+        // Обновляем в фоне
+        setTimeout(() => fetchPointsFromServer(), 1000);
+        return;
+    }
+    
+    // Загружаем с сервера
+    await fetchPointsFromServer();
+}
+
+// Загрузка с сервера
+async function fetchPointsFromServer() {
+    try {
+        const response = await fetch('/api/points', {
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const points = await response.json();
+        console.log(`✅ Загружено ${points.length} точек с сервера`);
+        
+        // Сохраняем в кэш
+        Cache.save(points);
+        
+        // Обновляем интерфейс
+        updateMap(points);
+        updateStats(points);
+        
+        // Уведомляем систему загрузки
+        if (window.AppLoader) {
+            window.AppLoader.onPointsLoaded();
+            window.AppLoader.updateLoader();
+        }
+        
+        return points;
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки точек:', error);
+        
+        // Уведомляем систему загрузки даже при ошибке
+        if (window.AppLoader) {
+            window.AppLoader.onPointsLoaded();
+            window.AppLoader.updateLoader();
+        }
+        
+        throw error;
+    }
+}
+
+// Обновление карты
+function updateMap(points) {
+    if (!map || !points) return;
+    
+    console.log(`🗺️ Обновление карты: ${points.length} точек`);
+    
+    // Очищаем старые маркеры
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+    
+    // Добавляем новые маркеры
+    points.forEach(point => {
+        try {
+            const isAvailable = point.status === 'available';
+            
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div class="marker-dot ${isAvailable ? 'available' : 'collected'}"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon });
+            
+            // Popup
+            let popupContent = `
+                <div style="min-width: 200px; font-family: Arial, sans-serif;">
+                    <h3 style="margin: 0 0 10px 0; color: #333;">${point.name}</h3>
+                    <p style="margin: 5px 0; font-weight: 600; color: ${isAvailable ? '#4CAF50' : '#f44336'};">
+                        ${isAvailable ? '🟢 Доступна' : '🔴 Собрана'}
+                    </p>
+            `;
+            
+            if (!isAvailable && point.collectorInfo) {
+                popupContent += `
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 6px; margin: 8px 0; font-size: 0.9rem;">
+                        <p style="margin: 4px 0;"><strong>Собрал:</strong> ${point.collectorInfo.name}</p>
+                        ${point.collectorInfo.signature ? `<p style="margin: 4px 0;"><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>` : ''}
+                        <p style="margin: 4px 0;"><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+                    </div>
+                    <button onclick="showPointDetails('${point.id}')" style="
+                        background: linear-gradient(45deg, #667eea, #764ba2);
+                        color: white; border: none; padding: 8px 12px;
+                        border-radius: 6px; cursor: pointer; width: 100%; margin-top: 8px;
+                    ">Подробнее</button>
+                `;
+            }
+            
+            popupContent += '</div>';
+            
+            marker.bindPopup(popupContent);
+            marker.addTo(map);
+            markers.push(marker);
+            
+        } catch (error) {
+            console.warn('⚠️ Ошибка создания маркера:', error);
+        }
+    });
+    
+    console.log(`✅ Добавлено ${markers.length} маркеров на карту`);
+}
+
+// Обновление статистики
+function updateStats(points) {
+    const available = points.filter(p => p.status === 'available').length;
+    const collected = points.filter(p => p.status === 'collected').length;
+    
+    const availableEl = document.getElementById('availableCount');
+    const collectedEl = document.getElementById('collectedCount');
+    
+    if (availableEl) availableEl.textContent = available;
+    if (collectedEl) collectedEl.textContent = collected;
+    
+    console.log(`📊 Статистика: ${available} доступно, ${collected} собрано`);
+}
+
+// Геолокация
+function getCurrentLocation() {
+    const btn = document.querySelector('.location-btn');
+    if (!navigator.geolocation || !map) {
+        console.warn('⚠️ Геолокация недоступна');
+        return;
+    }
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Определение...';
+    btn.disabled = true;
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Удаляем старый маркер
+            if (window.userMarker) {
+                map.removeLayer(window.userMarker);
+            }
+            
+            // Создаем новый маркер
+            const userIcon = L.divIcon({
+                className: 'user-marker',
+                html: '<div class="user-dot"></div>',
+                iconSize: [22, 22],
+                iconAnchor: [11, 11]
+            });
+            
+            window.userMarker = L.marker([lat, lng], { icon: userIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="text-align: center;">
+                        <strong>📍 Ваше местоположение</strong><br>
+                        <small>${lat.toFixed(4)}, ${lng.toFixed(4)}</small>
+                    </div>
+                `);
+            
+            map.flyTo([lat, lng], 16);
+            console.log('✅ Местоположение найдено');
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        },
+        function(error) {
+            console.error('❌ Ошибка геолокации:', error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    );
+}
+
+// Детали точки
+async function showPointDetails(pointId) {
+    try {
+        const response = await fetch(`/api/point/${pointId}/info`);
+        const point = await response.json();
+        
+        let content = `
+            <h3 style="color: #667eea;">${point.name}</h3>
+            <p><strong>Статус:</strong> ${point.status === 'collected' ? '🔴 Собрана' : '🟢 Доступна'}</p>
+            <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(4)}, ${point.coordinates.lng.toFixed(4)}</p>
+        `;
+        
+        if (point.status === 'collected' && point.collectorInfo) {
+            content += `
+                <hr>
+                <h4>Сборщик:</h4>
+                <p><strong>Имя:</strong> ${point.collectorInfo.name}</p>
+                ${point.collectorInfo.signature ? `<p><strong>Сообщение:</strong> "${point.collectorInfo.signature}"</p>` : ''}
+                <p><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+            `;
+            
+            if (point.collectorInfo.selfie) {
+                content += `
+                    <div style="text-align: center; margin-top: 15px;">
+                        <img src="${point.collectorInfo.selfie}" 
+                             style="max-width: 100%; max-height: 200px; border-radius: 8px;"
+                             alt="Селфи">
+                    </div>
+                `;
+            }
+        }
+        
+        document.getElementById('modalTitle').innerHTML = 'Информация о модели';
+        document.getElementById('modalBody').innerHTML = content;
+        document.getElementById('infoModal').style.display = 'block';
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки деталей:', error);
+    }
+}
+
+// Закрытие модального окна
+function closeModal() {
+    document.getElementById('infoModal').style.display = 'none';
+}
+
+// Обработчики событий
+window.addEventListener('click', function(e) {
+    if (e.target === document.getElementById('infoModal')) {
+        closeModal();
+    }
+});
+
+window.addEventListener('resize', function() {
+    if (map) {
+        setTimeout(() => map.invalidateSize(), 100);
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+    if (e.ctrlKey && e.key === 'l') {
+        e.preventDefault();
+        getCurrentLocation();
+    }
+});
+
+// Автообновление
+setInterval(() => {
+    if (map && markers.length > 0) {
+        fetchPointsFromServer().catch(() => {});
+    }
+}, 30000);
+
+console.log('🚀 PlasticBoy script готов к работе');
 
 // Быстрая инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
@@ -76,8 +528,15 @@ function initMap() {
             }
         }, 200);
         
-        // Автообновление
-        setInterval(loadPoints, 30000);
+        // Автообновление с умным кэшированием
+        setInterval(() => {
+            loadPoints(); // Автоматически проверит кэш
+        }, 30000);
+        
+        // Принудительное обновление каждые 5 минут
+        setInterval(() => {
+            loadPoints(true);
+        }, 5 * 60 * 1000);
         
         isAppInitialized = true;
         
@@ -249,29 +708,69 @@ function initControlButtons() {
     }
 }
 
-// Загрузка точек
-async function loadPoints() {
+// Загрузка точек с кэшированием
+async function loadPoints(forceRefresh = false) {
     if (!map) {
         console.log('⏳ Карта не готова для загрузки точек');
         return;
     }
     
+    // Проверяем кэш если не принудительное обновление
+    if (!forceRefresh) {
+        const cached = CacheManager.getCachedPoints();
+        if (cached && !cached.isExpired) {
+            console.log('⚡ Используем кэшированные точки');
+            pointsCache = cached.points;
+            updateMap(cached.points);
+            updateStats(cached.points);
+            
+            // Уведомляем систему загрузки
+            if (window.LoaderAPI) {
+                window.LoaderAPI.onPointsLoaded();
+            }
+            
+            return cached.points;
+        } else if (cached && cached.isExpired) {
+            console.log('📦 Показываем устаревший кэш, обновляем в фоне');
+            // Показываем старые данные сразу
+            pointsCache = cached.points;
+            updateMap(cached.points);
+            updateStats(cached.points);
+            
+            if (window.LoaderAPI) {
+                window.LoaderAPI.onPointsLoaded();
+            }
+            
+            // Продолжаем загрузку новых данных в фоне
+        }
+    }
+    
     try {
-        console.log('📍 Загрузка точек...');
+        console.log('🌐 Загрузка точек с сервера...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд таймаут
         
         const response = await fetch('/api/points', {
             method: 'GET',
             headers: {
-                'Accept': 'application/json'
-            }
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
         
         const points = await response.json();
-        console.log(`✅ Загружено ${points.length} точек`);
+        console.log(`✅ Загружено ${points.length} точек с сервера`);
+        
+        // Сохраняем в кэш
+        CacheManager.savePoints(points);
         
         pointsCache = points;
         updateMap(points);
@@ -286,6 +785,19 @@ async function loadPoints() {
         
     } catch (error) {
         console.error('❌ Ошибка загрузки точек:', error);
+        
+        // При ошибке пытаемся использовать любой доступный кэш
+        const cached = CacheManager.getCachedPoints();
+        if (cached) {
+            console.log('📦 Используем резервный кэш из-за ошибки сети');
+            pointsCache = cached.points;
+            updateMap(cached.points);
+            updateStats(cached.points);
+            
+            showNotification('Используются кэшированные данные', 'warning');
+        } else {
+            showNotification('Ошибка загрузки данных', 'error');
+        }
         
         // Уведомляем систему загрузки даже при ошибке
         if (window.LoaderAPI) {
@@ -546,19 +1058,46 @@ function closeModal() {
     document.getElementById('infoModal').style.display = 'none';
 }
 
-// Уведомления
+// Уведомления с поддержкой кэша
 function showNotification(message, type = 'info') {
-    // Простая реализация без всплывающих окон
-    console.log(`${type.toUpperCase()}: ${message}`);
+    // Простая реализация с логированием
+    const timestamp = new Date().toLocaleTimeString();
+    const icon = {
+        'info': 'ℹ️',
+        'success': '✅', 
+        'warning': '⚠️',
+        'error': '❌'
+    }[type] || 'ℹ️';
     
-    // Можно добавить простое уведомление в статус бар или консоль
+    console.log(`[${timestamp}] ${icon} ${message}`);
+    
+    // Дополнительное логирование для разных типов
     if (type === 'error') {
-        console.error(message);
+        console.error(`[PlasticBoy Error] ${message}`);
+    } else if (type === 'warning') {
+        console.warn(`[PlasticBoy Warning] ${message}`);
     } else if (type === 'success') {
-        console.log(`✅ ${message}`);
-    } else {
-        console.info(`ℹ️ ${message}`);
+        console.log(`[PlasticBoy Success] ${message}`);
     }
+}
+
+// Функция принудительного обновления
+function forceRefresh() {
+    console.log('🔄 Принудительное обновление данных');
+    CacheManager.clearCache();
+    loadPoints(true);
+}
+
+// Информация о кэше для отладки
+function getCacheStatus() {
+    const info = CacheManager.getCacheInfo();
+    if (!info) {
+        console.log('📭 Кэш пуст');
+        return null;
+    }
+    
+    console.log(`💾 Кэш: ${info.pointsCount} точек, возраст ${info.age}с, ${info.isExpired ? 'устарел' : 'актуален'}`);
+    return info;
 }
 
 // Обработчики событий
@@ -578,16 +1117,27 @@ window.addEventListener('resize', function() {
     }
 }, { passive: true });
 
-// Сетевые события
+// Сетевые события с поддержкой кэша
 window.addEventListener('online', function() {
     console.log('🌐 Соединение восстановлено');
+    showNotification('Соединение восстановлено', 'success');
     if (isAppInitialized) {
-        setTimeout(loadPoints, 1000);
+        // При восстановлении сети принудительно обновляем данные
+        setTimeout(() => loadPoints(true), 1000);
     }
 }, { passive: true });
 
 window.addEventListener('offline', function() {
-    console.log('⚠️ Нет интернета');
+    console.log('📱 Работа в оффлайн режиме');
+    showNotification('Работа в оффлайн режиме', 'warning');
+    
+    // Проверяем доступность кэша
+    const cacheInfo = CacheManager.getCacheInfo();
+    if (cacheInfo) {
+        console.log(`💾 Доступен оффлайн кэш: ${cacheInfo.pointsCount} точек`);
+    } else {
+        console.log('❌ Нет данных для оффлайн режима');
+    }
 }, { passive: true });
 
 // Обработка ошибок загрузки изображений
@@ -607,9 +1157,21 @@ document.addEventListener('keydown', function(event) {
         event.preventDefault();
         getCurrentLocation();
     }
+    
+    // Принудительное обновление по Ctrl+R
+    if (event.ctrlKey && event.key === 'r') {
+        event.preventDefault();
+        forceRefresh();
+    }
+    
+    // Информация о кэше по Ctrl+I
+    if (event.ctrlKey && event.key === 'i') {
+        event.preventDefault();
+        getCacheStatus();
+    }
 });
 
-// Экспорт функций
+// Экспорт функций с поддержкой кэша
 window.PlasticBoy = {
     map,
     markers,
@@ -620,7 +1182,12 @@ window.PlasticBoy = {
     initMap,
     updateMap,
     updateStats,
-    showNotification
+    showNotification,
+    // Новые функции кэширования
+    forceRefresh,
+    getCacheStatus,
+    clearCache: () => CacheManager.clearCache(),
+    cacheManager: CacheManager
 };
 
 // Псевдонимы для совместимости
@@ -628,4 +1195,15 @@ window.fastLoadPoints = loadPoints;
 window.fastUpdateMap = updateMap;
 window.fastUpdateStats = updateStats;
 
-console.log('🚀 PlasticBoy script готов к работе');
+// Инициализация кэша при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    // Показываем информацию о кэше при запуске
+    const cacheInfo = CacheManager.getCacheInfo();
+    if (cacheInfo) {
+        console.log(`🎯 PlasticBoy запущен с кэшем: ${cacheInfo.pointsCount} точек (${cacheInfo.age}с назад)`);
+    } else {
+        console.log('🎯 PlasticBoy запущен без кэша');
+    }
+});
+
+console.log('🚀 PlasticBoy script с кэшированием готов к работе');
