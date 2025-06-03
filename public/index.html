@@ -32,11 +32,104 @@
             font-family: 'Press Start 2P', monospace;
             color: #00ff00;
             overflow: hidden;
+            animation: crtFlicker 0.15s infinite alternate;
         }
         
         .loading-screen.fade-out {
             opacity: 0;
             pointer-events: none;
+        }
+        
+        /* CRT эффект */
+        .crt-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        /* Изгиб экрана */
+        .crt-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 70%,
+                rgba(0, 255, 0, 0.1) 100%
+            );
+            border-radius: 15px;
+        }
+        
+        /* Вертикальные полосы */
+        .crt-effect::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.02) 2px,
+                rgba(0, 255, 0, 0.02) 4px
+            );
+        }
+        
+        /* Мерцание экрана */
+        @keyframes crtFlicker {
+            0% {
+                opacity: 1;
+            }
+            96% {
+                opacity: 1;
+            }
+            97% {
+                opacity: 0.98;
+            }
+            98% {
+                opacity: 1;
+            }
+            99% {
+                opacity: 0.99;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        
+        /* Статические помехи */
+        .static-noise {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
+            animation: staticMove 0.1s infinite;
+        }
+        
+        @keyframes staticMove {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-1px, 1px); }
+            20% { transform: translate(1px, -1px); }
+            30% { transform: translate(-1px, -1px); }
+            40% { transform: translate(1px, 1px); }
+            50% { transform: translate(-1px, 0); }
+            60% { transform: translate(1px, 0); }
+            70% { transform: translate(0, -1px); }
+            80% { transform: translate(0, 1px); }
+            90% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0, 0); }
         }
         
         /* Простой матричный фон */
@@ -81,6 +174,8 @@
             text-align: center;
             margin-bottom: 40px;
             animation: logoGlow 2s ease-in-out infinite alternate;
+            z-index: 10;
+            position: relative;
         }
         
         .logo-title {
@@ -92,6 +187,44 @@
                 0 0 15px #00ff00;
             margin-bottom: 15px;
             letter-spacing: 3px;
+            position: relative;
+        }
+        
+        /* RGB смещение для текста */
+        .logo-title::before,
+        .logo-title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .logo-title::before {
+            color: #ff0000;
+            z-index: -1;
+            animation: chromaShiftRed 2s infinite;
+        }
+        
+        .logo-title::after {
+            color: #0000ff;
+            z-index: -2;
+            animation: chromaShiftBlue 2s infinite;
+        }
+        
+        @keyframes chromaShiftRed {
+            0%, 100% { transform: translate(0px, 0px); }
+            25% { transform: translate(0.5px, 0px); }
+            50% { transform: translate(-0.5px, 0px); }
+            75% { transform: translate(0.5px, 0px); }
+        }
+        
+        @keyframes chromaShiftBlue {
+            0%, 100% { transform: translate(0px, 0px); }
+            25% { transform: translate(-0.5px, 0px); }
+            50% { transform: translate(0.5px, 0px); }
+            75% { transform: translate(-0.5px, 0px); }
         }
         
         .logo-subtitle {
@@ -129,6 +262,7 @@
                 0 0 16px rgba(0, 255, 0, 0.2);
             margin-bottom: 30px;
             position: relative;
+            z-index: 10;
         }
         
         .progress-bar {
@@ -180,6 +314,8 @@
             min-height: 20px;
             animation: textBlink 1.5s infinite;
             letter-spacing: 1px;
+            z-index: 10;
+            position: relative;
         }
         
         @keyframes textBlink {
@@ -192,6 +328,8 @@
             display: flex;
             gap: 3px;
             margin-bottom: 15px;
+            z-index: 10;
+            position: relative;
         }
         
         .pixel-dot {
@@ -227,16 +365,16 @@
             height: 100%;
             background: linear-gradient(
                 transparent 50%, 
-                rgba(0, 255, 0, 0.01) 50%
+                rgba(0, 255, 0, 0.03) 50%
             );
-            background-size: 100% 2px;
+            background-size: 100% 4px;
             pointer-events: none;
             animation: scanlineMove 0.1s linear infinite;
         }
         
         @keyframes scanlineMove {
             0% { transform: translateY(0); }
-            100% { transform: translateY(2px); }
+            100% { transform: translateY(4px); }
         }
         
         /* Основной контент */
@@ -297,6 +435,12 @@
 <body>
     <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
     <div class="loading-screen" id="loadingScreen">
+        <!-- CRT эффект -->
+        <div class="crt-effect"></div>
+        
+        <!-- Статические помехи -->
+        <div class="static-noise"></div>
+        
         <!-- Матричный фон -->
         <div class="matrix-bg" id="matrixBg"></div>
         
@@ -305,7 +449,7 @@
         
         <!-- Логотип -->
         <div class="logo-container">
-            <div class="logo-title">PLASTICBOY</div>
+            <div class="logo-title" data-text="PLASTICBOY">PLASTICBOY</div>
             <div class="logo-subtitle">Almaty Edition</div>
         </div>
         
