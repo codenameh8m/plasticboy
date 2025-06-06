@@ -310,7 +310,7 @@ function updateAdminMap() {
         if (point.status === 'collected') {
             popupContent += `
                 <p><strong>Собрана:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
-                <p><strong>Сборщик:</strong> ${point.collectorInfo.name}</p>
+                <p><strong>Сборщик:</strong> @${point.collectorInfo.instagramUsername || point.collectorInfo.name}</p>
             `;
         }
         
@@ -409,7 +409,7 @@ function updatePointsList() {
                 ${isScheduled ? `<p><strong>Появится:</strong> ${new Date(point.scheduledTime).toLocaleString('ru-RU')}</p>` : ''}
                 ${point.status === 'collected' ? `
                     <p><strong>Собрана:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
-                    <p><strong>Сборщик:</strong> ${point.collectorInfo.name}</p>
+                    <p><strong>Сборщик:</strong> @${point.collectorInfo.instagramUsername || point.collectorInfo.name}</p>
                 ` : ''}
                 <div class="point-actions">
                     <button onclick="showQRCode('${point.id}')" class="admin-btn">QR код</button>
@@ -936,7 +936,8 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
-// Добавить в admin.js после существующего кода
+
+// ========== НОВЫЙ КОД ДЛЯ V3.0 ==========
 
 // Показать статистику пользователей в админ панели
 function showUserStats() {
