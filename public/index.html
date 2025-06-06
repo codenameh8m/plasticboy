@@ -389,45 +389,27 @@
         
         /* Мобильная оптимизация */
         @media (max-width: 768px) {
-            .logo-title {
-                font-size: 2rem;
-                letter-spacing: 2px;
-            }
-            
             .logo-subtitle {
                 font-size: 0.7rem;
             }
             
             .progress-container {
-                width: 260px;
-            }
-            
-            .loading-status {
-                font-size: 0.7rem;
-            }
-            
-            .matrix-dot {
-                width: 1px;
-                height: 1px;
+                width: 280px;
             }
         }
         
         @media (max-width: 480px) {
             .logo-title {
-                font-size: 1.6rem;
+                font-size: 1.5rem;
                 letter-spacing: 1px;
             }
             
-            .logo-subtitle {
-                font-size: 0.6rem;
+            .loading-status {
+                font-size: 0.7rem;
             }
             
             .progress-container {
-                width: 220px;
-            }
-            
-            .loading-status {
-                font-size: 0.6rem;
+                width: 250px;
             }
         }
     </style>
@@ -435,25 +417,21 @@
 <body>
     <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
     <div class="loading-screen" id="loadingScreen">
-        <!-- CRT эффект -->
-        <div class="crt-effect"></div>
-        
-        <!-- Статические помехи -->
-        <div class="static-noise"></div>
-        
-        <!-- Матричный фон -->
+        <!-- Простой матричный фон -->
         <div class="matrix-bg" id="matrixBg"></div>
         
-        <!-- Сканлинии -->
+        <!-- CRT эффекты -->
+        <div class="crt-effect"></div>
         <div class="scanlines"></div>
+        <div class="static-noise"></div>
         
         <!-- Логотип -->
         <div class="logo-container">
-            <div class="logo-title" data-text="PLASTICBOY">PLASTICBOY</div>
-            <div class="logo-subtitle">Almaty Edition</div>
+            <h1 class="logo-title" data-text="PLASTICBOY">PLASTICBOY</h1>
+            <p class="logo-subtitle">CYBER COLLECTION v3.0</p>
         </div>
         
-        <!-- Пиксельная анимация -->
+        <!-- Пиксельный индикатор -->
         <div class="pixel-loader">
             <div class="pixel-dot"></div>
             <div class="pixel-dot"></div>
@@ -462,14 +440,15 @@
             <div class="pixel-dot"></div>
         </div>
         
-        <!-- Статус загрузки -->
-        <div class="loading-status" id="loadingStatus">INITIALIZING...</div>
-        
         <!-- Прогресс бар -->
         <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
-            <div class="progress-text" id="progressText">0%</div>
+            <div class="progress-bar" id="progressBar">
+                <span class="progress-text" id="progressText">0%</span>
+            </div>
         </div>
+        
+        <!-- Статус загрузки -->
+        <div class="loading-status" id="loadingStatus">INITIALIZING SYSTEM...</div>
     </div>
 
     <!-- ОСНОВНОЙ КОНТЕНТ ПРИЛОЖЕНИЯ -->
@@ -477,39 +456,67 @@
         <div class="container">
             <header class="header">
                 <h1>🎯 PlasticBoy</h1>
-                <p>Collect'em all</p>
+                <p>Collect'em all in Almaty</p>
             </header>
 
-            <div class="stats">
-                <div class="stat-item">
-                    <span class="stat-number" id="availableCount">0</span>
-                    <span class="stat-label">Доступно для сбора</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="collectedCount">0</span>
-                    <span class="stat-label">Собрано другими</span>
-                </div>
-            </div>
-
-            <div class="map-container">
-                <div id="map"></div>
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-dot green"></div>
-                        <span>Доступные модели</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot red"></div>
-                        <span>Собранные модели</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- КНОПКА ГЕОЛОКАЦИИ -->
-            <div class="map-controls">
-                <button class="control-btn location-btn" onclick="getCurrentLocation()">
-                    📍 Моё местоположение
+            <!-- Навигация между картой и рейтингом -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('map')">
+                    🗺️ Карта
                 </button>
+                <button class="nav-tab" onclick="showTab('leaderboard')">
+                    🏆 Рейтинг
+                </button>
+            </div>
+
+            <!-- Вкладка карты -->
+            <div id="mapTab" class="tab-content active">
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="availableCount">0</span>
+                        <span class="stat-label">Доступно для сбора</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="collectedCount">0</span>
+                        <span class="stat-label">Собрано другими</span>
+                    </div>
+                </div>
+
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-dot green"></div>
+                            <span>Доступные модели</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot red"></div>
+                            <span>Собранные модели</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- КНОПКА ГЕОЛОКАЦИИ -->
+                <div class="map-controls">
+                    <button class="control-btn location-btn" onclick="getCurrentLocation()">
+                        📍 Моё местоположение
+                    </button>
+                </div>
+            </div>
+
+            <!-- Вкладка рейтинга -->
+            <div id="leaderboardTab" class="tab-content" style="display: none;">
+                <div class="leaderboard-container">
+                    <h2>🏆 Топ коллекционеров</h2>
+                    <div id="leaderboardList" class="leaderboard-list">
+                        <!-- Здесь будет список лидеров -->
+                    </div>
+                    <div class="leaderboard-pagination">
+                        <button id="prevPageBtn" onclick="loadLeaderboard(currentPage - 1)">←</button>
+                        <span id="pageInfo">Страница 1</span>
+                        <button id="nextPageBtn" onclick="loadLeaderboard(currentPage + 1)">→</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -521,129 +528,186 @@
                 <div id="modalBody"></div>
             </div>
         </div>
+
+        <!-- Модальное окно профиля пользователя -->
+        <div id="userModal" class="modal">
+            <div class="modal-content user-profile-modal">
+                <span class="close" onclick="closeUserModal()">&times;</span>
+                <div id="userProfileContent">
+                    <!-- Содержимое профиля -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Скрипт системы загрузки -->
     <script>
-        // ПРОСТАЯ И НАДЕЖНАЯ СИСТЕМА ЗАГРУЗКИ
-        console.log('🎯 PlasticBoy - Запуск системы');
-        
-        let loadingSteps = [
-            "INITIALIZING...",
-            "LOADING LEAFLET...",
-            "PREPARING MAP...",
-            "LOADING POINTS...",
-            "READY!"
-        ];
-
-        let currentStep = 0;
-        let progress = 0;
-        let isMapReady = false;
-        let arePointsLoaded = false;
-        let isLeafletReady = false;
-
-        // Создание простого матричного фона
-        function createMatrix() {
-            const matrixBg = document.getElementById('matrixBg');
-            const numberOfDots = window.innerWidth < 768 ? 10 : 20;
+        window.AppLoader = (function() {
+            'use strict';
             
-            for (let i = 0; i < numberOfDots; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'matrix-dot';
-                dot.style.left = Math.random() * 100 + '%';
-                dot.style.animationDelay = Math.random() * 3 + 's';
-                dot.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                matrixBg.appendChild(dot);
-            }
-        }
-
-        // Обновление загрузочного экрана
-        function updateLoader() {
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            const loadingStatus = document.getElementById('loadingStatus');
+            let progress = 0;
+            let loadSteps = {
+                start: false,
+                leaflet: false,
+                map: false,
+                points: false
+            };
             
-            // Простое увеличение прогресса
-            if (isLeafletReady && progress < 40) {
-                progress = 40;
-            }
-            if (isMapReady && progress < 70) {
-                progress = 70;
-            }
-            if (arePointsLoaded && progress < 100) {
-                progress = 100;
-            } else if (progress < 95) {
-                progress += 5;
-            }
+            const statusMessages = [
+                'INITIALIZING SYSTEM...',
+                'CONNECTING TO SATELLITE...',
+                'LOADING MAP DATA...',
+                'ESTABLISHING SECURE CONNECTION...',
+                'SYNCHRONIZING COORDINATES...',
+                'LOADING COLLECTION POINTS...',
+                'DECRYPTING QR CODES...',
+                'SYSTEM READY'
+            ];
             
-            if (progress > 100) progress = 100;
+            let currentMessageIndex = 0;
             
-            progressBar.style.width = progress + '%';
-            progressText.textContent = Math.floor(progress) + '%';
-            
-            // Обновление статуса
-            const targetStep = Math.floor(progress / 25);
-            if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
-                currentStep = targetStep;
-                loadingStatus.textContent = loadingSteps[currentStep];
-            }
-            
-            // Завершение загрузки
-            if (arePointsLoaded && progress >= 100) {
-                loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
-                setTimeout(finishLoading, 500);
-                return true;
-            }
-            return false;
-        }
-
-        // Завершение загрузки
-        function finishLoading() {
-            const loadingScreen = document.getElementById('loadingScreen');
-            const mainContent = document.getElementById('mainContent');
-            
-            loadingScreen.classList.add('fade-out');
-            
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                mainContent.classList.add('loaded');
-            }, 600);
-        }
-
-        // Экспорт для использования в script.js
-        window.AppLoader = {
-            onLeafletReady: () => { 
-                isLeafletReady = true; 
-                console.log('✅ Leaflet готов');
-            },
-            onMapReady: () => { 
-                isMapReady = true; 
-                console.log('✅ Карта готова');
-            },
-            onPointsLoaded: () => { 
-                arePointsLoaded = true; 
-                console.log('✅ Точки загружены');
-            },
-            updateLoader: updateLoader
-        };
-
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', function() {
-            createMatrix();
-            
-            // Основной цикл загрузки
-            const loaderInterval = setInterval(() => {
-                if (updateLoader()) {
-                    clearInterval(loaderInterval);
+            // Создаем матричный фон
+            function createMatrixBackground() {
+                const matrixBg = document.getElementById('matrixBg');
+                const dotCount = 50;
+                
+                for (let i = 0; i < dotCount; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'matrix-dot';
+                    dot.style.left = Math.random() * 100 + '%';
+                    dot.style.animationDelay = Math.random() * 3 + 's';
+                    dot.style.animationDuration = (2 + Math.random() * 3) + 's';
+                    matrixBg.appendChild(dot);
                 }
+            }
+            
+            // Обновляем прогресс
+            function updateProgress(value) {
+                progress = Math.min(value, 100);
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+                if (progressText) {
+                    progressText.textContent = Math.floor(progress) + '%';
+                }
+                
+                // Меняем статус сообщения
+                const messageIndex = Math.floor((progress / 100) * (statusMessages.length - 1));
+                if (messageIndex !== currentMessageIndex) {
+                    currentMessageIndex = messageIndex;
+                    updateStatus(statusMessages[messageIndex]);
+                }
+            }
+            
+            // Обновляем статус
+            function updateStatus(message) {
+                const statusElement = document.getElementById('loadingStatus');
+                if (statusElement) {
+                    statusElement.style.opacity = '0';
+                    setTimeout(() => {
+                        statusElement.textContent = message;
+                        statusElement.style.opacity = '1';
+                    }, 150);
+                }
+            }
+            
+            // Плавное увеличение прогресса
+            function smoothProgress(targetValue, duration = 500) {
+                const startValue = progress;
+                const startTime = Date.now();
+                
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const percentage = Math.min(elapsed / duration, 1);
+                    
+                    // Easing функция
+                    const easeInOutQuad = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                    const easedPercentage = easeInOutQuad(percentage);
+                    
+                    const currentProgress = startValue + (targetValue - startValue) * easedPercentage;
+                    updateProgress(currentProgress);
+                    
+                    if (percentage < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                }
+                
+                animate();
+            }
+            
+            // Финальная анимация
+            function finishLoading() {
+                smoothProgress(100, 600);
+                
+                setTimeout(() => {
+                    updateStatus('WELCOME TO PLASTICBOY');
+                    
+                    setTimeout(() => {
+                        const loadingScreen = document.getElementById('loadingScreen');
+                        const mainContent = document.getElementById('mainContent');
+                        
+                        if (loadingScreen) {
+                            loadingScreen.classList.add('fade-out');
+                        }
+                        
+                        if (mainContent) {
+                            mainContent.classList.add('loaded');
+                        }
+                        
+                        setTimeout(() => {
+                            if (loadingScreen) {
+                                loadingScreen.style.display = 'none';
+                            }
+                        }, 600);
+                    }, 800);
+                }, 600);
+            }
+            
+            // Проверяем завершение загрузки
+            function checkLoadingComplete() {
+                const allLoaded = Object.values(loadSteps).every(step => step === true);
+                
+                if (allLoaded) {
+                    finishLoading();
+                }
+            }
+            
+            // Инициализация
+            createMatrixBackground();
+            
+            // Начальная анимация
+            setTimeout(() => {
+                loadSteps.start = true;
+                smoothProgress(15, 800);
             }, 300);
             
-            // Таймаут безопасности
-            setTimeout(() => {
-                arePointsLoaded = true;
-                progress = 100;
-            }, 15000);
-        });
+            // API для отметки этапов загрузки
+            return {
+                onLeafletReady: function() {
+                    console.log('📚 Leaflet загружен');
+                    loadSteps.leaflet = true;
+                    smoothProgress(35, 600);
+                    checkLoadingComplete();
+                },
+                
+                onMapReady: function() {
+                    console.log('🗺️ Карта готова');
+                    loadSteps.map = true;
+                    smoothProgress(65, 700);
+                    checkLoadingComplete();
+                },
+                
+                onPointsLoaded: function() {
+                    console.log('📍 Точки загружены');
+                    loadSteps.points = true;
+                    smoothProgress(85, 500);
+                    checkLoadingComplete();
+                }
+            };
+        })();
     </script>
     
     <!-- Подключение Leaflet -->
@@ -652,4 +716,9 @@
     <!-- Основной скрипт приложения -->
     <script src="script.js"></script>
 </body>
-</html>
+</html>title {
+                font-size: 2rem;
+                letter-spacing: 2px;
+            }
+            
+            .logo-
