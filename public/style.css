@@ -184,378 +184,6 @@ body {
 .legend-item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1.3rem;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-}
-
-.leaderboard-info {
-    flex: 1;
-}
-
-.leaderboard-username {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.leaderboard-stats {
-    font-size: 0.9rem;
-    color: #666;
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-.collected-count {
-    color: #4CAF50;
-    font-weight: 600;
-}
-
-.badges {
-    font-size: 1.1rem;
-}
-
-.view-profile-btn {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.view-profile-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-/* Пагинация */
-.leaderboard-pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-}
-
-.leaderboard-pagination button {
-    padding: 8px 16px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.leaderboard-pagination button:hover:not(:disabled) {
-    background: #5a67d8;
-    transform: translateY(-2px);
-}
-
-.leaderboard-pagination button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-#pageInfo {
-    font-weight: 600;
-    color: #666;
-}
-
-/* Профиль пользователя */
-.user-profile-modal .modal-content {
-    max-width: 600px;
-}
-
-.user-profile-header {
-    display: flex;
-    align-items: center;
-    gap: 30px;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
-}
-
-.profile-avatar-large {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 2.5rem;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-}
-
-.profile-info h2 {
-    margin: 0 0 15px 0;
-    color: #333;
-}
-
-.profile-stats {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 15px;
-}
-
-.stat-box {
-    text-align: center;
-}
-
-.stat-value {
-    display: block;
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #667eea;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.profile-dates {
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.profile-dates p {
-    margin: 5px 0;
-}
-
-.profile-sections {
-    margin-top: 20px;
-}
-
-.profile-section {
-    margin-bottom: 30px;
-}
-
-.profile-section h3 {
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.badges-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-}
-
-.badge-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.badge-emoji {
-    font-size: 1.5rem;
-}
-
-.badge-name {
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.models-list {
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.collected-model-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    margin-bottom: 5px;
-}
-
-.model-name {
-    font-weight: 500;
-    color: #333;
-}
-
-.model-date {
-    font-size: 0.85rem;
-    color: #666;
-}
-
-.no-data, .no-models, .no-badges {
-    text-align: center;
-    color: #666;
-    padding: 20px;
-    font-style: italic;
-}
-
-/* АДАПТИВНОСТЬ С КОМПАКТНЫМИ КАРТАМИ */
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    
-    .header h1 {
-        font-size: 2rem;
-    }
-    
-    .header p {
-        font-size: 1rem;
-    }
-    
-    /* КОМПАКТНАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
-    #map, #adminMap {
-        height: 350px !important;
-        min-height: 350px !important;
-    }
-    
-    .modal-content {
-        margin: 10% auto;
-        width: 95%;
-        padding: 20px;
-    }
-    
-    .stats {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .stat-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .stat-number {
-        font-size: 1.5rem;
-        margin-bottom: 0;
-    }
-    
-    /* Адаптивная кнопка управления для планшетов */
-    .map-controls {
-        max-width: 350px;
-        padding: 18px;
-    }
-    
-    .control-btn {
-        font-size: 1rem !important;
-        padding: 16px 20px !important;
-        min-height: 55px;
-    }
-    
-    /* Адаптивность для рейтинга */
-    .nav-tabs {
-        flex-direction: column;
-    }
-    
-    .nav-tab {
-        max-width: 100%;
-    }
-    
-    .leaderboard-item {
-        flex-wrap: wrap;
-    }
-    
-    .leaderboard-position {
-        font-size: 1.2rem;
-    }
-    
-    .user-profile-header {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .profile-stats {
-        justify-content: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .header {
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-    
-    .header h1 {
-        font-size: 1.8rem;
-    }
-    
-    .form-container {
-        padding: 20px;
-    }
-    
-    /* КВАДРАТНАЯ КАРТА ДЛЯ СМАРТФОНОВ */
-    #map, #adminMap {
-        height: 320px !important;
-        min-height: 320px !important;
-    }
-    
-    /* Адаптивная кнопка для смартфонов */
-    .map-controls {
-        max-width: 320px;
-        padding: 16px;
-    }
-    
-    .control-btn {
-        font-size: 0.95rem !important;
-        padding: 14px 18px !important;
-        min-height: 50px;
-    }
-    
-    /* Адаптивность рейтинга для мобильных */
-    .leaderboard-item {
-        padding: 10px;
-    }
-    
-    .leaderboard-avatar {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    
-    .leaderboard-username {
-        font-size: 1rem;
-    }
-    
-    .view-profile-btn {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-}
-
-@media (max-width: 360px) {
-    /* КОМПАКТНАЯ КВАДРАТНАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
-    #map, #adminMap {
-        height: 300px !important;
-        min-height: 300px !important;
-    }
-    
-    .container {
-        padding: 5px;
-    }
-    
-    .control-btn {
-        font-size: 0.9rem !important;
-        padding: 12px 16px !important;
-        min-height: 48px;
-    }
-    
-    .map-controls {
-        max-width: 300px;
-        padding: 14px;
-    }
-}items: center;
     margin-bottom: 5px;
     font-size: 0.9rem;
 }
@@ -1182,213 +810,113 @@ button:not(.control-btn):disabled {
     }
 }
 
-/* Instagram авторизация */
-.instagram-auth {
-    text-align: center;
-    padding: 30px 0;
+/* АДАПТИВНОСТЬ С КОМПАКТНЫМИ КАРТАМИ */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header p {
+        font-size: 1rem;
+    }
+    
+    /* КОМПАКТНАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
+    #map, #adminMap {
+        height: 350px !important;
+        min-height: 350px !important;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 20px;
+    }
+    
+    .stats {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    /* Адаптивная кнопка управления для планшетов */
+    .map-controls {
+        max-width: 350px;
+        padding: 18px;
+    }
+    
+    .control-btn {
+        font-size: 1rem !important;
+        padding: 16px 20px !important;
+        min-height: 55px;
+    }
 }
 
-.instagram-auth h3 {
-    color: #333;
-    margin-bottom: 10px;
+@media (max-width: 480px) {
+    .header {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .form-container {
+        padding: 20px;
+    }
+    
+    /* КВАДРАТНАЯ КАРТА ДЛЯ СМАРТФОНОВ */
+    #map, #adminMap {
+        height: 320px !important;
+        min-height: 320px !important;
+    }
+    
+    /* Адаптивная кнопка для смартфонов */
+    .map-controls {
+        max-width: 320px;
+        padding: 16px;
+    }
+    
+    .control-btn {
+        font-size: 0.95rem !important;
+        padding: 14px 18px !important;
+        min-height: 50px;
+    }
 }
 
-.instagram-note {
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 20px;
+@media (max-width: 360px) {
+    /* КОМПАКТНАЯ КВАДРАТНАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    #map, #adminMap {
+        height: 300px !important;
+        min-height: 300px !important;
+    }
+    
+    .container {
+        padding: 5px;
+    }
+    
+    .control-btn {
+        font-size: 0.9rem !important;
+        padding: 12px 16px !important;
+        min-height: 48px;
+    }
+    
+    .map-controls {
+        max-width: 300px;
+        padding: 14px;
+    }
 }
-
-.instagram-input-wrapper {
-    position: relative;
-    max-width: 300px;
-    margin: 0 auto 20px;
-}
-
-.instagram-prefix {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-#instagramUsername {
-    padding-left: 35px;
-    font-size: 1.1rem;
-}
-
-.instagram-btn {
-    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-    color: white;
-    padding: 18px 40px;
-    font-size: 1.1rem;
-    box-shadow: 0 4px 15px rgba(220, 39, 67, 0.3);
-}
-
-.instagram-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(220, 39, 67, 0.4);
-}
-
-.instagram-info {
-    color: #666;
-    font-size: 0.85rem;
-    margin-top: 15px;
-}
-
-/* Информация о пользователе */
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
-    color: white;
-    margin-bottom: 20px;
-}
-
-.user-avatar-letter {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-.user-details h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.2rem;
-}
-
-.user-details p {
-    margin: 0;
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
-.change-user-btn {
-    background: #6c757d;
-    font-size: 0.9rem;
-    padding: 10px 20px;
-    margin-top: 5px;
-}
-
-/* Достижения */
-.achievement-notification {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-    padding: 20px;
-    border-radius: 15px;
-    margin: 20px 0;
-    text-align: center;
-    color: #333;
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-}
-
-.achievement-notification h3 {
-    margin: 0 0 10px 0;
-    color: #333;
-}
-
-.success-stats {
-    margin-top: 20px;
-    font-size: 1.1rem;
-}
-
-/* Навигация между вкладками */
-.nav-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 10px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.nav-tab {
-    flex: 1;
-    max-width: 200px;
-    padding: 12px 20px;
-    background: transparent;
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    color: #666;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.nav-tab:hover {
-    border-color: #667eea;
-    color: #667eea;
-}
-
-.nav-tab.active {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
-    border-color: transparent;
-}
-
-/* Рейтинг */
-.leaderboard-container {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
-    padding: 30px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.leaderboard-container h2 {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 1.8rem;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.leaderboard-list {
-    margin-bottom: 30px;
-}
-
-.leaderboard-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    transition: all 0.3s;
-}
-
-.leaderboard-item:hover {
-    transform: translateX(5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.leaderboard-position {
-    font-size: 1.5rem;
-    font-weight: bold;
-    min-width: 50px;
-    text-align: center;
-}
-
-.leaderboard-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-
