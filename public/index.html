@@ -670,7 +670,8 @@
             function checkLoadingComplete() {
                 const allLoaded = Object.values(loadSteps).every(step => step === true);
                 
-                if (allLoaded) {
+                if (allLoaded && !window.loadingFinished) {
+                    window.loadingFinished = true;
                     finishLoading();
                 }
             }
@@ -683,6 +684,17 @@
                 loadSteps.start = true;
                 smoothProgress(15, 800);
             }, 300);
+            
+            // Таймаут безопасности - если что-то пошло не так, все равно загружаем
+            setTimeout(() => {
+                if (!window.loadingFinished) {
+                    console.warn('⚠️ Принудительное завершение загрузки по таймауту');
+                    loadSteps.leaflet = true;
+                    loadSteps.map = true;
+                    loadSteps.points = true;
+                    checkLoadingComplete();
+                }
+            }, 8000); // 8 секунд максимум на загрузку
             
             // API для отметки этапов загрузки
             return {
