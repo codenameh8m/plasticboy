@@ -76,108 +76,181 @@
                 left: 0;
                 top: 0;
                 width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.9);
-                backdrop-filter: blur(10px);
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.95);
+                backdrop-filter: blur(15px);
                 animation: photoModalFadeIn 0.3s ease-out;
+                overflow: hidden;
             }
             
             .photo-modal.show {
                 display: flex;
-                align-items: center;
+                flex-direction: column;
                 justify-content: center;
+                align-items: center;
+                padding: 20px;
             }
             
             .photo-modal-content {
                 position: relative;
-                max-width: 90vw;
-                max-height: 90vh;
-                background: white;
+                width: 100%;
+                max-width: min(90vw, 600px);
+                max-height: 85vh;
+                background: rgba(255, 255, 255, 0.98);
                 border-radius: 20px;
                 overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
                 animation: photoModalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .photo-modal-image-container {
+                position: relative;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                min-height: 200px;
+                overflow: hidden;
             }
             
             .photo-modal-image {
-                width: 100%;
-                height: auto;
                 max-width: 100%;
-                max-height: 80vh;
-                display: block;
+                max-height: 60vh;
                 object-fit: contain;
+                border-radius: 0;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s ease;
             }
             
             .photo-modal-info {
                 padding: 20px;
-                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+                border-top: 1px solid rgba(0, 0, 0, 0.05);
+                flex-shrink: 0;
             }
             
             .photo-modal-close {
                 position: absolute;
                 top: 15px;
-                right: 20px;
-                background: rgba(0, 0, 0, 0.7);
+                right: 15px;
+                background: rgba(0, 0, 0, 0.8);
                 color: white;
                 border: none;
                 border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
+                width: 44px;
+                height: 44px;
+                font-size: 22px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.3s ease;
-                z-index: 10;
+                z-index: 20;
                 backdrop-filter: blur(10px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             }
             
             .photo-modal-close:hover {
-                background: rgba(0, 0, 0, 0.9);
+                background: rgba(255, 255, 255, 0.2);
                 transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
             }
             
             .photo-modal-title {
-                margin: 0 0 10px 0;
-                font-size: 1.2rem;
-                font-weight: 600;
-                color: #333;
+                margin: 0 0 15px 0;
+                font-size: 1.3rem;
+                font-weight: 700;
+                color: #2c3e50;
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
             
             .photo-modal-details {
-                font-size: 0.9rem;
-                color: #666;
-                line-height: 1.5;
+                font-size: 0.95rem;
+                color: #495057;
+                line-height: 1.6;
             }
             
             .photo-modal-details p {
-                margin: 5px 0;
+                margin: 8px 0;
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .photo-modal-details strong {
+                color: #2c3e50;
+                min-width: 90px;
+                font-weight: 600;
             }
             
             .photo-modal-signature {
-                background: rgba(255, 255, 255, 0.8);
-                padding: 10px;
-                border-radius: 8px;
-                margin-top: 10px;
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+                padding: 15px;
+                border-radius: 12px;
+                margin-top: 15px;
                 font-style: italic;
-                border-left: 3px solid #667eea;
+                border-left: 4px solid #667eea;
+                box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+            }
+            
+            .photo-modal-signature strong {
+                color: #667eea;
+                display: block;
+                margin-bottom: 8px;
+                font-style: normal;
+            }
+            
+            .photo-modal-meta {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .photo-modal-meta-item {
+                background: rgba(255, 255, 255, 0.7);
+                padding: 12px;
+                border-radius: 10px;
+                text-align: center;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+            
+            .photo-modal-meta-item strong {
+                display: block;
+                color: #667eea;
+                font-size: 0.85rem;
+                margin-bottom: 4px;
+                min-width: auto;
+            }
+            
+            .photo-modal-meta-item span {
+                color: #2c3e50;
+                font-weight: 600;
+                font-size: 0.9rem;
             }
             
             @keyframes photoModalFadeIn {
                 from {
                     opacity: 0;
+                    backdrop-filter: blur(0px);
                 }
                 to {
                     opacity: 1;
+                    backdrop-filter: blur(15px);
                 }
             }
             
             @keyframes photoModalSlideIn {
                 from {
                     opacity: 0;
-                    transform: scale(0.8) translateY(30px);
+                    transform: scale(0.9) translateY(50px);
                 }
                 to {
                     opacity: 1;
@@ -192,6 +265,7 @@
                 right: 0;
                 bottom: 0;
                 cursor: pointer;
+                z-index: 1;
             }
             
             /* Анимация закрытия */
@@ -206,9 +280,11 @@
             @keyframes photoModalFadeOut {
                 from {
                     opacity: 1;
+                    backdrop-filter: blur(15px);
                 }
                 to {
                     opacity: 0;
+                    backdrop-filter: blur(0px);
                 }
             }
             
@@ -219,35 +295,115 @@
                 }
                 to {
                     opacity: 0;
-                    transform: scale(0.8) translateY(30px);
+                    transform: scale(0.9) translateY(50px);
                 }
             }
             
             /* Мобильная адаптация */
             @media (max-width: 768px) {
+                .photo-modal.show {
+                    padding: 10px;
+                }
+                
                 .photo-modal-content {
                     max-width: 95vw;
-                    max-height: 95vh;
-                    border-radius: 15px;
+                    max-height: 90vh;
+                    border-radius: 16px;
+                }
+                
+                .photo-modal-image {
+                    max-height: 50vh;
                 }
                 
                 .photo-modal-info {
-                    padding: 15px;
+                    padding: 16px;
                 }
                 
                 .photo-modal-close {
-                    top: 10px;
-                    right: 15px;
-                    width: 35px;
-                    height: 35px;
-                    font-size: 18px;
+                    top: 12px;
+                    right: 12px;
+                    width: 40px;
+                    height: 40px;
+                    font-size: 20px;
                 }
                 
                 .photo-modal-title {
-                    font-size: 1.1rem;
+                    font-size: 1.15rem;
+                    margin-bottom: 12px;
                 }
                 
                 .photo-modal-details {
+                    font-size: 0.9rem;
+                }
+                
+                .photo-modal-details strong {
+                    min-width: 80px;
+                    font-size: 0.85rem;
+                }
+                
+                .photo-modal-meta {
+                    grid-template-columns: 1fr;
+                    gap: 10px;
+                }
+                
+                .photo-modal-signature {
+                    padding: 12px;
+                    margin-top: 12px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .photo-modal.show {
+                    padding: 5px;
+                }
+                
+                .photo-modal-content {
+                    max-width: 98vw;
+                    max-height: 95vh;
+                    border-radius: 12px;
+                }
+                
+                .photo-modal-image {
+                    max-height: 45vh;
+                }
+                
+                .photo-modal-info {
+                    padding: 14px;
+                }
+                
+                .photo-modal-title {
+                    font-size: 1.05rem;
+                    margin-bottom: 10px;
+                }
+                
+                .photo-modal-details {
+                    font-size: 0.85rem;
+                }
+                
+                .photo-modal-details p {
+                    margin: 6px 0;
+                    gap: 6px;
+                }
+                
+                .photo-modal-details strong {
+                    min-width: 70px;
+                    font-size: 0.8rem;
+                }
+                
+                .photo-modal-signature {
+                    padding: 10px;
+                    font-size: 0.85rem;
+                }
+                
+                .photo-modal-meta-item {
+                    padding: 10px;
+                }
+                
+                .photo-modal-meta-item strong {
+                    font-size: 0.8rem;
+                }
+                
+                .photo-modal-meta-item span {
                     font-size: 0.85rem;
                 }
             }
@@ -256,36 +412,46 @@
             .clickable-selfie {
                 cursor: pointer;
                 transition: all 0.3s ease;
-                border-radius: 8px;
+                border-radius: 10px;
                 overflow: hidden;
                 position: relative;
+                display: inline-block;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             }
             
             .clickable-selfie:hover {
-                transform: scale(1.02);
+                transform: translateY(-2px);
                 box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
             }
             
             .clickable-selfie::after {
-                content: '🔍';
+                content: '👁️';
                 position: absolute;
-                top: 10px;
-                right: 10px;
-                background: rgba(0, 0, 0, 0.7);
+                top: 8px;
+                right: 8px;
+                background: rgba(0, 0, 0, 0.8);
                 color: white;
                 border-radius: 50%;
-                width: 30px;
-                height: 30px;
+                width: 28px;
+                height: 28px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 14px;
+                font-size: 12px;
                 opacity: 0;
                 transition: opacity 0.3s ease;
+                backdrop-filter: blur(5px);
             }
             
             .clickable-selfie:hover::after {
                 opacity: 1;
+            }
+            
+            @media (max-width: 768px) {
+                .clickable-selfie::after {
+                    opacity: 1;
+                    background: rgba(0, 0, 0, 0.6);
+                }
             }
         `;
         document.head.appendChild(style);
@@ -302,9 +468,14 @@
             <div class="photo-modal-overlay" onclick="closePhotoModal()"></div>
             <div class="photo-modal-content">
                 <button class="photo-modal-close" onclick="closePhotoModal()">×</button>
-                <img id="photoModalImage" class="photo-modal-image" alt="Селфи с места находки">
+                <div class="photo-modal-image-container">
+                    <img id="photoModalImage" class="photo-modal-image" alt="Селфи с места находки">
+                </div>
                 <div class="photo-modal-info">
-                    <h3 class="photo-modal-title" id="photoModalTitle">Селфи с места находки</h3>
+                    <h3 class="photo-modal-title" id="photoModalTitle">
+                        📸 Селфи с места находки
+                    </h3>
+                    <div class="photo-modal-meta" id="photoModalMeta"></div>
                     <div class="photo-modal-details" id="photoModalDetails"></div>
                 </div>
             </div>
@@ -320,22 +491,39 @@
         const modal = document.getElementById('photoModal');
         const image = document.getElementById('photoModalImage');
         const title = document.getElementById('photoModalTitle');
+        const meta = document.getElementById('photoModalMeta');
         const details = document.getElementById('photoModalDetails');
         
         // Устанавливаем данные
         image.src = imageSrc;
-        title.textContent = `📸 ${pointData.name}`;
+        title.innerHTML = `📸 ${pointData.name}`;
         
+        // Мета информация в красивых карточках
+        let metaHTML = '';
+        if (pointData.collectorInfo) {
+            metaHTML = `
+                <div class="photo-modal-meta-item">
+                    <strong>Сборщик</strong>
+                    <span>${pointData.collectorInfo.name}</span>
+                </div>
+                <div class="photo-modal-meta-item">
+                    <strong>Время сбора</strong>
+                    <span>${new Date(pointData.collectedAt).toLocaleDateString('ru-RU')}</span>
+                </div>
+            `;
+        }
+        meta.innerHTML = metaHTML;
+        
+        // Детальная информация
         let detailsHTML = '';
         if (pointData.collectorInfo) {
-            detailsHTML += `<p><strong>Сборщик:</strong> ${pointData.collectorInfo.name}</p>`;
-            detailsHTML += `<p><strong>Время сбора:</strong> ${new Date(pointData.collectedAt).toLocaleString('ru-RU')}</p>`;
-            detailsHTML += `<p><strong>Координаты:</strong> ${pointData.coordinates.lat.toFixed(6)}, ${pointData.coordinates.lng.toFixed(6)}</p>`;
+            detailsHTML += `<p><strong>📍 Координаты:</strong> ${pointData.coordinates.lat.toFixed(4)}, ${pointData.coordinates.lng.toFixed(4)}</p>`;
+            detailsHTML += `<p><strong>🕒 Полное время:</strong> ${new Date(pointData.collectedAt).toLocaleString('ru-RU')}</p>`;
             
             if (pointData.collectorInfo.signature) {
                 detailsHTML += `
                     <div class="photo-modal-signature">
-                        <strong>Сообщение:</strong><br>
+                        <strong>💬 Сообщение от сборщика:</strong>
                         "${pointData.collectorInfo.signature}"
                     </div>
                 `;
