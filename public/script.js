@@ -592,22 +592,36 @@
     
     // Инициализация карты (остается прежней)
     function initMap() {
-        if (isInitialized) return;
+        console.log('🗺️ Начало инициализации карты');
+        
+        if (isInitialized) {
+            console.log('⚠️ Карта уже инициализирована');
+            return;
+        }
         
         const mapElement = document.getElementById('map');
         if (!mapElement) {
             console.error('❌ Элемент карты не найден');
+            // Все равно сообщаем загрузчику
+            if (window.AppLoader && window.AppLoader.onMapReady) {
+                window.AppLoader.onMapReady();
+            }
+            if (window.AppLoader && window.AppLoader.onPointsLoaded) {
+                window.AppLoader.onPointsLoaded();
+            }
             return;
         }
         
         try {
-            console.log('🗺️ Создание карты');
+            console.log('🗺️ Создание карты Leaflet');
             
             map = L.map('map', {
                 center: ALMATY_CENTER,
                 zoom: 13,
                 zoomControl: true
             });
+            
+            console.log('🗺️ Добавление тайлов');
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
@@ -617,6 +631,8 @@
             // Добавляем стили
             addMapStyles();
             
+            console.log('✅ Карта создана успешно');
+            
             // Уведомляем загрузчик
             if (window.AppLoader && window.AppLoader.onMapReady) {
                 window.AppLoader.onMapReady();
@@ -624,8 +640,10 @@
             
             // Обновляем размер карты
             setTimeout(function() {
-                map.invalidateSize();
-                console.log('✅ Карта готова');
+                if (map) {
+                    map.invalidateSize();
+                    console.log('✅ Размер карты обновлен');
+                }
                 
                 // Загружаем точки
                 loadPoints();
@@ -637,13 +655,23 @@
             setInterval(function() {
                 loadPoints();
                 // Обновляем рейтинг если открыт
-                if (document.getElementById('leaderboardTab').style.display !== 'none') {
+                if (document.getElementById('leaderboardTab') && 
+                    document.getElementById('leaderboardTab').style.display !== 'none') {
                     loadLeaderboard(currentPage);
                 }
             }, 30000);
             
         } catch (error) {
             console.error('❌ Ошибка создания карты:', error);
+            
+            // Все равно уведомляем загрузчик чтобы не застрять
+            if (window.AppLoader && window.AppLoader.onMapReady) {
+                window.AppLoader.onMapReady();
+            }
+            if (window.AppLoader && window.AppLoader.onPointsLoaded) {
+                window.AppLoader.onPointsLoaded();
+            }
+            
             setTimeout(initMap, 2000);
         }
     }
