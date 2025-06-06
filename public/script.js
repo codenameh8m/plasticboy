@@ -1,4 +1,4 @@
-// PlasticBoy v2.0 - Упрощенная версия
+// PlasticBoy v2.0 - Упрощенная версия с модальным просмотром селфи
 (function() {
     'use strict';
     
@@ -59,7 +59,310 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🎯 PlasticBoy - Инициализация');
         initApp();
+        addPhotoModalStyles();
     });
+    
+    // Добавление стилей для модального окна с фотографиями
+    function addPhotoModalStyles() {
+        if (document.getElementById('photo-modal-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'photo-modal-styles';
+        style.textContent = `
+            .photo-modal {
+                display: none;
+                position: fixed;
+                z-index: 3000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.9);
+                backdrop-filter: blur(10px);
+                animation: photoModalFadeIn 0.3s ease-out;
+            }
+            
+            .photo-modal.show {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .photo-modal-content {
+                position: relative;
+                max-width: 90vw;
+                max-height: 90vh;
+                background: white;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                animation: photoModalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .photo-modal-image {
+                width: 100%;
+                height: auto;
+                max-width: 100%;
+                max-height: 80vh;
+                display: block;
+                object-fit: contain;
+            }
+            
+            .photo-modal-info {
+                padding: 20px;
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .photo-modal-close {
+                position: absolute;
+                top: 15px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                z-index: 10;
+                backdrop-filter: blur(10px);
+            }
+            
+            .photo-modal-close:hover {
+                background: rgba(0, 0, 0, 0.9);
+                transform: scale(1.1);
+            }
+            
+            .photo-modal-title {
+                margin: 0 0 10px 0;
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #333;
+            }
+            
+            .photo-modal-details {
+                font-size: 0.9rem;
+                color: #666;
+                line-height: 1.5;
+            }
+            
+            .photo-modal-details p {
+                margin: 5px 0;
+            }
+            
+            .photo-modal-signature {
+                background: rgba(255, 255, 255, 0.8);
+                padding: 10px;
+                border-radius: 8px;
+                margin-top: 10px;
+                font-style: italic;
+                border-left: 3px solid #667eea;
+            }
+            
+            @keyframes photoModalFadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes photoModalSlideIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8) translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            
+            .photo-modal-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                cursor: pointer;
+            }
+            
+            /* Анимация закрытия */
+            .photo-modal.closing {
+                animation: photoModalFadeOut 0.3s ease-in;
+            }
+            
+            .photo-modal.closing .photo-modal-content {
+                animation: photoModalSlideOut 0.3s ease-in;
+            }
+            
+            @keyframes photoModalFadeOut {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+            
+            @keyframes photoModalSlideOut {
+                from {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: scale(0.8) translateY(30px);
+                }
+            }
+            
+            /* Мобильная адаптация */
+            @media (max-width: 768px) {
+                .photo-modal-content {
+                    max-width: 95vw;
+                    max-height: 95vh;
+                    border-radius: 15px;
+                }
+                
+                .photo-modal-info {
+                    padding: 15px;
+                }
+                
+                .photo-modal-close {
+                    top: 10px;
+                    right: 15px;
+                    width: 35px;
+                    height: 35px;
+                    font-size: 18px;
+                }
+                
+                .photo-modal-title {
+                    font-size: 1.1rem;
+                }
+                
+                .photo-modal-details {
+                    font-size: 0.85rem;
+                }
+            }
+            
+            /* Улучшение для кликабельных селфи в popup */
+            .clickable-selfie {
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border-radius: 8px;
+                overflow: hidden;
+                position: relative;
+            }
+            
+            .clickable-selfie:hover {
+                transform: scale(1.02);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            }
+            
+            .clickable-selfie::after {
+                content: '🔍';
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            
+            .clickable-selfie:hover::after {
+                opacity: 1;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Создание модального окна для фотографий
+    function createPhotoModal() {
+        if (document.getElementById('photoModal')) return;
+        
+        const modal = document.createElement('div');
+        modal.id = 'photoModal';
+        modal.className = 'photo-modal';
+        modal.innerHTML = `
+            <div class="photo-modal-overlay" onclick="closePhotoModal()"></div>
+            <div class="photo-modal-content">
+                <button class="photo-modal-close" onclick="closePhotoModal()">×</button>
+                <img id="photoModalImage" class="photo-modal-image" alt="Селфи с места находки">
+                <div class="photo-modal-info">
+                    <h3 class="photo-modal-title" id="photoModalTitle">Селфи с места находки</h3>
+                    <div class="photo-modal-details" id="photoModalDetails"></div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    // Открытие модального окна с фотографией
+    function openPhotoModal(imageSrc, pointData) {
+        createPhotoModal();
+        
+        const modal = document.getElementById('photoModal');
+        const image = document.getElementById('photoModalImage');
+        const title = document.getElementById('photoModalTitle');
+        const details = document.getElementById('photoModalDetails');
+        
+        // Устанавливаем данные
+        image.src = imageSrc;
+        title.textContent = `📸 ${pointData.name}`;
+        
+        let detailsHTML = '';
+        if (pointData.collectorInfo) {
+            detailsHTML += `<p><strong>Сборщик:</strong> ${pointData.collectorInfo.name}</p>`;
+            detailsHTML += `<p><strong>Время сбора:</strong> ${new Date(pointData.collectedAt).toLocaleString('ru-RU')}</p>`;
+            detailsHTML += `<p><strong>Координаты:</strong> ${pointData.coordinates.lat.toFixed(6)}, ${pointData.coordinates.lng.toFixed(6)}</p>`;
+            
+            if (pointData.collectorInfo.signature) {
+                detailsHTML += `
+                    <div class="photo-modal-signature">
+                        <strong>Сообщение:</strong><br>
+                        "${pointData.collectorInfo.signature}"
+                    </div>
+                `;
+            }
+        }
+        
+        details.innerHTML = detailsHTML;
+        
+        // Показываем модальное окно
+        modal.classList.add('show');
+        
+        // Предотвращаем скролл страницы
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Закрытие модального окна с фотографией
+    window.closePhotoModal = function() {
+        const modal = document.getElementById('photoModal');
+        if (!modal) return;
+        
+        modal.classList.add('closing');
+        
+        setTimeout(() => {
+            modal.classList.remove('show', 'closing');
+            document.body.style.overflow = '';
+        }, 300);
+    };
     
     // Инициализация приложения
     function initApp() {
@@ -282,6 +585,16 @@
                     popupContent += '<p style="margin: 4px 0;"><strong>Сообщение:</strong> ' + point.collectorInfo.signature + '</p>';
                 }
                 popupContent += '<p style="margin: 4px 0;"><strong>Время:</strong> ' + new Date(point.collectedAt).toLocaleString('ru-RU') + '</p>';
+                
+                // Добавляем кликабельное селфи если есть
+                if (point.collectorInfo.selfie) {
+                    popupContent += '<div style="margin: 8px 0; text-align: center;">';
+                    popupContent += '<div class="clickable-selfie" onclick="openPhotoModal(\'' + point.collectorInfo.selfie + '\', ' + JSON.stringify(point).replace(/"/g, '&quot;') + ')" style="display: inline-block; position: relative;">';
+                    popupContent += '<img src="' + point.collectorInfo.selfie + '" style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer;" title="Кликните для увеличения">';
+                    popupContent += '</div>';
+                    popupContent += '</div>';
+                }
+                
                 popupContent += '</div>';
                 popupContent += '<button onclick="showPointDetails(\'' + point.id + '\')" style="background: #667eea; color: white; border: none; padding: 8px 12px; border-radius: 6px; width: 100%; cursor: pointer;">Подробнее</button>';
             }
@@ -376,7 +689,9 @@
                     
                     if (point.collectorInfo.selfie) {
                         content += '<div style="text-align: center; margin-top: 15px;">';
-                        content += '<img src="' + point.collectorInfo.selfie + '" style="max-width: 100%; max-height: 200px; border-radius: 8px;">';
+                        content += '<div class="clickable-selfie" onclick="openPhotoModal(\'' + point.collectorInfo.selfie + '\', ' + JSON.stringify(point).replace(/"/g, '&quot;') + ')" style="display: inline-block;">';
+                        content += '<img src="' + point.collectorInfo.selfie + '" style="max-width: 100%; max-height: 200px; border-radius: 8px; cursor: pointer;" title="Кликните для увеличения">';
+                        content += '</div>';
                         content += '</div>';
                     }
                 }
@@ -390,6 +705,9 @@
             });
     };
     
+    // Делаем функцию openPhotoModal глобальной
+    window.openPhotoModal = openPhotoModal;
+    
     // Закрытие модального окна
     window.closeModal = function() {
         document.getElementById('infoModal').style.display = 'none';
@@ -398,6 +716,14 @@
     // Обработчики событий
     window.addEventListener('click', function(e) {
         if (e.target === document.getElementById('infoModal')) {
+            closeModal();
+        }
+    });
+    
+    // Закрытие модального окна с фото по Escape
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePhotoModal();
             closeModal();
         }
     });
