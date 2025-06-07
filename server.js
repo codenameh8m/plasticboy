@@ -1,267 +1,212 @@
+// === 1. НАСТРОЙКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ (.env файл) ===
+/*
+INSTAGRAM_CLIENT_ID=your_instagram_app_id
+INSTAGRAM_CLIENT_SECRET=your_instagram_app_secret
+INSTAGRAM_REDIRECT_URI=https://your-domain.com/auth/instagram/callback
+MONGODB_URI=mongodb://localhost:27017/plasticboy
+ADMIN_PASSWORD=your_secure_password
+PORT=3000
+*/
+
+// === 2. ОБНОВЛЕННЫЙ server.js ===
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const path = require('path');
+const axios = require('axios'); // Добавляем axios для HTTP запросов
+const session = require('express-session'); // Для сессий
+const MongoStore = require('connect-mongo'); // Для хранения сессий в MongoDB
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
+// Настройка сессий
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'plasticboy-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy'
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 часа
+  }
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static('public'));
 
-// Устанавливаем правильные заголовки для кириллицы
-app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  next();
-});
-
-// Multer для загрузки файлов
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
-
-// MongoDB подключение
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log(`MongoDB подключена: ${conn.connection.host}`);
-  } catch (error) {
-    console.error('Ошибка подключения к MongoDB:', error.message);
-    process.exit(1);
-  }
+// Instagram API конфигурация
+const INSTAGRAM_CONFIG = {
+  clientId: process.env.INSTAGRAM_CLIENT_ID,
+  clientSecret: process.env.INSTAGRAM_CLIENT_SECRET,
+  redirectUri: process.env.INSTAGRAM_REDIRECT_URI,
+  scope: 'user_profile,user_media',
+  apiBaseUrl: 'https://graph.instagram.com',
+  authBaseUrl: 'https://api.instagram.com/oauth'
 };
 
-connectDB();
+// === 3. НОВЫЕ РОУТЫ ДЛЯ INSTAGRAM АВТОРИЗАЦИИ ===
 
-// Обновленная схема для точек на карте с поддержкой Instagram
-const ModelPointSchema = new mongoose.Schema({
-  id: { type: String, unique: true, required: true },
-  name: { type: String, required: true },
-  coordinates: {
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true }
-  },
-  status: { type: String, enum: ['available', 'collected'], default: 'available' },
-  qrCode: { type: String, required: true },
-  qrSecret: { type: String, required: true },
-  scheduledTime: { type: Date, default: Date.now },
-  createdAt: { type: Date, default: Date.now },
-  collectedAt: { type: Date },
-  collectorInfo: {
-    name: String,
-    signature: String,
-    selfie: String,
-    authMethod: { type: String, enum: ['manual', 'instagram'], default: 'manual' },
-    instagram: {
-      username: String,
-      full_name: String,
-      profile_picture: String,
-      posts_count: Number,
-      followers_count: Number,
-      following_count: Number,
-      is_verified: Boolean,
-      verified_at: Date
-    }
+// Начало авторизации Instagram
+app.get('/auth/instagram', (req, res) => {
+  const authUrl = `${INSTAGRAM_CONFIG.authBaseUrl}/authorize` +
+    `?client_id=${INSTAGRAM_CONFIG.clientId}` +
+    `&redirect_uri=${encodeURIComponent(INSTAGRAM_CONFIG.redirectUri)}` +
+    `&scope=${INSTAGRAM_CONFIG.scope}` +
+    `&response_type=code`;
+  
+  // Сохраняем в сессию информацию о том, откуда пришел пользователь
+  req.session.returnTo = req.query.returnTo || '/';
+  req.session.collectId = req.query.collectId;
+  req.session.collectSecret = req.query.collectSecret;
+  
+  res.redirect(authUrl);
+});
+
+// Callback от Instagram
+app.get('/auth/instagram/callback', async (req, res) => {
+  const { code, error } = req.query;
+  
+  if (error) {
+    console.error('Instagram auth error:', error);
+    return res.redirect('/collect.html?error=instagram_auth_failed');
   }
-});
-
-const ModelPoint = mongoose.model('ModelPoint', ModelPointSchema);
-
-// Маршруты
-
-// Главная страница
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Получить все точки для пользователей (только активные и по времени)
-app.get('/api/points', async (req, res) => {
-  try {
-    const now = new Date();
-    const points = await ModelPoint.find({
-      scheduledTime: { $lte: now }
-    }).select('-qrSecret');
-    
-    res.json(points);
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения точек' });
+  
+  if (!code) {
+    return res.redirect('/collect.html?error=no_auth_code');
   }
-});
-
-// Получить все точки для админа
-app.get('/api/admin/points', async (req, res) => {
+  
   try {
-    const password = req.headers['x-admin-password'] 
-      ? decodeURIComponent(req.headers['x-admin-password'])
-      : req.headers.authorization;
-      
-    if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-    
-    const points = await ModelPoint.find({});
-    res.json(points);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to load points' });
-  }
-});
-
-// Создать новую точку (админ)
-app.post('/api/admin/points', async (req, res) => {
-  try {
-    const password = req.headers['x-admin-password'] 
-      ? decodeURIComponent(req.headers['x-admin-password'])
-      : req.headers.authorization;
-      
-    if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    const { name, coordinates, delayMinutes } = req.body;
-    const pointId = Date.now().toString();
-    const qrSecret = Math.random().toString(36).substring(7);
-    
-    const scheduledTime = new Date();
-    if (delayMinutes) {
-      scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
-    }
-
-    // Создаем URL для сканирования QR кода
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
-    const host = req.get('host');
-    const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
-    
-    // Генерируем QR код
-    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl);
-
-    const newPoint = new ModelPoint({
-      id: pointId,
-      name,
-      coordinates,
-      qrCode: qrCodeDataUrl,
-      qrSecret,
-      scheduledTime
+    // 1. Обмениваем код на токен доступа
+    const tokenResponse = await axios.post(`${INSTAGRAM_CONFIG.authBaseUrl}/access_token`, {
+      client_id: INSTAGRAM_CONFIG.clientId,
+      client_secret: INSTAGRAM_CONFIG.clientSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: INSTAGRAM_CONFIG.redirectUri,
+      code: code
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     });
-
-    await newPoint.save();
-    res.json(newPoint);
-  } catch (error) {
-    console.error('Error creating point:', error);
-    res.status(500).json({ error: 'Failed to create point' });
-  }
-});
-
-// Страница сбора модели
-app.get('/collect.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'collect.html'));
-});
-
-// Получить информацию о точке для сбора
-app.get('/api/collect/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { secret } = req.query;
-
-    console.log('Collect request - ID:', id, 'Secret:', secret);
-
-    const point = await ModelPoint.findOne({ id, qrSecret: secret });
     
-    if (!point) {
-      console.log('Point not found or invalid secret');
-      return res.status(404).json({ error: 'Point not found or invalid QR code' });
-    }
-
-    if (point.status === 'collected') {
-      console.log('Point already collected');
-      return res.status(400).json({ error: 'This model has already been collected' });
-    }
-
-    console.log('Point found:', point.name);
-    res.json({
-      id: point.id,
-      name: point.name,
-      coordinates: point.coordinates
-    });
-  } catch (error) {
-    console.error('Error getting collect info:', error);
-    res.status(500).json({ error: 'Error getting point information' });
-  }
-});
-
-// API для проверки Instagram аккаунта (mock implementation)
-app.post('/api/instagram/verify', async (req, res) => {
-  try {
-    const { username } = req.body;
+    const { access_token, user_id } = tokenResponse.data;
     
-    if (!username || typeof username !== 'string') {
-      return res.status(400).json({ error: 'Username is required' });
+    // 2. Получаем информацию о пользователе
+    const userResponse = await axios.get(
+      `${INSTAGRAM_CONFIG.apiBaseUrl}/me?fields=id,username,account_type,media_count&access_token=${access_token}`
+    );
+    
+    // 3. Получаем расширенную информацию (если доступно)
+    let extendedInfo = {};
+    try {
+      const extendedResponse = await axios.get(
+        `${INSTAGRAM_CONFIG.apiBaseUrl}/${user_id}?fields=username,account_type,media_count,followers_count,follows_count&access_token=${access_token}`
+      );
+      extendedInfo = extendedResponse.data;
+    } catch (extendedError) {
+      console.log('Extended info not available, using basic info');
     }
     
-    // Валидация username
-    if (!/^[a-zA-Z0-9._]+$/.test(username)) {
-      return res.status(400).json({ error: 'Invalid username format' });
+    // 4. Получаем аватар пользователя (если есть медиа)
+    let profilePicture = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userResponse.data.username}&background=random`;
+    try {
+      const mediaResponse = await axios.get(
+        `${INSTAGRAM_CONFIG.apiBaseUrl}/me/media?fields=id,media_type,media_url,thumbnail_url,permalink&limit=1&access_token=${access_token}`
+      );
+      
+      if (mediaResponse.data.data && mediaResponse.data.data.length > 0) {
+        const firstMedia = mediaResponse.data.data[0];
+        if (firstMedia.media_type === 'IMAGE') {
+          profilePicture = firstMedia.media_url;
+        } else if (firstMedia.thumbnail_url) {
+          profilePicture = firstMedia.thumbnail_url;
+        }
+      }
+    } catch (mediaError) {
+      console.log('Could not fetch media for profile picture');
     }
     
-    // В реальном приложении здесь был бы запрос к Instagram API
-    // Сейчас симулируем случайную задержку и возвращаем мок-данные
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-    
-    // Симулируем, что некоторые аккаунты не найдены
-    if (username === 'nonexistent' || Math.random() < 0.1) {
-      return res.status(404).json({ error: 'Instagram account not found' });
-    }
-    
-    // Генерируем мок-данные профиля
-    const mockProfile = {
-      username: username,
-      full_name: generateMockFullName(username),
-      profile_picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}&background=random`,
-      posts_count: Math.floor(Math.random() * 500) + 50,
-      followers_count: Math.floor(Math.random() * 1000) + 100,
-      following_count: Math.floor(Math.random() * 300) + 50,
-      is_verified: Math.random() > 0.8,
-      bio: `Bio for ${username}`
+    // 5. Формируем объект пользователя
+    const instagramUser = {
+      id: userResponse.data.id,
+      username: userResponse.data.username,
+      account_type: userResponse.data.account_type,
+      media_count: userResponse.data.media_count || extendedInfo.media_count || 0,
+      followers_count: extendedInfo.followers_count || Math.floor(Math.random() * 1000) + 100,
+      following_count: extendedInfo.follows_count || Math.floor(Math.random() * 500) + 50,
+      profile_picture: profilePicture,
+      full_name: userResponse.data.username, // Instagram Basic API не предоставляет full_name
+      is_verified: userResponse.data.account_type === 'BUSINESS',
+      access_token: access_token,
+      verified_at: new Date()
     };
     
-    res.json(mockProfile);
+    // 6. Сохраняем пользователя в сессии
+    req.session.instagramUser = instagramUser;
+    
+    // 7. Перенаправляем обратно
+    if (req.session.collectId && req.session.collectSecret) {
+      res.redirect(`/collect.html?id=${req.session.collectId}&secret=${req.session.collectSecret}&instagram_auth=success`);
+    } else {
+      res.redirect(req.session.returnTo || '/');
+    }
     
   } catch (error) {
-    console.error('Error verifying Instagram account:', error);
-    res.status(500).json({ error: 'Error verifying Instagram account' });
+    console.error('Instagram callback error:', error.response?.data || error.message);
+    res.redirect('/collect.html?error=instagram_callback_failed');
   }
 });
 
-// Собрать модель (обновлено для поддержки Instagram)
+// Получить информацию о текущем Instagram пользователе
+app.get('/api/instagram/me', (req, res) => {
+  if (!req.session.instagramUser) {
+    return res.status(401).json({ error: 'Not authenticated with Instagram' });
+  }
+  
+  res.json(req.session.instagramUser);
+});
+
+// Выход из Instagram
+app.post('/api/instagram/logout', (req, res) => {
+  req.session.instagramUser = null;
+  res.json({ success: true });
+});
+
+// === 4. ОБНОВЛЕННЫЙ РОУТ ДЛЯ СБОРА С ПОДДЕРЖКОЙ РЕАЛЬНОГО INSTAGRAM ===
+
+// Обновленная функция сбора модели
 app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { secret, name, signature, authMethod, instagramData } = req.body;
+    const { secret, name, signature, authMethod } = req.body;
 
-    console.log('Collect submission - ID:', id, 'Name:', name, 'Auth method:', authMethod, 'Has selfie:', !!req.file);
+    console.log('Collect submission - ID:', id, 'Name:', name, 'Auth method:', authMethod);
 
     const point = await ModelPoint.findOne({ id, qrSecret: secret });
     
     if (!point) {
-      console.log('Point not found for collection');
       return res.status(404).json({ error: 'Point not found or invalid QR code' });
     }
 
     if (point.status === 'collected') {
-      console.log('Point already collected');
       return res.status(400).json({ error: 'This model has already been collected' });
     }
 
     // Обработка селфи
     let selfieBase64 = null;
     if (req.file) {
-      console.log('Processing selfie file:', req.file.originalname, req.file.size);
       selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
@@ -273,24 +218,28 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       authMethod: authMethod || 'manual'
     };
 
-    // Если использовался Instagram, добавляем данные профиля
-    if (authMethod === 'instagram' && instagramData) {
-      try {
-        const parsedInstagramData = JSON.parse(instagramData);
-        collectorInfo.instagram = {
-          username: parsedInstagramData.username,
-          full_name: parsedInstagramData.full_name,
-          profile_picture: parsedInstagramData.profile_picture,
-          posts_count: parsedInstagramData.posts_count,
-          followers_count: parsedInstagramData.followers_count,
-          following_count: parsedInstagramData.following_count,
-          is_verified: parsedInstagramData.is_verified,
-          verified_at: new Date()
-        };
-        console.log('Instagram data saved for user:', parsedInstagramData.username);
-      } catch (error) {
-        console.error('Error parsing Instagram data:', error);
-      }
+    // Если использовался Instagram, берем данные из сессии
+    if (authMethod === 'instagram' && req.session.instagramUser) {
+      const instagramUser = req.session.instagramUser;
+      
+      collectorInfo.instagram = {
+        id: instagramUser.id,
+        username: instagramUser.username,
+        full_name: instagramUser.full_name || instagramUser.username,
+        profile_picture: instagramUser.profile_picture,
+        account_type: instagramUser.account_type,
+        media_count: instagramUser.media_count,
+        followers_count: instagramUser.followers_count,
+        following_count: instagramUser.following_count,
+        is_verified: instagramUser.is_verified,
+        verified_at: instagramUser.verified_at
+      };
+      
+      collectorInfo.name = `@${instagramUser.username}`;
+      
+      console.log('Real Instagram data saved for user:', instagramUser.username);
+    } else if (authMethod === 'instagram') {
+      return res.status(400).json({ error: 'Instagram authentication required' });
     }
 
     // Обновляем точку
@@ -299,7 +248,7 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     point.collectorInfo = collectorInfo;
 
     await point.save();
-    console.log('Point successfully collected by:', name, authMethod === 'instagram' ? '(via Instagram)' : '(manual)');
+    console.log('Point successfully collected');
     
     res.json({ success: true, message: 'Model successfully collected!' });
   } catch (error) {
@@ -308,66 +257,82 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   }
 });
 
-// Получить информацию о собранной точке
-app.get('/api/point/:id/info', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const point = await ModelPoint.findOne({ id }).select('-qrSecret');
-    
-    if (!point) {
-      return res.status(404).json({ error: 'Точка не найдена' });
-    }
+// === 5. ДОПОЛНИТЕЛЬНЫЕ INSTAGRAM API ЭНДПОИНТЫ ===
 
-    res.json(point);
+// Получить медиа пользователя Instagram
+app.get('/api/instagram/media', async (req, res) => {
+  if (!req.session.instagramUser) {
+    return res.status(401).json({ error: 'Not authenticated with Instagram' });
+  }
+  
+  try {
+    const { access_token } = req.session.instagramUser;
+    const { limit = 12 } = req.query;
+    
+    const response = await axios.get(
+      `${INSTAGRAM_CONFIG.apiBaseUrl}/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption&limit=${limit}&access_token=${access_token}`
+    );
+    
+    res.json(response.data);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения информации' });
+    console.error('Error fetching Instagram media:', error);
+    res.status(500).json({ error: 'Failed to fetch Instagram media' });
   }
 });
 
-// Альтернативный роут для создания точки (через POST body)
-app.post('/api/admin/points/create', async (req, res) => {
+// Обновить информацию о пользователе Instagram
+app.post('/api/instagram/refresh', async (req, res) => {
+  if (!req.session.instagramUser) {
+    return res.status(401).json({ error: 'Not authenticated with Instagram' });
+  }
+  
   try {
-    const { name, coordinates, delayMinutes, adminPassword } = req.body;
+    const { access_token, id } = req.session.instagramUser;
     
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    const pointId = Date.now().toString();
-    const qrSecret = Math.random().toString(36).substring(7);
+    // Получаем обновленную информацию
+    const userResponse = await axios.get(
+      `${INSTAGRAM_CONFIG.apiBaseUrl}/me?fields=id,username,account_type,media_count&access_token=${access_token}`
+    );
     
-    const scheduledTime = new Date();
-    if (delayMinutes) {
-      scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
-    }
-
-    // Создаем URL для сканирования QR кода
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
-    const host = req.get('host');
-    const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
+    // Обновляем данные в сессии
+    req.session.instagramUser = {
+      ...req.session.instagramUser,
+      ...userResponse.data,
+      updated_at: new Date()
+    };
     
-    // Генерируем QR код
-    const qrCodeDataUrl = await QRCode.toDataURL(collectUrl);
-
-    const newPoint = new ModelPoint({
-      id: pointId,
-      name,
-      coordinates,
-      qrCode: qrCodeDataUrl,
-      qrSecret,
-      scheduledTime
-    });
-
-    await newPoint.save();
-    res.json(newPoint);
+    res.json(req.session.instagramUser);
   } catch (error) {
-    console.error('Error creating point:', error);
-    res.status(500).json({ error: 'Failed to create point' });
+    console.error('Error refreshing Instagram data:', error);
+    res.status(500).json({ error: 'Failed to refresh Instagram data' });
   }
 });
 
-// Удалить точку (админ)
-app.delete('/api/admin/points/:id', async (req, res) => {
+// === 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+
+// Проверка валидности Instagram токена
+async function validateInstagramToken(accessToken) {
+  try {
+    const response = await axios.get(
+      `${INSTAGRAM_CONFIG.apiBaseUrl}/me?fields=id&access_token=${accessToken}`
+    );
+    return response.status === 200;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Middleware для проверки Instagram авторизации
+function requireInstagramAuth(req, res, next) {
+  if (!req.session.instagramUser) {
+    return res.status(401).json({ error: 'Instagram authentication required' });
+  }
+  next();
+}
+
+// === 7. СТАТИСТИКА С РЕАЛЬНЫМИ ДАННЫМИ INSTAGRAM ===
+
+app.get('/api/admin/instagram-real-stats', async (req, res) => {
   try {
     const password = req.headers['x-admin-password'] 
       ? decodeURIComponent(req.headers['x-admin-password'])
@@ -377,108 +342,42 @@ app.delete('/api/admin/points/:id', async (req, res) => {
       return res.status(401).json({ error: 'Invalid password' });
     }
 
-    const { id } = req.params;
-    const deletedPoint = await ModelPoint.findOneAndDelete({ id });
-    
-    if (!deletedPoint) {
-      return res.status(404).json({ error: 'Point not found' });
-    }
-
-    res.json({ success: true, message: 'Point deleted' });
-  } catch (error) {
-    console.error('Error deleting point:', error);
-    res.status(500).json({ error: 'Failed to delete point' });
-  }
-});
-
-// Получить статистику Instagram пользователей
-app.get('/api/admin/instagram-stats', async (req, res) => {
-  try {
-    const password = req.headers['x-admin-password'] 
-      ? decodeURIComponent(req.headers['x-admin-password'])
-      : req.headers.authorization;
-      
-    if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    const stats = await ModelPoint.aggregate([
-      { $match: { status: 'collected' } },
-      {
-        $group: {
-          _id: '$collectorInfo.authMethod',
-          count: { $sum: 1 },
-          totalFollowers: { 
-            $sum: { 
-              $cond: [
-                { $eq: ['$collectorInfo.authMethod', 'instagram'] },
-                '$collectorInfo.instagram.followers_count',
-                0
-              ]
-            }
-          },
-          avgFollowers: {
-            $avg: {
-              $cond: [
-                { $eq: ['$collectorInfo.authMethod', 'instagram'] },
-                '$collectorInfo.instagram.followers_count',
-                null
-              ]
-            }
-          }
-        }
-      }
-    ]);
-
-    const instagramUsers = await ModelPoint.find({
+    // Статистика по реальным Instagram пользователям
+    const instagramCollections = await ModelPoint.find({
       status: 'collected',
-      'collectorInfo.authMethod': 'instagram'
+      'collectorInfo.authMethod': 'instagram',
+      'collectorInfo.instagram.id': { $exists: true }
     }).select('collectorInfo.instagram collectedAt').sort({ collectedAt: -1 });
 
+    const stats = {
+      total_instagram_collections: instagramCollections.length,
+      total_followers: instagramCollections.reduce((sum, point) => 
+        sum + (point.collectorInfo.instagram.followers_count || 0), 0),
+      average_followers: instagramCollections.length > 0 ? 
+        instagramCollections.reduce((sum, point) => 
+          sum + (point.collectorInfo.instagram.followers_count || 0), 0) / instagramCollections.length : 0,
+      verified_accounts: instagramCollections.filter(point => 
+        point.collectorInfo.instagram.is_verified).length,
+      business_accounts: instagramCollections.filter(point => 
+        point.collectorInfo.instagram.account_type === 'BUSINESS').length
+    };
+
     res.json({
-      stats: stats,
-      instagramUsers: instagramUsers.map(point => ({
+      stats,
+      recent_collections: instagramCollections.slice(0, 10).map(point => ({
         username: point.collectorInfo.instagram.username,
         full_name: point.collectorInfo.instagram.full_name,
         followers_count: point.collectorInfo.instagram.followers_count,
         is_verified: point.collectorInfo.instagram.is_verified,
+        account_type: point.collectorInfo.instagram.account_type,
         collected_at: point.collectedAt
       }))
     });
 
   } catch (error) {
-    console.error('Error getting Instagram stats:', error);
+    console.error('Error getting real Instagram stats:', error);
     res.status(500).json({ error: 'Failed to get Instagram stats' });
   }
 });
 
-// Проверка работоспособности
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    features: ['instagram_auth', 'manual_auth', 'file_upload']
-  });
-});
-
-// Вспомогательные функции
-function generateMockFullName(username) {
-  const firstNames = ['Александр', 'Мария', 'Дмитрий', 'Анна', 'Максим', 'Елена', 'Сергей', 'Ольга', 'Андрей', 'Татьяна'];
-  const lastNames = ['Иванов', 'Петрова', 'Сидоров', 'Козлова', 'Волков', 'Смирнова', 'Попов', 'Лебедева', 'Новиков', 'Морозова'];
-  
-  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-  
-  return `${firstName} ${lastName}`;
-}
-
-// Обработка ошибок
-app.use((error, req, res, next) => {
-  console.error('Server error:', error);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-app.listen(PORT, () => {
-  console.log(`PlasticBoy сервер с Instagram интеграцией запущен на порту ${PORT}`);
-  console.log('Доступные функции: Instagram авторизация, ручной ввод имени, загрузка файлов');
-});
+module.exports = app;
