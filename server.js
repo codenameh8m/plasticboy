@@ -12,10 +12,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware - УБРАНЫ ОГРАНИЧЕНИЯ ПО РАЗМЕРУ
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' })); // Увеличили лимит для больших изображений
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Увеличили лимит
 app.use(express.static('public'));
 
 // Устанавливаем правильные заголовки для кириллицы
@@ -24,14 +24,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Multer для загрузки файлов
+// Multer для загрузки файлов - УБРАНЫ ВСЕ ОГРАНИЧЕНИЯ ПО РАЗМЕРУ
 const storage = multer.memoryStorage();
 const upload = multer({ 
-  storage: storage, 
-  limits: { 
-    fileSize: 5 * 1024 * 1024,  // 5MB
-    fieldSize: 5 * 1024 * 1024  // 5MB для base64 изображений
-  }
+  storage: storage
+  // Убрали все limits - теперь файлы любого размера принимаются
 });
 
 // MongoDB подключение
@@ -67,7 +64,7 @@ const ModelPointSchema = new mongoose.Schema({
   collectorInfo: {
     name: { type: String, required: true },
     signature: String,
-    selfie: String,
+    selfie: String, // Убрали ограничения - теперь может быть любого размера
     authMethod: { type: String, enum: ['manual', 'telegram'], default: 'manual' },
     telegramData: {
       id: Number,
@@ -431,7 +428,7 @@ app.get('/api/collect/:id', async (req, res) => {
   }
 });
 
-// Собрать модель с расширенной поддержкой Telegram авторизации
+// Собрать модель с расширенной поддержкой Telegram авторизации - УБРАНЫ ВСЕ ОГРАНИЧЕНИЯ ПО РАЗМЕРУ
 app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -473,22 +470,18 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       });
     }
 
-    // Обработка селфи
+    // Обработка селфи - УБРАНЫ ВСЕ ОГРАНИЧЕНИЯ ПО РАЗМЕРУ
     let selfieBase64 = null;
     if (req.file) {
-      console.log(`📸 Обработка селфи: ${req.file.originalname}, размер: ${req.file.size} байт`);
+      console.log(`📸 Обработка селфи: ${req.file.originalname}, размер: ${req.file.size} байт (без ограничений)`);
       
-      // Проверяем размер файла
-      if (req.file.size > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: 'Image file too large (max 5MB)' });
-      }
-      
-      // Проверяем тип файла
+      // Проверяем только тип файла, размер не ограничиваем
       if (!req.file.mimetype.startsWith('image/')) {
         return res.status(400).json({ error: 'Invalid file type, please upload an image' });
       }
       
       selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      console.log(`✅ Селфи обработано успешно, размер в base64: ${Math.round(selfieBase64.length / 1024)} КБ`);
     }
 
     // Подготавливаем данные коллектора
@@ -583,7 +576,8 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       authMethod: authMethod,
       telegramId: collectorInfo.telegramData?.id,
       telegramUsername: collectorInfo.telegramData?.username,
-      hasSelfie: !!selfieBase64
+      hasSelfie: !!selfieBase64,
+      selfieSize: selfieBase64 ? Math.round(selfieBase64.length / 1024) + 'KB' : 'none'
     }, req);
     
     console.log(`🎉 Точка успешно собрана: ${point.name} (ID: ${id}) пользователем ${collectorInfo.name} через ${authMethod}`);
@@ -977,6 +971,11 @@ app.get('/health', (req, res) => {
       },
       admin: {
         configured: !!process.env.ADMIN_PASSWORD
+      },
+      uploads: {
+        sizeLimits: 'removed',
+        allowedFormats: 'all images',
+        maxFileSize: 'unlimited'
       }
     },
     uptime: process.uptime(),
@@ -1049,6 +1048,7 @@ app.listen(PORT, () => {
   console.log(`   🌐 URL: http://localhost:${PORT}`);
   console.log(`   🗄️  MongoDB: ${process.env.MONGODB_URI ? '✅ настроена' : '❌ не настроена'}`);
   console.log(`   🛡️  Админ: ${process.env.ADMIN_PASSWORD ? '✅ настроен' : '❌ не настроен'}`);
+  console.log(`   📸 Ограничения селфи: ❌ убраны (принимаются файлы любого размера)`);
   
   // Проверяем Telegram конфигурацию
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME) {
