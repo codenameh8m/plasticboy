@@ -703,19 +703,13 @@
             }
         }
 
-        // Обработка селфи
+        // Обработка селфи (УБРАНЫ ВСЕ ОГРАНИЧЕНИЯ ПО РАЗМЕРУ)
         document.getElementById('selfie').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const preview = document.getElementById('imagePreview');
             
             if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    showNotification('Файл слишком большой. Максимальный размер: 5MB', 'error');
-                    this.value = '';
-                    preview.innerHTML = '';
-                    return;
-                }
-
+                // Проверяем только тип файла, размер не ограничиваем
                 if (!file.type.startsWith('image/')) {
                     showNotification('Пожалуйста, выберите изображение', 'error');
                     this.value = '';
