@@ -10,9 +10,7 @@
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
-          crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
@@ -88,12 +86,24 @@
         
         /* Мерцание экрана */
         @keyframes crtFlicker {
-            0% { opacity: 1; }
-            96% { opacity: 1; }
-            97% { opacity: 0.98; }
-            98% { opacity: 1; }
-            99% { opacity: 0.99; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+            96% {
+                opacity: 1;
+            }
+            97% {
+                opacity: 0.98;
+            }
+            98% {
+                opacity: 1;
+            }
+            99% {
+                opacity: 0.99;
+            }
+            100% {
+                opacity: 1;
+            }
         }
         
         /* Статические помехи */
@@ -376,46 +386,6 @@
             opacity: 1;
         }
         
-        /* Сообщение об ошибке */
-        .error-fallback {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(244, 67, 54, 0.95);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 11000;
-            max-width: 90%;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-        
-        .error-fallback h2 {
-            margin: 0 0 15px 0;
-            font-size: 1.2rem;
-        }
-        
-        .error-fallback button {
-            background: white;
-            color: #f44336;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-top: 15px;
-            transition: all 0.3s;
-        }
-        
-        .error-fallback button:hover {
-            background: #f8f9fa;
-            transform: translateY(-1px);
-        }
-        
         /* Мобильная оптимизация */
         @media (max-width: 768px) {
             .logo-title {
@@ -501,14 +471,6 @@
         </div>
     </div>
 
-    <!-- СООБЩЕНИЕ ОБ ОШИБКЕ -->
-    <div class="error-fallback" id="errorFallback">
-        <h2>❌ Ошибка загрузки</h2>
-        <p>Не удалось загрузить PlasticBoy</p>
-        <p><small>Проверьте подключение к интернету</small></p>
-        <button onclick="window.location.reload()">Обновить страницу</button>
-    </div>
-
     <!-- ОСНОВНОЙ КОНТЕНТ ПРИЛОЖЕНИЯ -->
     <div class="main-content" id="mainContent">
         <div class="container">
@@ -562,7 +524,7 @@
 
     <!-- Скрипт системы загрузки -->
     <script>
-        // УЛУЧШЕННАЯ И НАДЕЖНАЯ СИСТЕМА ЗАГРУЗКИ
+        // ПРОСТАЯ И НАДЕЖНАЯ СИСТЕМА ЗАГРУЗКИ
         console.log('🎯 PlasticBoy - Запуск системы');
         
         let loadingSteps = [
@@ -578,7 +540,6 @@
         let isMapReady = false;
         let arePointsLoaded = false;
         let isLeafletReady = false;
-        let hasError = false;
 
         // Создание простого матричного фона
         function createMatrix() {
@@ -597,8 +558,6 @@
 
         // Обновление загрузочного экрана
         function updateLoader() {
-            if (hasError) return false;
-            
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const loadingStatus = document.getElementById('loadingStatus');
@@ -650,132 +609,46 @@
             }, 600);
         }
 
-        // Показ ошибки
-        function showError(message) {
-            hasError = true;
-            const loadingScreen = document.getElementById('loadingScreen');
-            const errorFallback = document.getElementById('errorFallback');
-            
-            loadingScreen.style.display = 'none';
-            errorFallback.style.display = 'block';
-            
-            if (message) {
-                errorFallback.querySelector('p').textContent = message;
-            }
-        }
-
-        // Проверка загрузки Leaflet
-        function checkLeafletLoaded() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 100; // 10 секунд
-                
-                const check = () => {
-                    attempts++;
-                    
-                    if (typeof L !== 'undefined' && L.map) {
-                        console.log('✅ Leaflet загружен успешно');
-                        isLeafletReady = true;
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        console.error('❌ Таймаут загрузки Leaflet');
-                        reject(new Error('Leaflet loading timeout'));
-                    } else {
-                        setTimeout(check, 100);
-                    }
-                };
-                
-                check();
-            });
-        }
-
         // Экспорт для использования в script.js
         window.AppLoader = {
             onLeafletReady: () => { 
                 isLeafletReady = true; 
                 console.log('✅ Leaflet готов');
-                updateLoader();
             },
             onMapReady: () => { 
                 isMapReady = true; 
                 console.log('✅ Карта готова');
-                updateLoader();
             },
             onPointsLoaded: () => { 
                 arePointsLoaded = true; 
                 console.log('✅ Точки загружены');
-                updateLoader();
             },
-            updateLoader: updateLoader,
-            showError: showError
+            updateLoader: updateLoader
         };
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOM загружен, начинаем инициализацию');
-            
             createMatrix();
             
             // Основной цикл загрузки
             const loaderInterval = setInterval(() => {
-                if (updateLoader() || hasError) {
+                if (updateLoader()) {
                     clearInterval(loaderInterval);
                 }
             }, 300);
             
-            // Проверяем загрузку Leaflet
-            checkLeafletLoaded()
-                .then(() => {
-                    console.log('✅ Leaflet проверен и готов');
-                    updateLoader();
-                })
-                .catch((error) => {
-                    console.error('❌ Ошибка загрузки Leaflet:', error);
-                    showError('Не удалось загрузить библиотеку карт');
-                });
-            
             // Таймаут безопасности
             setTimeout(() => {
-                if (!arePointsLoaded && !hasError) {
-                    console.warn('⚠️ Принудительное завершение загрузки по таймауту');
-                    arePointsLoaded = true;
-                    progress = 100;
-                    updateLoader();
-                }
-            }, 20000); // 20 секунд
-            
-            // Обработка ошибок загрузки Leaflet
-            window.addEventListener('error', (event) => {
-                if (event.filename && event.filename.includes('leaflet')) {
-                    console.error('❌ Ошибка загрузки Leaflet:', event.error);
-                    showError('Ошибка загрузки библиотеки карт');
-                }
-            });
-        });
-
-        // Обработка онлайн/оффлайн состояния
-        window.addEventListener('online', () => {
-            console.log('🌐 Соединение восстановлено');
-            if (hasError) {
-                window.location.reload();
-            }
-        });
-
-        window.addEventListener('offline', () => {
-            console.log('📡 Соединение потеряно');
+                arePointsLoaded = true;
+                progress = 100;
+            }, 15000);
         });
     </script>
     
-    <!-- Подключение Leaflet с обработкой ошибок -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
-            crossorigin=""
-            onload="console.log('📦 Leaflet скрипт загружен'); if(window.AppLoader) window.AppLoader.onLeafletReady();"
-            onerror="console.error('❌ Ошибка загрузки Leaflet скрипта'); if(window.AppLoader) window.AppLoader.showError('Не удалось загрузить Leaflet');"></script>
+    <!-- Подключение Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <!-- Основной скрипт приложения -->
-    <script src="script.js" 
-            onload="console.log('📦 Основной скрипт загружен');"
-            onerror="console.error('❌ Ошибка загрузки основного скрипта'); if(window.AppLoader) window.AppLoader.showError('Не удалось загрузить приложение');"></script>
+    <script src="script.js"></script>
 </body>
 </html>
