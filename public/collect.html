@@ -5,6 +5,255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlasticBoy - Сбор модели</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Дополнительные стили для Telegram авторизации */
+        .auth-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .auth-method {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #e9ecef;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-method:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .auth-method.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(255, 255, 255, 0.9));
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .auth-method::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .auth-method.selected::before {
+            opacity: 1;
+        }
+
+        .auth-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-icon.manual {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .auth-icon.telegram {
+            background: linear-gradient(45deg, #0088cc, #00a0ff);
+        }
+
+        .auth-content {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .auth-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .radio-indicator {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-method.selected .radio-indicator {
+            border-color: #667eea;
+            background: #667eea;
+        }
+
+        .auth-method.selected .radio-indicator::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Стили для Telegram виджета */
+        .telegram-auth-container {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 136, 204, 0.05);
+            border-radius: 15px;
+            border: 2px solid rgba(0, 136, 204, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .telegram-auth-container.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .telegram-login-info {
+            margin-bottom: 20px;
+            color: #0088cc;
+            font-weight: 500;
+        }
+
+        .telegram-widget {
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        /* Форма ручного ввода */
+        .manual-form {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .manual-form.hidden {
+            display: none;
+        }
+
+        /* Информация о пользователе после авторизации */
+        .user-info {
+            display: none;
+            padding: 20px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 15px;
+            border: 2px solid rgba(76, 175, 80, 0.2);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .user-info.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            border: 3px solid #4CAF50;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-username {
+            color: #0088cc;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .change-auth-btn {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .change-auth-btn:hover {
+            background: linear-gradient(45deg, #f57c00, #ef6c00);
+            transform: translateY(-1px);
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            .auth-methods {
+                padding: 15px;
+                gap: 12px;
+            }
+
+            .auth-method {
+                padding: 12px;
+            }
+
+            .auth-title {
+                font-size: 1rem;
+            }
+
+            .auth-description {
+                font-size: 0.85rem;
+            }
+
+            .auth-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container collect-container">
@@ -19,12 +268,57 @@
                 <p id="modelLocation"></p>
             </div>
 
-            <div id="collectFormInner">
+            <!-- Выбор метода авторизации -->
+            <div class="auth-methods">
+                <div class="auth-method selected" id="manualAuth" onclick="selectAuthMethod('manual')">
+                    <div class="auth-icon manual">👤</div>
+                    <div class="auth-content">
+                        <div class="auth-title">Ручной ввод</div>
+                        <div class="auth-description">Просто введите ваше имя и продолжите</div>
+                    </div>
+                    <div class="radio-indicator"></div>
+                </div>
+                
+                <div class="auth-method" id="telegramAuth" onclick="selectAuthMethod('telegram')">
+                    <div class="auth-icon telegram">✈️</div>
+                    <div class="auth-content">
+                        <div class="auth-title">Авторизация через Telegram</div>
+                        <div class="auth-description">Войдите через Telegram для персонализированного опыта</div>
+                    </div>
+                    <div class="radio-indicator"></div>
+                </div>
+            </div>
+
+            <!-- Информация о пользователе после Telegram авторизации -->
+            <div id="userInfo" class="user-info">
+                <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                <div id="userName" class="user-name"></div>
+                <div id="userUsername" class="user-username"></div>
+                <button class="change-auth-btn" onclick="resetAuth()">Изменить способ входа</button>
+            </div>
+
+            <!-- Telegram виджет авторизации -->
+            <div id="telegramAuthContainer" class="telegram-auth-container">
+                <div class="telegram-login-info">
+                    <strong>🔐 Войдите через Telegram</strong><br>
+                    <small>Ваши данные будут автоматически заполнены</small>
+                </div>
+                <div id="telegramWidget" class="telegram-widget"></div>
+                <p style="color: #666; font-size: 0.8rem; margin-top: 15px;">
+                    ⚡ Быстро, безопасно, конфиденциально
+                </p>
+            </div>
+
+            <!-- Форма ручного ввода -->
+            <div id="manualFormContainer" class="manual-form">
                 <div class="form-group">
                     <label for="collectorName">Ваше имя:</label>
                     <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required>
                 </div>
+            </div>
 
+            <!-- Общие поля для обоих методов -->
+            <div id="collectFormInner">
                 <div class="form-group">
                     <label for="signature">Подпись/Сообщение:</label>
                     <textarea id="signature" name="signature" placeholder="Оставьте свою подпись или сообщение (необязательно)" rows="3"></textarea>
@@ -57,7 +351,15 @@
         </div>
     </div>
 
+    <!-- Telegram Widget Script -->
+    <script async src="https://telegram.org/js/telegram-widget.js?22"></script>
+
     <script>
+        // Переменные для авторизации
+        let currentAuthMethod = 'manual';
+        let telegramUser = null;
+        let isAuthenticated = false;
+
         // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const pointId = urlParams.get('id');
@@ -68,15 +370,125 @@
         if (!pointId || !secret) {
             showError('Неверная ссылка QR кода');
         } else {
-            // Загружаем информацию о точке
             loadPointInfo();
         }
 
+        // Выбор метода авторизации
+        function selectAuthMethod(method) {
+            if (isAuthenticated && method !== currentAuthMethod) {
+                resetAuth();
+            }
+
+            currentAuthMethod = method;
+            
+            // Обновляем UI выбора
+            document.querySelectorAll('.auth-method').forEach(el => el.classList.remove('selected'));
+            document.getElementById(method === 'manual' ? 'manualAuth' : 'telegramAuth').classList.add('selected');
+            
+            // Показываем/скрываем соответствующие контейнеры
+            const telegramContainer = document.getElementById('telegramAuthContainer');
+            const manualContainer = document.getElementById('manualFormContainer');
+            
+            if (method === 'telegram') {
+                telegramContainer.classList.add('active');
+                manualContainer.classList.add('hidden');
+                initTelegramWidget();
+            } else {
+                telegramContainer.classList.remove('active');
+                manualContainer.classList.remove('hidden');
+                document.getElementById('collectorName').focus();
+            }
+        }
+
+        // Инициализация Telegram виджета
+        function initTelegramWidget() {
+            const widget = document.getElementById('telegramWidget');
+            widget.innerHTML = ''; // Очищаем предыдущий виджет
+            
+            // Создаем виджет авторизации Telegram
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-login', 'PlasticBoyBot'); // Замените на ваш бот
+            script.setAttribute('data-size', 'large');
+            script.setAttribute('data-radius', '12');
+            script.setAttribute('data-auth-url', window.location.origin + '/telegram-auth');
+            script.setAttribute('data-request-access', 'write');
+            script.onload = function() {
+                console.log('Telegram widget loaded');
+            };
+            
+            // Для разработки используем callback
+            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+            
+            widget.appendChild(script);
+        }
+
+        // Callback для Telegram авторизации
+        window.onTelegramAuth = function(user) {
+            console.log('Telegram auth successful:', user);
+            telegramUser = user;
+            isAuthenticated = true;
+            
+            // Показываем информацию о пользователе
+            showUserInfo(user);
+            
+            // Скрываем методы авторизации
+            document.querySelector('.auth-methods').style.display = 'none';
+            document.getElementById('telegramAuthContainer').classList.remove('active');
+        };
+
+        // Показать информацию о пользователе
+        function showUserInfo(user) {
+            const userInfo = document.getElementById('userInfo');
+            const avatar = document.getElementById('userAvatar');
+            const name = document.getElementById('userName');
+            const username = document.getElementById('userUsername');
+            
+            // Устанавливаем аватар
+            if (user.photo_url) {
+                avatar.src = user.photo_url;
+                avatar.style.display = 'block';
+            } else {
+                avatar.style.display = 'none';
+            }
+            
+            // Устанавливаем имя
+            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+            name.textContent = fullName;
+            
+            // Устанавливаем username
+            if (user.username) {
+                username.textContent = '@' + user.username;
+                username.style.display = 'block';
+            } else {
+                username.style.display = 'none';
+            }
+            
+            userInfo.classList.add('active');
+            
+            showNotification('✅ Успешная авторизация через Telegram!', 'success');
+        }
+
+        // Сброс авторизации
+        function resetAuth() {
+            isAuthenticated = false;
+            telegramUser = null;
+            
+            // Показываем методы авторизации
+            document.querySelector('.auth-methods').style.display = 'flex';
+            document.getElementById('userInfo').classList.remove('active');
+            document.getElementById('telegramAuthContainer').classList.remove('active');
+            document.getElementById('manualFormContainer').classList.remove('hidden');
+            
+            // Выбираем ручной ввод по умолчанию
+            selectAuthMethod('manual');
+        }
+
+        // Загрузка информации о точке
         async function loadPointInfo() {
             try {
                 console.log('Loading point info...');
                 
-                // Показываем индикатор загрузки
                 const modelNameElement = document.getElementById('modelName');
                 modelNameElement.innerHTML = '⏳ Загрузка...';
                 modelNameElement.style.animation = 'pulse 1.5s infinite';
@@ -96,16 +508,16 @@
                     throw new Error(data.error || 'Ошибка загрузки');
                 }
 
-                // Обновляем информацию с анимацией
                 modelNameElement.style.animation = '';
                 modelNameElement.textContent = data.name;
                 
                 document.getElementById('modelLocation').innerHTML = 
                     `📍 Координаты: <strong>${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}</strong>`;
 
-                // Добавляем фокус на поле имени
                 setTimeout(() => {
-                    document.getElementById('collectorName').focus();
+                    if (currentAuthMethod === 'manual') {
+                        document.getElementById('collectorName').focus();
+                    }
                 }, 300);
 
             } catch (error) {
@@ -114,13 +526,12 @@
             }
         }
 
-        // Улучшенное превью изображения
+        // Обработка селфи
         document.getElementById('selfie').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const preview = document.getElementById('imagePreview');
             
             if (file) {
-                // Проверяем размер файла (максимум 5MB)
                 if (file.size > 5 * 1024 * 1024) {
                     showNotification('Файл слишком большой. Максимальный размер: 5MB', 'error');
                     this.value = '';
@@ -128,7 +539,6 @@
                     return;
                 }
 
-                // Проверяем тип файла
                 if (!file.type.startsWith('image/')) {
                     showNotification('Пожалуйста, выберите изображение', 'error');
                     this.value = '';
@@ -156,27 +566,34 @@
             }
         });
 
-        // Функция для очистки изображения
         function clearImage() {
             document.getElementById('selfie').value = '';
             document.getElementById('imagePreview').innerHTML = '';
         }
 
-        // Улучшенная обработка кнопки отправки
+        // Отправка формы
         document.getElementById('submitBtn').addEventListener('click', async function(e) {
             e.preventDefault();
             
-            const name = document.getElementById('collectorName').value.trim();
-            if (!name) {
-                showNotification('Пожалуйста, введите ваше имя', 'error');
-                document.getElementById('collectorName').focus();
-                return;
+            let collectorName = '';
+            let telegramData = null;
+            
+            // Получаем имя в зависимости от метода авторизации
+            if (currentAuthMethod === 'telegram' && telegramUser) {
+                collectorName = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ');
+                telegramData = telegramUser;
+            } else {
+                collectorName = document.getElementById('collectorName').value.trim();
+                if (!collectorName) {
+                    showNotification('Пожалуйста, введите ваше имя', 'error');
+                    document.getElementById('collectorName').focus();
+                    return;
+                }
             }
 
             const submitBtn = document.getElementById('submitBtn');
             const originalHTML = submitBtn.innerHTML;
             
-            // Блокируем кнопку и показываем анимацию загрузки
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span style="animation: spin 1s linear infinite;">⏳</span> Отправка...';
             submitBtn.style.opacity = '0.8';
@@ -186,8 +603,14 @@
                 
                 const formData = new FormData();
                 formData.append('secret', secret);
-                formData.append('name', name);
+                formData.append('name', collectorName);
                 formData.append('signature', document.getElementById('signature').value.trim());
+                formData.append('authMethod', currentAuthMethod);
+                
+                // Добавляем данные Telegram если есть
+                if (telegramData) {
+                    formData.append('telegramData', JSON.stringify(telegramData));
+                }
                 
                 const selfieFile = document.getElementById('selfie').files[0];
                 if (selfieFile) {
@@ -217,20 +640,18 @@
                 console.error('Error submitting form:', error);
                 showError(error.message);
                 
-                // Восстанавливаем кнопку
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalHTML;
                 submitBtn.style.opacity = '';
             }
         });
 
-        // Улучшенная функция показа успеха
+        // Остальные функции остаются без изменений...
         function showSuccess() {
             document.getElementById('collectForm').style.display = 'none';
             const successMessage = document.getElementById('successMessage');
             successMessage.style.display = 'block';
             
-            // Добавляем анимацию появления
             successMessage.style.opacity = '0';
             successMessage.style.transform = 'scale(0.9)';
             successMessage.style.transition = 'all 0.5s ease';
@@ -240,18 +661,15 @@
                 successMessage.style.transform = 'scale(1)';
             }, 100);
             
-            // Добавляем конфетти эффект
             createConfetti();
         }
 
-        // Улучшенная функция показа ошибки
         function showError(message) {
             document.getElementById('collectForm').style.display = 'none';
             const errorMessage = document.getElementById('errorMessage');
             document.getElementById('errorText').textContent = message;
             errorMessage.style.display = 'block';
             
-            // Добавляем анимацию появления
             errorMessage.style.opacity = '0';
             errorMessage.style.transform = 'scale(0.9)';
             errorMessage.style.transition = 'all 0.5s ease';
@@ -262,7 +680,6 @@
             }, 100);
         }
 
-        // Функция создания конфетти эффекта
         function createConfetti() {
             const colors = ['#f44336', '#4CAF50', '#2196F3', '#ff9800', '#9c27b0', '#ffeb3b'];
             
@@ -288,7 +705,6 @@
                 }, i * 50);
             }
             
-            // Добавляем CSS анимацию если её нет
             if (!document.getElementById('confetti-styles')) {
                 const style = document.createElement('style');
                 style.id = 'confetti-styles';
@@ -313,7 +729,6 @@
             }
         }
 
-        // Функция показа уведомлений
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -332,7 +747,6 @@
                 </div>
             `;
             
-            // Добавляем стили если их нет
             if (!document.getElementById('notification-styles')) {
                 const style = document.createElement('style');
                 style.id = 'notification-styles';
@@ -415,7 +829,7 @@
             }, 4000);
         }
 
-        // Предотвращаем случайную отправку формы
+        // Обработчики событий
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
@@ -423,9 +837,7 @@
             }
         });
 
-        // Обработка изменения размера окна
         window.addEventListener('resize', function() {
-            // Обновляем высоту textarea при изменении размера
             const textarea = document.getElementById('signature');
             if (textarea) {
                 textarea.style.height = 'auto';
@@ -433,13 +845,11 @@
             }
         });
 
-        // Автоматическое изменение высоты textarea
         document.getElementById('signature').addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = this.scrollHeight + 'px';
         });
 
-        // Валидация поля имени в реальном времени
         document.getElementById('collectorName').addEventListener('input', function() {
             const value = this.value.trim();
             if (value.length > 0) {
@@ -451,7 +861,7 @@
             }
         });
 
-        // Обработка drag & drop для изображений
+        // Drag & Drop для изображений
         const selfieInput = document.getElementById('selfie');
         const collectForm = document.getElementById('collectFormInner');
 
@@ -499,6 +909,6 @@
                 }
             }
         }
-    </script>
-</body>
-</html>
+
+        // Инициализация по умолчанию
+        selectAuthMethod('manual');
