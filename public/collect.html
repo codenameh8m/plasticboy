@@ -5,12 +5,269 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlasticBoy - Сбор модели</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Дополнительные стили для Instagram интеграции */
+        .auth-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+        
+        .auth-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .auth-option.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .auth-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .auth-option-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .auth-option-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .auth-option-desc {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .instagram-option .auth-option-icon {
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .manual-option .auth-option-icon {
+            color: #4CAF50;
+        }
+        
+        .form-section {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+        
+        .form-section.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .instagram-form {
+            background: linear-gradient(135deg, rgba(240, 148, 51, 0.1), rgba(188, 24, 136, 0.1));
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .instagram-input-group {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .instagram-input {
+            width: 100%;
+            padding: 15px 50px 15px 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .instagram-input:focus {
+            outline: none;
+            border-color: #e6683c;
+            box-shadow: 0 0 0 3px rgba(230, 104, 60, 0.1);
+        }
+        
+        .instagram-prefix {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-weight: 600;
+            pointer-events: none;
+        }
+        
+        .instagram-verify-btn {
+            background: linear-gradient(45deg, #f09433, #e6683c);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .instagram-verify-btn:hover {
+            background: linear-gradient(45deg, #e6683c, #dc2743);
+            transform: translateY(-1px);
+        }
+        
+        .instagram-verify-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .instagram-profile {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .instagram-profile.show {
+            display: block;
+            animation: slideDown 0.4s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .instagram-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            border: 3px solid #e6683c;
+        }
+        
+        .instagram-username {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .instagram-fullname {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .instagram-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .instagram-stat {
+            text-align: center;
+        }
+        
+        .instagram-stat-number {
+            font-weight: 600;
+            color: #333;
+            display: block;
+        }
+        
+        .instagram-stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .change-account-btn {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .change-account-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .verification-status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .verification-status.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .verification-status.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .verification-status.loading {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .auth-options {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .auth-option {
+                padding: 12px;
+            }
+            
+            .auth-option-icon {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container collect-container">
         <header class="header">
             <h1>🎉 Отличная находка!</h1>
-            <p>Заполните информацию о себе</p>
+            <p>Выберите способ авторизации</p>
         </header>
 
         <div id="collectForm" class="form-container">
@@ -19,12 +276,72 @@
                 <p id="modelLocation"></p>
             </div>
 
-            <div id="collectFormInner">
+            <!-- Выбор способа авторизации -->
+            <div class="auth-options">
+                <div class="auth-option manual-option active" onclick="selectAuthMethod('manual')">
+                    <span class="auth-option-icon">👤</span>
+                    <div class="auth-option-title">Ввести имя</div>
+                    <div class="auth-option-desc">Введите имя вручную</div>
+                </div>
+                <div class="auth-option instagram-option" onclick="selectAuthMethod('instagram')">
+                    <span class="auth-option-icon">📸</span>
+                    <div class="auth-option-title">Instagram</div>
+                    <div class="auth-option-desc">Войти через Instagram</div>
+                </div>
+            </div>
+
+            <!-- Форма для ручного ввода -->
+            <div id="manualForm" class="form-section active">
                 <div class="form-group">
                     <label for="collectorName">Ваше имя:</label>
                     <input type="text" id="collectorName" name="name" placeholder="Введите ваше имя" required>
                 </div>
+            </div>
 
+            <!-- Форма для Instagram -->
+            <div id="instagramForm" class="form-section">
+                <div class="instagram-form">
+                    <div class="form-group">
+                        <label>Instagram аккаунт:</label>
+                        <div class="instagram-input-group">
+                            <span class="instagram-prefix">@</span>
+                            <input type="text" id="instagramUsername" class="instagram-input" 
+                                   placeholder="username" style="padding-left: 35px;">
+                        </div>
+                        <button type="button" class="instagram-verify-btn" onclick="verifyInstagram()">
+                            Проверить аккаунт
+                        </button>
+                        <div id="verificationStatus" class="verification-status" style="display: none;"></div>
+                    </div>
+                    
+                    <!-- Профиль Instagram -->
+                    <div id="instagramProfile" class="instagram-profile">
+                        <img id="instagramAvatar" class="instagram-avatar" src="" alt="Avatar">
+                        <div id="instagramDisplayName" class="instagram-username"></div>
+                        <div id="instagramFullName" class="instagram-fullname"></div>
+                        <div class="instagram-stats">
+                            <div class="instagram-stat">
+                                <span id="instagramPosts" class="instagram-stat-number">0</span>
+                                <span class="instagram-stat-label">постов</span>
+                            </div>
+                            <div class="instagram-stat">
+                                <span id="instagramFollowers" class="instagram-stat-number">0</span>
+                                <span class="instagram-stat-label">подписчиков</span>
+                            </div>
+                            <div class="instagram-stat">
+                                <span id="instagramFollowing" class="instagram-stat-number">0</span>
+                                <span class="instagram-stat-label">подписок</span>
+                            </div>
+                        </div>
+                        <button type="button" class="change-account-btn" onclick="changeInstagramAccount()">
+                            Изменить аккаунт
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Общие поля формы -->
+            <div id="collectFormInner">
                 <div class="form-group">
                     <label for="signature">Подпись/Сообщение:</label>
                     <textarea id="signature" name="signature" placeholder="Оставьте свою подпись или сообщение (необязательно)" rows="3"></textarea>
@@ -58,6 +375,10 @@
     </div>
 
     <script>
+        // Глобальные переменные
+        let currentAuthMethod = 'manual';
+        let instagramData = null;
+        
         // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const pointId = urlParams.get('id');
@@ -68,15 +389,142 @@
         if (!pointId || !secret) {
             showError('Неверная ссылка QR кода');
         } else {
-            // Загружаем информацию о точке
             loadPointInfo();
         }
 
+        // Выбор метода авторизации
+        function selectAuthMethod(method) {
+            currentAuthMethod = method;
+            
+            // Обновляем активные элементы
+            document.querySelectorAll('.auth-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Активируем выбранный метод
+            if (method === 'manual') {
+                document.querySelector('.manual-option').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('manualForm').classList.add('active');
+                }, 100);
+            } else if (method === 'instagram') {
+                document.querySelector('.instagram-option').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('instagramForm').classList.add('active');
+                }, 100);
+            }
+        }
+
+        // Проверка Instagram аккаунта (симуляция)
+        async function verifyInstagram() {
+            const username = document.getElementById('instagramUsername').value.trim();
+            const btn = document.querySelector('.instagram-verify-btn');
+            const status = document.getElementById('verificationStatus');
+            
+            if (!username) {
+                showVerificationStatus('Введите имя пользователя Instagram', 'error');
+                return;
+            }
+            
+            // Валидация username
+            if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+                showVerificationStatus('Некорректное имя пользователя', 'error');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Проверка...';
+            showVerificationStatus('Проверяем аккаунт...', 'loading');
+            
+            try {
+                // Симуляция проверки аккаунта
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // В реальном приложении здесь был бы запрос к Instagram API
+                // Сейчас создаем мок-данные
+                const mockProfile = {
+                    username: username,
+                    full_name: generateMockFullName(username),
+                    profile_picture: generateMockAvatar(username),
+                    posts_count: Math.floor(Math.random() * 500) + 50,
+                    followers_count: Math.floor(Math.random() * 1000) + 100,
+                    following_count: Math.floor(Math.random() * 300) + 50,
+                    is_verified: Math.random() > 0.8
+                };
+                
+                instagramData = mockProfile;
+                displayInstagramProfile(mockProfile);
+                showVerificationStatus('Аккаунт найден!', 'success');
+                
+            } catch (error) {
+                console.error('Error verifying Instagram:', error);
+                showVerificationStatus('Не удалось найти аккаунт', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Проверить аккаунт';
+                
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // Показ статуса проверки
+        function showVerificationStatus(message, type) {
+            const status = document.getElementById('verificationStatus');
+            status.className = `verification-status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+        
+        // Отображение профиля Instagram
+        function displayInstagramProfile(profile) {
+            document.getElementById('instagramAvatar').src = profile.profile_picture;
+            document.getElementById('instagramDisplayName').textContent = '@' + profile.username;
+            document.getElementById('instagramFullName').textContent = profile.full_name;
+            document.getElementById('instagramPosts').textContent = formatNumber(profile.posts_count);
+            document.getElementById('instagramFollowers').textContent = formatNumber(profile.followers_count);
+            document.getElementById('instagramFollowing').textContent = formatNumber(profile.following_count);
+            
+            document.getElementById('instagramProfile').classList.add('show');
+        }
+        
+        // Изменение аккаунта Instagram
+        function changeInstagramAccount() {
+            document.getElementById('instagramProfile').classList.remove('show');
+            document.getElementById('instagramUsername').value = '';
+            instagramData = null;
+        }
+        
+        // Генерация мок-данных для демонстрации
+        function generateMockFullName(username) {
+            const names = ['Александр Иванов', 'Мария Петрова', 'Дмитрий Сидоров', 'Анна Козлова', 'Максим Волков'];
+            return names[Math.floor(Math.random() * names.length)];
+        }
+        
+        function generateMockAvatar(username) {
+            // Используем сервис для генерации аватаров
+            return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}&background=random`;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        // Загрузка информации о точке
         async function loadPointInfo() {
             try {
                 console.log('Loading point info...');
                 
-                // Показываем индикатор загрузки
                 const modelNameElement = document.getElementById('modelName');
                 modelNameElement.innerHTML = '⏳ Загрузка...';
                 modelNameElement.style.animation = 'pulse 1.5s infinite';
@@ -96,16 +544,18 @@
                     throw new Error(data.error || 'Ошибка загрузки');
                 }
 
-                // Обновляем информацию с анимацией
                 modelNameElement.style.animation = '';
                 modelNameElement.textContent = data.name;
                 
                 document.getElementById('modelLocation').innerHTML = 
                     `📍 Координаты: <strong>${data.coordinates.lat.toFixed(6)}, ${data.coordinates.lng.toFixed(6)}</strong>`;
 
-                // Добавляем фокус на поле имени
                 setTimeout(() => {
-                    document.getElementById('collectorName').focus();
+                    if (currentAuthMethod === 'manual') {
+                        document.getElementById('collectorName').focus();
+                    } else {
+                        document.getElementById('instagramUsername').focus();
+                    }
                 }, 300);
 
             } catch (error) {
@@ -114,69 +564,46 @@
             }
         }
 
-        // Улучшенное превью изображения
-        document.getElementById('selfie').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const preview = document.getElementById('imagePreview');
-            
-            if (file) {
-                // Проверяем размер файла (максимум 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    showNotification('Файл слишком большой. Максимальный размер: 5MB', 'error');
-                    this.value = '';
-                    preview.innerHTML = '';
-                    return;
-                }
-
-                // Проверяем тип файла
-                if (!file.type.startsWith('image/')) {
-                    showNotification('Пожалуйста, выберите изображение', 'error');
-                    this.value = '';
-                    preview.innerHTML = '';
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `
-                        <div style="position: relative; display: inline-block; margin-top: 10px;">
-                            <img src="${e.target.result}" alt="Превью селфи" 
-                                 style="max-width: 100%; max-height: 200px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                            <div style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); 
-                                        color: white; border-radius: 50%; width: 25px; height: 25px; 
-                                        display: flex; align-items: center; justify-content: center; 
-                                        cursor: pointer; font-size: 14px;"
-                                 onclick="clearImage()">×</div>
-                        </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
+        // Получение имени пользователя
+        function getCollectorName() {
+            if (currentAuthMethod === 'instagram' && instagramData) {
+                return `@${instagramData.username} (${instagramData.full_name})`;
             } else {
-                preview.innerHTML = '';
+                const manualName = document.getElementById('collectorName').value.trim();
+                return manualName || 'Anonymous';
             }
-        });
-
-        // Функция для очистки изображения
-        function clearImage() {
-            document.getElementById('selfie').value = '';
-            document.getElementById('imagePreview').innerHTML = '';
         }
 
-        // Улучшенная обработка кнопки отправки
+        // Валидация формы
+        function validateForm() {
+            if (currentAuthMethod === 'manual') {
+                const name = document.getElementById('collectorName').value.trim();
+                if (!name) {
+                    showNotification('Пожалуйста, введите ваше имя', 'error');
+                    document.getElementById('collectorName').focus();
+                    return false;
+                }
+            } else if (currentAuthMethod === 'instagram') {
+                if (!instagramData) {
+                    showNotification('Пожалуйста, подтвердите ваш Instagram аккаунт', 'error');
+                    document.getElementById('instagramUsername').focus();
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Обработка отправки формы
         document.getElementById('submitBtn').addEventListener('click', async function(e) {
             e.preventDefault();
             
-            const name = document.getElementById('collectorName').value.trim();
-            if (!name) {
-                showNotification('Пожалуйста, введите ваше имя', 'error');
-                document.getElementById('collectorName').focus();
+            if (!validateForm()) {
                 return;
             }
 
             const submitBtn = document.getElementById('submitBtn');
             const originalHTML = submitBtn.innerHTML;
             
-            // Блокируем кнопку и показываем анимацию загрузки
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span style="animation: spin 1s linear infinite;">⏳</span> Отправка...';
             submitBtn.style.opacity = '0.8';
@@ -186,8 +613,14 @@
                 
                 const formData = new FormData();
                 formData.append('secret', secret);
-                formData.append('name', name);
+                formData.append('name', getCollectorName());
                 formData.append('signature', document.getElementById('signature').value.trim());
+                
+                // Добавляем информацию о методе авторизации
+                formData.append('authMethod', currentAuthMethod);
+                if (currentAuthMethod === 'instagram' && instagramData) {
+                    formData.append('instagramData', JSON.stringify(instagramData));
+                }
                 
                 const selfieFile = document.getElementById('selfie').files[0];
                 if (selfieFile) {
@@ -217,20 +650,18 @@
                 console.error('Error submitting form:', error);
                 showError(error.message);
                 
-                // Восстанавливаем кнопку
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalHTML;
                 submitBtn.style.opacity = '';
             }
         });
 
-        // Улучшенная функция показа успеха
+        // Остальные функции (showSuccess, showError, etc.) остаются без изменений
         function showSuccess() {
             document.getElementById('collectForm').style.display = 'none';
             const successMessage = document.getElementById('successMessage');
             successMessage.style.display = 'block';
             
-            // Добавляем анимацию появления
             successMessage.style.opacity = '0';
             successMessage.style.transform = 'scale(0.9)';
             successMessage.style.transition = 'all 0.5s ease';
@@ -240,18 +671,15 @@
                 successMessage.style.transform = 'scale(1)';
             }, 100);
             
-            // Добавляем конфетти эффект
             createConfetti();
         }
 
-        // Улучшенная функция показа ошибки
         function showError(message) {
             document.getElementById('collectForm').style.display = 'none';
             const errorMessage = document.getElementById('errorMessage');
             document.getElementById('errorText').textContent = message;
             errorMessage.style.display = 'block';
             
-            // Добавляем анимацию появления
             errorMessage.style.opacity = '0';
             errorMessage.style.transform = 'scale(0.9)';
             errorMessage.style.transition = 'all 0.5s ease';
@@ -262,7 +690,6 @@
             }, 100);
         }
 
-        // Функция создания конфетти эффекта
         function createConfetti() {
             const colors = ['#f44336', '#4CAF50', '#2196F3', '#ff9800', '#9c27b0', '#ffeb3b'];
             
@@ -288,7 +715,6 @@
                 }, i * 50);
             }
             
-            // Добавляем CSS анимацию если её нет
             if (!document.getElementById('confetti-styles')) {
                 const style = document.createElement('style');
                 style.id = 'confetti-styles';
@@ -313,7 +739,6 @@
             }
         }
 
-        // Функция показа уведомлений
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -332,7 +757,6 @@
                 </div>
             `;
             
-            // Добавляем стили если их нет
             if (!document.getElementById('notification-styles')) {
                 const style = document.createElement('style');
                 style.id = 'notification-styles';
@@ -354,21 +778,10 @@
                         font-weight: 500;
                     }
                     
-                    .notification.error {
-                        border-left: 4px solid #f44336;
-                    }
-                    
-                    .notification.success {
-                        border-left: 4px solid #4CAF50;
-                    }
-                    
-                    .notification.info {
-                        border-left: 4px solid #2196F3;
-                    }
-                    
-                    .notification.warning {
-                        border-left: 4px solid #ff9800;
-                    }
+                    .notification.error { border-left: 4px solid #f44336; }
+                    .notification.success { border-left: 4px solid #4CAF50; }
+                    .notification.info { border-left: 4px solid #2196F3; }
+                    .notification.warning { border-left: 4px solid #ff9800; }
                     
                     .notification-content {
                         display: flex;
@@ -392,14 +805,8 @@
                     }
                     
                     @keyframes slideIn {
-                        from {
-                            transform: translateX(100%) scale(0.9);
-                            opacity: 0;
-                        }
-                        to {
-                            transform: translateX(0) scale(1);
-                            opacity: 1;
-                        }
+                        from { transform: translateX(100%) scale(0.9); opacity: 0; }
+                        to { transform: translateX(0) scale(1); opacity: 1; }
                     }
                 `;
                 document.head.appendChild(style);
@@ -415,21 +822,63 @@
             }, 4000);
         }
 
-        // Предотвращаем случайную отправку формы
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                document.getElementById('submitBtn').click();
+        // Обработка файлов
+        document.getElementById('selfie').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification('Файл слишком большой. Максимальный размер: 5MB', 'error');
+                    this.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
+                if (!file.type.startsWith('image/')) {
+                    showNotification('Пожалуйста, выберите изображение', 'error');
+                    this.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <div style="position: relative; display: inline-block; margin-top: 10px;">
+                            <img src="${e.target.result}" alt="Превью селфи" 
+                                 style="max-width: 100%; max-height: 200px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); 
+                                        color: white; border-radius: 50%; width: 25px; height: 25px; 
+                                        display: flex; align-items: center; justify-content: center; 
+                                        cursor: pointer; font-size: 14px;"
+                                 onclick="clearImage()">×</div>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
             }
         });
 
-        // Обработка изменения размера окна
-        window.addEventListener('resize', function() {
-            // Обновляем высоту textarea при изменении размера
-            const textarea = document.getElementById('signature');
-            if (textarea) {
-                textarea.style.height = 'auto';
-                textarea.style.height = textarea.scrollHeight + 'px';
+        function clearImage() {
+            document.getElementById('selfie').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+        }
+
+        // Обработка Enter для Instagram username
+        document.getElementById('instagramUsername').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyInstagram();
+            }
+        });
+
+        // Предотвращаем случайную отправку формы
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.id !== 'instagramUsername') {
+                e.preventDefault();
+                document.getElementById('submitBtn').click();
             }
         });
 
@@ -450,55 +899,6 @@
                 this.style.boxShadow = 'none';
             }
         });
-
-        // Обработка drag & drop для изображений
-        const selfieInput = document.getElementById('selfie');
-        const collectForm = document.getElementById('collectFormInner');
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            collectForm.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            collectForm.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            collectForm.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            collectForm.style.background = 'rgba(76, 175, 80, 0.05)';
-            collectForm.style.border = '2px dashed #4CAF50';
-        }
-
-        function unhighlight(e) {
-            collectForm.style.background = '';
-            collectForm.style.border = '';
-        }
-
-        collectForm.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.type.startsWith('image/')) {
-                    selfieInput.files = files;
-                    selfieInput.dispatchEvent(new Event('change'));
-                    showNotification('Изображение добавлено!', 'success');
-                } else {
-                    showNotification('Пожалуйста, перетащите изображение', 'error');
-                }
-            }
-        }
     </script>
 </body>
 </html>
