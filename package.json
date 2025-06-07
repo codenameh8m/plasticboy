@@ -1,7 +1,7 @@
 {
   "name": "plasticboy",
-  "version": "2.0.0",
-  "description": "3D Model Collection App for Almaty with Advanced Caching",
+  "version": "2.1.0",
+  "description": "3D Model Collection App for Almaty with Real Instagram Integration",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,7 +13,10 @@
     "mongoose": "^7.5.0",
     "cors": "^2.8.5",
     "multer": "^1.4.5-lts.1",
-    "qrcode": "^1.5.3"
+    "qrcode": "^1.5.3",
+    "axios": "^1.5.0",
+    "express-session": "^1.17.3",
+    "connect-mongo": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -27,7 +30,8 @@
     "mongodb",
     "qr-code",
     "geolocation",
-    "cache",
+    "instagram-api",
+    "oauth",
     "almaty"
   ],
   "author": "PlasticBoy Team",
