@@ -920,3 +920,41 @@ button:not(.control-btn):disabled {
         padding: 14px;
     }
 }
+.telegram-user-info {
+    background: linear-gradient(135deg, #0088cc, #00a0ff);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+}
+
+.telegram-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid white;
+    margin: 0 auto 8px;
+    display: block;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.telegram-username {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    text-decoration: none;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s;
+    padding: 4px 8px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.1);
+}
+
+.telegram-username:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+}
