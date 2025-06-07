@@ -161,7 +161,6 @@
                     throw new Error('Leaflet не загружен');
                 }
                 
-                // Создаем карту
                 map = L.map('map', {
                     center: ALMATY_CENTER,
                     zoom: 13,
@@ -557,21 +556,12 @@
                               <strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}
                             </div>`;
             
-            // Добавляем селфи если есть - исправленная версия
+            // Добавляем селфи если есть
             if (point.collectorInfo.selfie) {
-                // Создаем уникальный ID для этого изображения
-                const imageId = `selfie_${point.id}_${Date.now()}`;
-                
-                // Сохраняем данные сборщика в window для доступа из onclick
-                if (!window.collectorData) {
-                    window.collectorData = {};
-                }
-                window.collectorData[imageId] = point.collectorInfo;
-                
                 popupContent += '<div style="margin: 10px 0; text-align: center;">';
                 popupContent += `<img src="${point.collectorInfo.selfie}" 
                                   style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
-                                  onclick="showFullImageWithData('${point.collectorInfo.selfie}', '${point.name}', '${imageId}')" 
+                                  onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" 
                                   title="Кликните для увеличения">`;
                 popupContent += '</div>';
             }
@@ -712,23 +702,8 @@
         );
     };
     
-    // Вспомогательная функция для показа изображения с данными из window.collectorData
-    window.showFullImageWithData = function(imageSrc, title, imageId) {
-        const collectorInfo = window.collectorData && window.collectorData[imageId];
-        console.log('🖼️ Открытие изображения:', title, 'ID:', imageId, 'Данные сборщика:', collectorInfo);
-        window.showFullImage(imageSrc, title, collectorInfo);
-    };
-    
-    // Показ полного изображения с информацией о сборщике
-    window.showFullImage = function(imageSrc, title, collectorInfo) {
-        console.log('🖼️ showFullImage вызвана с параметрами:', { imageSrc, title, collectorInfo });
-        
-        // Fallback для старых вызовов без collectorInfo
-        if (typeof title === 'object' && !collectorInfo) {
-            collectorInfo = title;
-            title = 'Модель';
-        }
-        
+    // Показ полного изображения
+    window.showFullImage = function(imageSrc, title) {
         const modal = document.createElement('div');
         modal.style.cssText = `
             position: fixed;
@@ -736,292 +711,32 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.8);
             z-index: 3000;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            backdrop-filter: blur(10px);
-            animation: modalFadeIn 0.3s ease-out;
         `;
-        
-        // Определяем информацию о сборщике
-        let collectorDisplay = '';
-        if (collectorInfo) {
-            if (collectorInfo.authMethod === 'telegram' && collectorInfo.telegramData) {
-                const tgData = collectorInfo.telegramData;
-                const fullName = [tgData.first_name, tgData.last_name].filter(Boolean).join(' ');
-                
-                collectorDisplay = `
-                    <div style="
-                        background: linear-gradient(135deg, #0088cc, #00a0ff);
-                        color: white;
-                        padding: 12px 16px;
-                        border-radius: 10px;
-                        margin-bottom: 15px;
-                        display: flex;
-                        align-items: center;
-                        gap: 12px;
-                        box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
-                    ">
-                        ${tgData.photo_url ? `
-                            <img src="${tgData.photo_url}" 
-                                 style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" 
-                                 onerror="this.style.display='none';" 
-                                 alt="Avatar">
-                        ` : `
-                            <div style="
-                                width: 40px; 
-                                height: 40px; 
-                                border-radius: 50%; 
-                                background: rgba(255,255,255,0.2); 
-                                display: flex; 
-                                align-items: center; 
-                                justify-content: center; 
-                                font-size: 18px;
-                                border: 2px solid white;
-                            ">👤</div>
-                        `}
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 3px;">
-                                ${fullName}
-                            </div>
-                            ${tgData.username ? `
-                                <a href="https://t.me/${tgData.username}" 
-                                   target="_blank" 
-                                   style="
-                                       color: white; 
-                                       text-decoration: none; 
-                                       font-size: 0.85rem; 
-                                       opacity: 0.9; 
-                                       display: flex; 
-                                       align-items: center; 
-                                       gap: 4px;
-                                       transition: opacity 0.3s;
-                                   "
-                                   onmouseover="this.style.opacity='1'"
-                                   onmouseout="this.style.opacity='0.9'">
-                                    <span style="font-size: 0.8rem;">✈️</span>
-                                    @${tgData.username}
-                                </a>
-                            ` : `
-                                <div style="font-size: 0.8rem; opacity: 0.8;">
-                                    <span style="font-size: 0.75rem;">🆔</span>
-                                    ID: ${tgData.id}
-                                </div>
-                            `}
-                        </div>
-                        <div style="
-                            background: rgba(255,255,255,0.15);
-                            padding: 4px 8px;
-                            border-radius: 12px;
-                            font-size: 0.75rem;
-                            font-weight: 500;
-                        ">
-                            Telegram
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Обычный сборщик (ручной ввод)
-                collectorDisplay = `
-                    <div style="
-                        background: linear-gradient(135deg, #4CAF50, #45a049);
-                        color: white;
-                        padding: 12px 16px;
-                        border-radius: 10px;
-                        margin-bottom: 15px;
-                        display: flex;
-                        align-items: center;
-                        gap: 12px;
-                        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-                    ">
-                        <div style="
-                            width: 40px; 
-                            height: 40px; 
-                            border-radius: 50%; 
-                            background: rgba(255,255,255,0.2); 
-                            display: flex; 
-                            align-items: center; 
-                            justify-content: center; 
-                            font-size: 18px;
-                            border: 2px solid white;
-                        ">👤</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 3px;">
-                                ${collectorInfo.name}
-                            </div>
-                            <div style="font-size: 0.8rem; opacity: 0.9;">
-                                Ручной ввод
-                            </div>
-                        </div>
-                        <div style="
-                            background: rgba(255,255,255,0.15);
-                            padding: 4px 8px;
-                            border-radius: 12px;
-                            font-size: 0.75rem;
-                            font-weight: 500;
-                        ">
-                            Ручной
-                        </div>
-                    </div>
-                `;
-            }
-        }
         
         modal.innerHTML = `
             <div style="
-                max-width: 90vw;
-                max-height: 90vh;
+                max-width: 90%;
+                max-height: 90%;
                 background: white;
-                border-radius: 15px;
+                border-radius: 12px;
                 overflow: hidden;
                 cursor: default;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-                position: relative;
-                display: flex;
-                flex-direction: column;
             " onclick="event.stopPropagation()">
-                <!-- Заголовок и закрытие -->
-                <div style="
-                    padding: 20px 20px 15px 20px;
-                    background: #f8f9fa;
-                    border-bottom: 1px solid #dee2e6;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    position: relative;
-                ">
-                    <div style="flex: 1; padding-right: 40px;">
-                        <h3 style="
-                            margin: 0 0 8px 0;
-                            font-size: 1.1rem;
-                            color: #333;
-                            font-weight: 600;
-                        ">${title}</h3>
-                        <div style="font-size: 0.85rem; color: #666;">
-                            Селфи с места находки
-                        </div>
-                    </div>
-                    <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="
-                        position: absolute;
-                        top: 15px;
-                        right: 15px;
-                        background: rgba(108, 117, 125, 0.1);
-                        border: none;
-                        border-radius: 50%;
-                        width: 35px;
-                        height: 35px;
-                        font-size: 20px;
-                        cursor: pointer;
-                        color: #6c757d;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.3s;
-                    " 
-                    onmouseover="this.style.background='rgba(108, 117, 125, 0.2)'; this.style.color='#495057'"
-                    onmouseout="this.style.background='rgba(108, 117, 125, 0.1)'; this.style.color='#6c757d'">
-                        ×
-                    </button>
+                <div style="padding: 15px; background: #f8f9fa; text-align: center; font-weight: 600;">
+                    ${title}
                 </div>
-                
-                <!-- Информация о сборщике -->
-                <div style="padding: 0 20px;">
-                    ${collectorDisplay}
-                </div>
-                
-                <!-- Изображение -->
-                <div style="
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 0 20px 20px 20px;
-                    overflow: hidden;
-                ">
-                    <img src="${imageSrc}" style="
-                        max-width: 100%;
-                        max-height: 60vh;
-                        object-fit: contain;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                    " alt="Селфи с места находки">
-                </div>
-                
-                <!-- Дополнительные действия -->
-                <div style="
-                    padding: 15px 20px;
-                    background: #f8f9fa;
-                    border-top: 1px solid #dee2e6;
-                    display: flex;
-                    justify-content: center;
-                    gap: 10px;
-                ">
-                    <button onclick="
-                        const link = document.createElement('a');
-                        link.download = 'plasticboy-selfie-${Date.now()}.jpg';
-                        link.href = '${imageSrc}';
-                        link.click();
-                    " style="
-                        background: linear-gradient(45deg, #007bff, #0056b3);
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        font-size: 0.9rem;
-                        font-weight: 500;
-                        transition: all 0.3s;
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                    "
-                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(0, 123, 255, 0.3)'"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                        📥 Скачать
-                    </button>
-                </div>
+                <img src="${imageSrc}" style="max-width: 100%; max-height: 70vh; display: block;">
             </div>
         `;
         
-        // Добавляем стили анимации если их еще нет
-        if (!document.getElementById('modal-animation-styles')) {
-            const style = document.createElement('style');
-            style.id = 'modal-animation-styles';
-            style.textContent = `
-                @keyframes modalFadeIn {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.9);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        modal.onclick = () => {
-            console.log('🖼️ Закрытие модального окна');
-            modal.remove();
-        };
+        modal.onclick = () => modal.remove();
         document.body.appendChild(modal);
-        
-        // Обработка ESC для закрытия
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') {
-                console.log('🖼️ Закрытие модального окна по ESC');
-                modal.remove();
-                document.removeEventListener('keydown', handleEsc);
-            }
-        };
-        document.addEventListener('keydown', handleEsc);
-        
-        console.log('🖼️ Модальное окно создано и добавлено в DOM');
     };
     
     // Обработчики событий
