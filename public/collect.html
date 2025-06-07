@@ -6,207 +6,92 @@
     <title>PlasticBoy - Сбор модели</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Дополнительные стили для Instagram интеграции */
-        .auth-options {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            justify-content: center;
-        }
-        
-        .auth-option {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s ease;
-            background: white;
-        }
-        
-        .auth-option.active {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-        
-        .auth-option:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
-        
-        .auth-option-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .auth-option-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        
-        .auth-option-desc {
-            font-size: 0.85rem;
-            color: #666;
-        }
-        
-        .instagram-option .auth-option-icon {
+        /* Дополнительные стили для реального Instagram */
+        .instagram-login-btn {
             background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .manual-option .auth-option-icon {
-            color: #4CAF50;
-        }
-        
-        .form-section {
-            display: none;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s ease;
-        }
-        
-        .form-section.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .instagram-form {
-            background: linear-gradient(135deg, rgba(240, 148, 51, 0.1), rgba(188, 24, 136, 0.1));
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .instagram-input-group {
-            position: relative;
-            margin-bottom: 15px;
-        }
-        
-        .instagram-input {
-            width: 100%;
-            padding: 15px 50px 15px 15px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        
-        .instagram-input:focus {
-            outline: none;
-            border-color: #e6683c;
-            box-shadow: 0 0 0 3px rgba(230, 104, 60, 0.1);
-        }
-        
-        .instagram-prefix {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #666;
-            font-weight: 600;
-            pointer-events: none;
-        }
-        
-        .instagram-verify-btn {
-            background: linear-gradient(45deg, #f09433, #e6683c);
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 600;
+            cursor: pointer;
             transition: all 0.3s;
             width: 100%;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
         }
         
-        .instagram-verify-btn:hover {
-            background: linear-gradient(45deg, #e6683c, #dc2743);
-            transform: translateY(-1px);
+        .instagram-login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(240, 148, 51, 0.4);
         }
         
-        .instagram-verify-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .instagram-profile {
-            display: none;
-            background: white;
+        .instagram-connected {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid #4CAF50;
             border-radius: 12px;
             padding: 20px;
-            margin-top: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin: 15px 0;
             text-align: center;
         }
         
-        .instagram-profile.show {
-            display: block;
-            animation: slideDown 0.4s ease;
+        .instagram-connected .status-icon {
+            font-size: 2rem;
+            color: #4CAF50;
+            margin-bottom: 10px;
         }
         
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .instagram-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            border: 3px solid #e6683c;
-        }
-        
-        .instagram-username {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .instagram-fullname {
-            color: #666;
-            margin-bottom: 15px;
-        }
-        
-        .instagram-stats {
+        .instagram-profile-real {
             display: flex;
-            justify-content: space-around;
-            margin-bottom: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .instagram-stat {
-            text-align: center;
+        .instagram-avatar-real {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #e6683c;
+            object-fit: cover;
         }
         
-        .instagram-stat-number {
-            font-weight: 600;
+        .instagram-info-real h3 {
+            margin: 0 0 5px 0;
             color: #333;
-            display: block;
+            font-size: 1.1rem;
         }
         
-        .instagram-stat-label {
+        .instagram-info-real .username {
+            color: #666;
+            font-size: 0.9rem;
+            margin: 0 0 8px 0;
+        }
+        
+        .instagram-stats-real {
+            display: flex;
+            gap: 15px;
             font-size: 0.8rem;
+        }
+        
+        .instagram-stat-real {
             color: #666;
         }
         
-        .change-account-btn {
+        .instagram-stat-real strong {
+            color: #333;
+        }
+        
+        .instagram-logout-btn {
             background: #f8f9fa;
             color: #666;
             border: 1px solid #ddd;
@@ -217,49 +102,95 @@
             margin-top: 10px;
         }
         
-        .change-account-btn:hover {
+        .instagram-logout-btn:hover {
             background: #e9ecef;
         }
         
-        .verification-status {
-            padding: 10px;
+        .auth-status {
+            padding: 12px;
             border-radius: 8px;
-            margin-top: 10px;
+            margin: 10px 0;
             text-align: center;
-            font-size: 0.9rem;
+            font-weight: 600;
         }
         
-        .verification-status.success {
+        .auth-status.success {
             background: rgba(76, 175, 80, 0.1);
             color: #4CAF50;
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
         
-        .verification-status.error {
+        .auth-status.error {
             background: rgba(244, 67, 54, 0.1);
             color: #f44336;
             border: 1px solid rgba(244, 67, 54, 0.3);
         }
         
-        .verification-status.loading {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border: 1px solid rgba(102, 126, 234, 0.3);
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
         }
         
-        @media (max-width: 768px) {
-            .auth-options {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .auth-option {
-                padding: 12px;
-            }
-            
-            .auth-option-icon {
-                font-size: 1.5rem;
-            }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .instagram-media-preview {
+            display: none;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .instagram-media-preview.show {
+            display: block;
+        }
+        
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .media-item {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .media-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -275,6 +206,9 @@
                 <h2 id="modelName">Загрузка...</h2>
                 <p id="modelLocation"></p>
             </div>
+
+            <!-- Статус авторизации -->
+            <div id="authStatus" class="auth-status" style="display: none;"></div>
 
             <!-- Выбор способа авторизации -->
             <div class="auth-options">
@@ -300,43 +234,46 @@
 
             <!-- Форма для Instagram -->
             <div id="instagramForm" class="form-section">
-                <div class="instagram-form">
-                    <div class="form-group">
-                        <label>Instagram аккаунт:</label>
-                        <div class="instagram-input-group">
-                            <span class="instagram-prefix">@</span>
-                            <input type="text" id="instagramUsername" class="instagram-input" 
-                                   placeholder="username" style="padding-left: 35px;">
+                <!-- Кнопка входа -->
+                <div id="instagramLogin">
+                    <a href="#" id="instagramLoginBtn" class="instagram-login-btn" onclick="loginWithInstagram()">
+                        📸 Войти через Instagram
+                    </a>
+                    <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 10px;">
+                        Мы получим доступ к вашему имени пользователя и публичному профилю
+                    </p>
+                </div>
+                
+                <!-- Подключенный аккаунт -->
+                <div id="instagramConnected" class="instagram-connected" style="display: none;">
+                    <div class="status-icon">✅</div>
+                    <h3>Instagram подключен</h3>
+                    
+                    <div id="instagramProfileReal" class="instagram-profile-real">
+                        <img id="instagramAvatarReal" class="instagram-avatar-real" src="" alt="Avatar">
+                        <div class="instagram-info-real">
+                            <h3 id="instagramNameReal"></h3>
+                            <p id="instagramUsernameReal" class="username"></p>
+                            <div id="instagramStatsReal" class="instagram-stats-real">
+                                <span class="instagram-stat-real">
+                                    <strong id="instagramMediaCount">0</strong> постов
+                                </span>
+                                <span class="instagram-stat-real" id="instagramFollowersReal">
+                                    <strong>0</strong> подписчиков
+                                </span>
+                            </div>
                         </div>
-                        <button type="button" class="instagram-verify-btn" onclick="verifyInstagram()">
-                            Проверить аккаунт
-                        </button>
-                        <div id="verificationStatus" class="verification-status" style="display: none;"></div>
                     </div>
                     
-                    <!-- Профиль Instagram -->
-                    <div id="instagramProfile" class="instagram-profile">
-                        <img id="instagramAvatar" class="instagram-avatar" src="" alt="Avatar">
-                        <div id="instagramDisplayName" class="instagram-username"></div>
-                        <div id="instagramFullName" class="instagram-fullname"></div>
-                        <div class="instagram-stats">
-                            <div class="instagram-stat">
-                                <span id="instagramPosts" class="instagram-stat-number">0</span>
-                                <span class="instagram-stat-label">постов</span>
-                            </div>
-                            <div class="instagram-stat">
-                                <span id="instagramFollowers" class="instagram-stat-number">0</span>
-                                <span class="instagram-stat-label">подписчиков</span>
-                            </div>
-                            <div class="instagram-stat">
-                                <span id="instagramFollowing" class="instagram-stat-number">0</span>
-                                <span class="instagram-stat-label">подписок</span>
-                            </div>
-                        </div>
-                        <button type="button" class="change-account-btn" onclick="changeInstagramAccount()">
-                            Изменить аккаунт
-                        </button>
+                    <!-- Превью медиа (опционально) -->
+                    <div id="instagramMediaPreview" class="instagram-media-preview">
+                        <h4>Последние посты:</h4>
+                        <div id="mediaGrid" class="media-grid"></div>
                     </div>
+                    
+                    <button class="instagram-logout-btn" onclick="logoutFromInstagram()">
+                        Сменить аккаунт
+                    </button>
                 </div>
             </div>
 
@@ -360,6 +297,7 @@
             </div>
         </div>
 
+        <!-- Остальные блоки (success, error) остаются без изменений -->
         <div id="successMessage" class="success-message" style="display: none;">
             <h2>🎯 Успешно!</h2>
             <p>Спасибо за участие в PlasticBoy!</p>
@@ -374,22 +312,205 @@
         </div>
     </div>
 
+    <!-- Оверлей загрузки -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Подключение к Instagram...</p>
+    </div>
+
     <script>
         // Глобальные переменные
         let currentAuthMethod = 'manual';
-        let instagramData = null;
+        let instagramUser = null;
+        let isInstagramConnected = false;
         
         // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const pointId = urlParams.get('id');
         const secret = urlParams.get('secret');
+        const instagramAuth = urlParams.get('instagram_auth');
+        const error = urlParams.get('error');
 
-        console.log('Point ID:', pointId, 'Secret:', secret);
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем на ошибки или успешную авторизацию
+            if (error) {
+                handleAuthError(error);
+            } else if (instagramAuth === 'success') {
+                handleInstagramSuccess();
+            }
+            
+            if (!pointId || !secret) {
+                showError('Неверная ссылка QR кода');
+            } else {
+                loadPointInfo();
+            }
+            
+            // Проверяем текущее состояние Instagram авторизации
+            checkInstagramAuth();
+        });
 
-        if (!pointId || !secret) {
-            showError('Неверная ссылка QR кода');
-        } else {
-            loadPointInfo();
+        // Проверка текущей Instagram авторизации
+        async function checkInstagramAuth() {
+            try {
+                const response = await fetch('/api/instagram/me', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    displayInstagramUser(userData);
+                    isInstagramConnected = true;
+                }
+            } catch (error) {
+                console.log('No Instagram session found');
+            }
+        }
+
+        // Обработка успешной Instagram авторизации
+        function handleInstagramSuccess() {
+            showAuthStatus('Instagram успешно подключен!', 'success');
+            setTimeout(() => {
+                selectAuthMethod('instagram');
+                checkInstagramAuth();
+            }, 1000);
+        }
+
+        // Обработка ошибок авторизации
+        function handleAuthError(errorType) {
+            let message = 'Ошибка авторизации Instagram';
+            
+            switch(errorType) {
+                case 'instagram_auth_failed':
+                    message = 'Авторизация Instagram отменена или не удалась';
+                    break;
+                case 'no_auth_code':
+                    message = 'Не получен код авторизации от Instagram';
+                    break;
+                case 'instagram_callback_failed':
+                    message = 'Ошибка при обработке ответа Instagram';
+                    break;
+            }
+            
+            showAuthStatus(message, 'error');
+        }
+
+        // Показ статуса авторизации
+        function showAuthStatus(message, type) {
+            const statusEl = document.getElementById('authStatus');
+            statusEl.className = `auth-status ${type}`;
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Вход через Instagram
+        function loginWithInstagram() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+            
+            // Формируем URL для авторизации
+            const authUrl = `/auth/instagram?collectId=${pointId}&collectSecret=${secret}`;
+            
+            // Перенаправляем на авторизацию
+            window.location.href = authUrl;
+        }
+
+        // Отображение пользователя Instagram
+        function displayInstagramUser(userData) {
+            instagramUser = userData;
+            
+            // Скрываем кнопку входа
+            document.getElementById('instagramLogin').style.display = 'none';
+            
+            // Заполняем данные профиля
+            document.getElementById('instagramAvatarReal').src = userData.profile_picture;
+            document.getElementById('instagramNameReal').textContent = userData.full_name || userData.username;
+            document.getElementById('instagramUsernameReal').textContent = `@${userData.username}`;
+            document.getElementById('instagramMediaCount').textContent = userData.media_count || 0;
+            
+            // Форматируем количество подписчиков
+            const followersCount = userData.followers_count || 0;
+            document.getElementById('instagramFollowersReal').innerHTML = 
+                `<strong>${formatNumber(followersCount)}</strong> подписчиков`;
+            
+            // Показываем подключенный профиль
+            document.getElementById('instagramConnected').style.display = 'block';
+            
+            // Загружаем медиа (опционально)
+            loadInstagramMedia();
+            
+            isInstagramConnected = true;
+        }
+
+        // Загрузка медиа пользователя
+        async function loadInstagramMedia() {
+            try {
+                const response = await fetch('/api/instagram/media?limit=6', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const mediaData = await response.json();
+                    displayInstagramMedia(mediaData.data || []);
+                }
+            } catch (error) {
+                console.log('Could not load Instagram media');
+            }
+        }
+
+        // Отображение медиа Instagram
+        function displayInstagramMedia(mediaItems) {
+            if (!mediaItems || mediaItems.length === 0) return;
+            
+            const mediaGrid = document.getElementById('mediaGrid');
+            mediaGrid.innerHTML = '';
+            
+            mediaItems.slice(0, 6).forEach(item => {
+                const mediaEl = document.createElement('div');
+                mediaEl.className = 'media-item';
+                
+                const imgSrc = item.media_type === 'IMAGE' ? item.media_url : item.thumbnail_url;
+                if (imgSrc) {
+                    mediaEl.innerHTML = `<img src="${imgSrc}" alt="Instagram post" loading="lazy">`;
+                    mediaEl.onclick = () => window.open(item.permalink, '_blank');
+                    mediaGrid.appendChild(mediaEl);
+                }
+            });
+            
+            if (mediaGrid.children.length > 0) {
+                document.getElementById('instagramMediaPreview').classList.add('show');
+            }
+        }
+
+        // Выход из Instagram
+        async function logoutFromInstagram() {
+            try {
+                await fetch('/api/instagram/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                // Сбрасываем состояние
+                instagramUser = null;
+                isInstagramConnected = false;
+                
+                // Скрываем подключенный профиль
+                document.getElementById('instagramConnected').style.display = 'none';
+                document.getElementById('instagramMediaPreview').classList.remove('show');
+                
+                // Показываем кнопку входа
+                document.getElementById('instagramLogin').style.display = 'block';
+                
+                showAuthStatus('Вы вышли из Instagram', 'success');
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                showAuthStatus('Ошибка при выходе', 'error');
+            }
         }
 
         // Выбор метода авторизации
@@ -419,126 +540,19 @@
             }
         }
 
-        // Проверка Instagram аккаунта (симуляция)
-        async function verifyInstagram() {
-            const username = document.getElementById('instagramUsername').value.trim();
-            const btn = document.querySelector('.instagram-verify-btn');
-            const status = document.getElementById('verificationStatus');
-            
-            if (!username) {
-                showVerificationStatus('Введите имя пользователя Instagram', 'error');
-                return;
-            }
-            
-            // Валидация username
-            if (!/^[a-zA-Z0-9._]+$/.test(username)) {
-                showVerificationStatus('Некорректное имя пользователя', 'error');
-                return;
-            }
-            
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Проверка...';
-            showVerificationStatus('Проверяем аккаунт...', 'loading');
-            
-            try {
-                // Симуляция проверки аккаунта
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // В реальном приложении здесь был бы запрос к Instagram API
-                // Сейчас создаем мок-данные
-                const mockProfile = {
-                    username: username,
-                    full_name: generateMockFullName(username),
-                    profile_picture: generateMockAvatar(username),
-                    posts_count: Math.floor(Math.random() * 500) + 50,
-                    followers_count: Math.floor(Math.random() * 1000) + 100,
-                    following_count: Math.floor(Math.random() * 300) + 50,
-                    is_verified: Math.random() > 0.8
-                };
-                
-                instagramData = mockProfile;
-                displayInstagramProfile(mockProfile);
-                showVerificationStatus('Аккаунт найден!', 'success');
-                
-            } catch (error) {
-                console.error('Error verifying Instagram:', error);
-                showVerificationStatus('Не удалось найти аккаунт', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Проверить аккаунт';
-                
-                setTimeout(() => {
-                    status.style.display = 'none';
-                }, 3000);
-            }
-        }
-        
-        // Показ статуса проверки
-        function showVerificationStatus(message, type) {
-            const status = document.getElementById('verificationStatus');
-            status.className = `verification-status ${type}`;
-            status.textContent = message;
-            status.style.display = 'block';
-        }
-        
-        // Отображение профиля Instagram
-        function displayInstagramProfile(profile) {
-            document.getElementById('instagramAvatar').src = profile.profile_picture;
-            document.getElementById('instagramDisplayName').textContent = '@' + profile.username;
-            document.getElementById('instagramFullName').textContent = profile.full_name;
-            document.getElementById('instagramPosts').textContent = formatNumber(profile.posts_count);
-            document.getElementById('instagramFollowers').textContent = formatNumber(profile.followers_count);
-            document.getElementById('instagramFollowing').textContent = formatNumber(profile.following_count);
-            
-            document.getElementById('instagramProfile').classList.add('show');
-        }
-        
-        // Изменение аккаунта Instagram
-        function changeInstagramAccount() {
-            document.getElementById('instagramProfile').classList.remove('show');
-            document.getElementById('instagramUsername').value = '';
-            instagramData = null;
-        }
-        
-        // Генерация мок-данных для демонстрации
-        function generateMockFullName(username) {
-            const names = ['Александр Иванов', 'Мария Петрова', 'Дмитрий Сидоров', 'Анна Козлова', 'Максим Волков'];
-            return names[Math.floor(Math.random() * names.length)];
-        }
-        
-        function generateMockAvatar(username) {
-            // Используем сервис для генерации аватаров
-            return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}&background=random`;
-        }
-        
-        function formatNumber(num) {
-            if (num >= 1000000) {
-                return (num / 1000000).toFixed(1) + 'M';
-            } else if (num >= 1000) {
-                return (num / 1000).toFixed(1) + 'K';
-            }
-            return num.toString();
-        }
-
         // Загрузка информации о точке
         async function loadPointInfo() {
             try {
-                console.log('Loading point info...');
-                
                 const modelNameElement = document.getElementById('modelName');
                 modelNameElement.innerHTML = '⏳ Загрузка...';
                 modelNameElement.style.animation = 'pulse 1.5s infinite';
                 
                 const response = await fetch(`/api/collect/${pointId}?secret=${encodeURIComponent(secret)}`, {
                     method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' }
                 });
 
-                console.log('Response status:', response.status);
                 const data = await response.json();
-                console.log('Response data:', data);
 
                 if (!response.ok) {
                     throw new Error(data.error || 'Ошибка загрузки');
@@ -553,8 +567,6 @@
                 setTimeout(() => {
                     if (currentAuthMethod === 'manual') {
                         document.getElementById('collectorName').focus();
-                    } else {
-                        document.getElementById('instagramUsername').focus();
                     }
                 }, 300);
 
@@ -566,8 +578,8 @@
 
         // Получение имени пользователя
         function getCollectorName() {
-            if (currentAuthMethod === 'instagram' && instagramData) {
-                return `@${instagramData.username} (${instagramData.full_name})`;
+            if (currentAuthMethod === 'instagram' && instagramUser) {
+                return `@${instagramUser.username}`;
             } else {
                 const manualName = document.getElementById('collectorName').value.trim();
                 return manualName || 'Anonymous';
@@ -584,9 +596,8 @@
                     return false;
                 }
             } else if (currentAuthMethod === 'instagram') {
-                if (!instagramData) {
-                    showNotification('Пожалуйста, подтвердите ваш Instagram аккаунт', 'error');
-                    document.getElementById('instagramUsername').focus();
+                if (!isInstagramConnected || !instagramUser) {
+                    showNotification('Пожалуйста, войдите через Instagram', 'error');
                     return false;
                 }
             }
@@ -609,41 +620,29 @@
             submitBtn.style.opacity = '0.8';
 
             try {
-                console.log('Submitting form...');
-                
                 const formData = new FormData();
                 formData.append('secret', secret);
                 formData.append('name', getCollectorName());
                 formData.append('signature', document.getElementById('signature').value.trim());
-                
-                // Добавляем информацию о методе авторизации
                 formData.append('authMethod', currentAuthMethod);
-                if (currentAuthMethod === 'instagram' && instagramData) {
-                    formData.append('instagramData', JSON.stringify(instagramData));
-                }
                 
                 const selfieFile = document.getElementById('selfie').files[0];
                 if (selfieFile) {
-                    console.log('Adding selfie file:', selfieFile.name, selfieFile.size);
                     formData.append('selfie', selfieFile);
                 }
 
-                console.log('Sending request to:', `/api/collect/${pointId}`);
-
                 const response = await fetch(`/api/collect/${pointId}`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include' // Важно для передачи сессии
                 });
 
-                console.log('Response status:', response.status);
                 const result = await response.json();
-                console.log('Response result:', result);
 
                 if (!response.ok) {
                     throw new Error(result.error || 'Ошибка отправки');
                 }
 
-                console.log('Success!');
                 showSuccess();
 
             } catch (error) {
@@ -656,7 +655,18 @@
             }
         });
 
-        // Остальные функции (showSuccess, showError, etc.) остаются без изменений
+        // Форматирование чисел
+        function formatNumber(num) {
+            if (!num) return '0';
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        // Остальные функции (showSuccess, showError, showNotification, etc.) остаются без изменений
         function showSuccess() {
             document.getElementById('collectForm').style.display = 'none';
             const successMessage = document.getElementById('successMessage');
@@ -866,21 +876,6 @@
             document.getElementById('selfie').value = '';
             document.getElementById('imagePreview').innerHTML = '';
         }
-
-        // Обработка Enter для Instagram username
-        document.getElementById('instagramUsername').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                verifyInstagram();
-            }
-        });
-
-        // Предотвращаем случайную отправку формы
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.id !== 'instagramUsername') {
-                e.preventDefault();
-                document.getElementById('submitBtn').click();
-            }
-        });
 
         // Автоматическое изменение высоты textarea
         document.getElementById('signature').addEventListener('input', function() {
