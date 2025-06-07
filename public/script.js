@@ -1,8 +1,8 @@
-// PlasticBoy v2.0 - Исправленная версия с улучшенной загрузкой
+// PlasticBoy v2.0 - С поддержкой Instagram авторизации
 (function() {
     'use strict';
     
-    console.log('🎯 PlasticBoy - Инициализация скрипта');
+    console.log('🎯 PlasticBoy - Инициализация скрипта с Instagram поддержкой');
     
     // Глобальные переменные
     let map = null;
@@ -168,14 +168,6 @@
                     preferCanvas: true // Улучшаем производительность на мобильных
                 });
                 
-                // Добавляем тайлы
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    maxZoom: 18,
-                    tileSize: 256,
-                    crossOrigin: true
-                }).addTo(map);
-                
                 // Добавляем стили
                 addMapStyles();
                 
@@ -271,6 +263,81 @@
                 0% { transform: scale(1); opacity: 0.7; }
                 50% { opacity: 0.2; }
                 100% { transform: scale(2); opacity: 0; }
+            }
+            
+            .instagram-popup-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 15px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .instagram-avatar-small {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                border: 2px solid #e6683c;
+                object-fit: cover;
+            }
+            
+            .instagram-user-info h4 {
+                margin: 0 0 4px 0;
+                color: #333;
+                font-size: 1.1rem;
+            }
+            
+            .instagram-username {
+                color: #666;
+                font-size: 0.9rem;
+                margin: 0;
+            }
+            
+            .instagram-stats-popup {
+                display: flex;
+                justify-content: space-around;
+                margin: 12px 0;
+                padding: 10px;
+                background: #f8f9fa;
+                border-radius: 8px;
+            }
+            
+            .instagram-stat-popup {
+                text-align: center;
+            }
+            
+            .instagram-stat-number-popup {
+                font-weight: 600;
+                color: #333;
+                display: block;
+                font-size: 0.9rem;
+            }
+            
+            .instagram-stat-label-popup {
+                font-size: 0.7rem;
+                color: #666;
+            }
+            
+            .auth-method-badge {
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+            
+            .auth-method-badge.instagram {
+                background: linear-gradient(45deg, rgba(240, 148, 51, 0.1), rgba(188, 24, 136, 0.1));
+                color: #e6683c;
+                border: 1px solid rgba(230, 104, 60, 0.3);
+            }
+            
+            .auth-method-badge.manual {
+                background: rgba(76, 175, 80, 0.1);
+                color: #4CAF50;
+                border: 1px solid rgba(76, 175, 80, 0.3);
             }
         `;
         document.head.appendChild(style);
@@ -413,7 +480,7 @@
         }
     }
     
-    // Создание содержимого popup
+    // Создание содержимого popup с поддержкой Instagram
     function createPopupContent(point, isAvailable) {
         let popupContent = '<div style="min-width: 200px;">';
         popupContent += `<h3 style="margin: 0 0 10px 0;">${point.name}</h3>`;
@@ -422,17 +489,66 @@
         popupContent += '</p>';
         
         if (!isAvailable && point.collectorInfo) {
-            popupContent += '<div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">';
-            popupContent += `<p style="margin: 4px 0;"><strong>Собрал:</strong> ${point.collectorInfo.name}</p>`;
-            if (point.collectorInfo.signature) {
-                popupContent += `<p style="margin: 4px 0;"><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>`;
+            // Определяем метод авторизации
+            const authMethod = point.collectorInfo.authMethod || 'manual';
+            
+            // Бейдж метода авторизации
+            popupContent += `<div class="auth-method-badge ${authMethod}">`;
+            popupContent += authMethod === 'instagram' ? '📸 Instagram' : '👤 Ручной ввод';
+            popupContent += '</div>';
+            
+            popupContent += '<div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin: 10px 0;">';
+            
+            // Если собрано через Instagram, показываем профиль
+            if (authMethod === 'instagram' && point.collectorInfo.instagram) {
+                const instagram = point.collectorInfo.instagram;
+                
+                popupContent += '<div class="instagram-popup-header">';
+                popupContent += `<img src="${instagram.profile_picture}" alt="Avatar" class="instagram-avatar-small" onerror="this.src='https://via.placeholder.com/50x50?text=👤'">`;
+                popupContent += '<div class="instagram-user-info">';
+                popupContent += `<h4>${instagram.full_name || instagram.username}</h4>`;
+                popupContent += `<p class="instagram-username">@${instagram.username}`;
+                if (instagram.is_verified) {
+                    popupContent += ' ✓';
+                }
+                popupContent += '</p>';
+                popupContent += '</div>';
+                popupContent += '</div>';
+                
+                // Статистика Instagram
+                if (instagram.followers_count !== undefined) {
+                    popupContent += '<div class="instagram-stats-popup">';
+                    popupContent += '<div class="instagram-stat-popup">';
+                    popupContent += `<span class="instagram-stat-number-popup">${formatNumber(instagram.posts_count || 0)}</span>`;
+                    popupContent += '<span class="instagram-stat-label-popup">постов</span>';
+                    popupContent += '</div>';
+                    popupContent += '<div class="instagram-stat-popup">';
+                    popupContent += `<span class="instagram-stat-number-popup">${formatNumber(instagram.followers_count)}</span>`;
+                    popupContent += '<span class="instagram-stat-label-popup">подписчиков</span>';
+                    popupContent += '</div>';
+                    popupContent += '<div class="instagram-stat-popup">';
+                    popupContent += `<span class="instagram-stat-number-popup">${formatNumber(instagram.following_count || 0)}</span>`;
+                    popupContent += '<span class="instagram-stat-label-popup">подписок</span>';
+                    popupContent += '</div>';
+                    popupContent += '</div>';
+                }
+            } else {
+                // Обычное отображение для ручного ввода
+                popupContent += `<p style="margin: 4px 0;"><strong>Собрал:</strong> ${point.collectorInfo.name}</p>`;
             }
-            popupContent += `<p style="margin: 4px 0;"><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>`;
+            
+            // Подпись (для всех методов)
+            if (point.collectorInfo.signature) {
+                popupContent += `<p style="margin: 8px 0 4px 0;"><strong>Сообщение:</strong></p>`;
+                popupContent += `<p style="margin: 4px 0; font-style: italic; color: #555;">"${point.collectorInfo.signature}"</p>`;
+            }
+            
+            popupContent += `<p style="margin: 8px 0 4px 0;"><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>`;
             
             // Добавляем селфи если есть
             if (point.collectorInfo.selfie) {
-                popupContent += '<div style="margin: 10px 0; text-align: center;">';
-                popupContent += `<img src="${point.collectorInfo.selfie}" style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer;" onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" title="Кликните для увеличения">`;
+                popupContent += '<div style="margin: 12px 0; text-align: center;">';
+                popupContent += `<img src="${point.collectorInfo.selfie}" style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" title="Кликните для увеличения">`;
                 popupContent += '</div>';
             }
             
@@ -441,6 +557,17 @@
         
         popupContent += '</div>';
         return popupContent;
+    }
+    
+    // Форматирование чисел для Instagram статистики
+    function formatNumber(num) {
+        if (!num) return '0';
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toString();
     }
     
     // Обновление статистики
@@ -619,5 +746,13 @@
     // Запускаем инициализацию
     init();
     
-    console.log('🚀 PlasticBoy скрипт загружен');
-})();
+    console.log('🚀 PlasticBoy скрипт с Instagram поддержкой загружен');
+})();ляем тайлы
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18,
+                    tileSize: 256,
+                    crossOrigin: true
+                }).addTo(map);
+                
+                // Добав
