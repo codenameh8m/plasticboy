@@ -1,4 +1,4 @@
-// PlasticBoy v2.0 - Исправленная версия с улучшенной загрузкой
+// PlasticBoy v2.0 - Исправленная версия с улучшенной загрузкой и Telegram интеграцией
 (function() {
     'use strict';
     
@@ -272,6 +272,81 @@
                 50% { opacity: 0.2; }
                 100% { transform: scale(2); opacity: 0; }
             }
+
+            /* Стили для Telegram данных в popup */
+            .telegram-user-info {
+                background: linear-gradient(135deg, #0088cc, #00a0ff);
+                color: white;
+                padding: 12px;
+                border-radius: 10px;
+                margin: 10px 0;
+                text-align: center;
+                box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+            }
+
+            .telegram-avatar {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                border: 2px solid white;
+                margin: 0 auto 8px;
+                display: block;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            }
+
+            .telegram-name {
+                font-weight: 600;
+                font-size: 1rem;
+                margin-bottom: 4px;
+            }
+
+            .telegram-username {
+                font-size: 0.85rem;
+                opacity: 0.9;
+                text-decoration: none;
+                color: white;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                transition: all 0.3s;
+                padding: 4px 8px;
+                border-radius: 15px;
+                background: rgba(255,255,255,0.1);
+            }
+
+            .telegram-username:hover {
+                background: rgba(255,255,255,0.2);
+                transform: translateY(-1px);
+            }
+
+            .telegram-icon {
+                font-size: 0.8rem;
+            }
+
+            .collector-info-enhanced {
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 10px;
+                margin: 10px 0;
+                border-left: 4px solid #4CAF50;
+            }
+
+            .collector-info-enhanced h4 {
+                margin: 0 0 8px 0;
+                color: #333;
+                font-size: 0.95rem;
+            }
+
+            .collector-detail {
+                margin: 4px 0;
+                font-size: 0.9rem;
+                color: #666;
+            }
+
+            .popup-collector-name {
+                font-weight: 600;
+                color: #333;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -395,7 +470,7 @@
                     
                     const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon: icon });
                     
-                    // Создаем содержимое popup
+                    // Создаем содержимое popup с улучшенной поддержкой Telegram
                     const popupContent = createPopupContent(point, isAvailable);
                     marker.bindPopup(popupContent);
                     
@@ -413,7 +488,7 @@
         }
     }
     
-    // Создание содержимого popup
+    // Создание содержимого popup с поддержкой Telegram
     function createPopupContent(point, isAvailable) {
         let popupContent = '<div style="min-width: 200px;">';
         popupContent += `<h3 style="margin: 0 0 10px 0;">${point.name}</h3>`;
@@ -422,17 +497,72 @@
         popupContent += '</p>';
         
         if (!isAvailable && point.collectorInfo) {
-            popupContent += '<div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">';
-            popupContent += `<p style="margin: 4px 0;"><strong>Собрал:</strong> ${point.collectorInfo.name}</p>`;
-            if (point.collectorInfo.signature) {
-                popupContent += `<p style="margin: 4px 0;"><strong>Сообщение:</strong> ${point.collectorInfo.signature}</p>`;
+            popupContent += '<div class="collector-info-enhanced">';
+            popupContent += '<h4>Информация о сборщике:</h4>';
+            
+            // Если пользователь авторизован через Telegram
+            if (point.collectorInfo.authMethod === 'telegram' && point.collectorInfo.telegramData) {
+                const tgData = point.collectorInfo.telegramData;
+                
+                popupContent += '<div class="telegram-user-info">';
+                
+                // Аватар пользователя
+                if (tgData.photo_url) {
+                    popupContent += `<img src="${tgData.photo_url}" alt="Avatar" class="telegram-avatar" 
+                                      onerror="this.style.display='none';">`;
+                }
+                
+                // Имя пользователя
+                const fullName = [tgData.first_name, tgData.last_name].filter(Boolean).join(' ');
+                popupContent += `<div class="telegram-name">${fullName}</div>`;
+                
+                // Ссылка на Telegram профиль
+                if (tgData.username) {
+                    popupContent += `<a href="https://t.me/${tgData.username}" 
+                                      target="_blank" class="telegram-username">
+                                      <span class="telegram-icon">✈️</span>
+                                      @${tgData.username}
+                                    </a>`;
+                } else {
+                    // Если username нет, показываем Telegram ID
+                    popupContent += `<div class="telegram-username" style="cursor: default;">
+                                      <span class="telegram-icon">🆔</span>
+                                      ID: ${tgData.id}
+                                    </div>`;
+                }
+                
+                popupContent += '</div>';
+                
+                // Дополнительная информация
+                if (point.collectorInfo.signature) {
+                    popupContent += `<div class="collector-detail">
+                                      <strong>Сообщение:</strong> ${point.collectorInfo.signature}
+                                    </div>`;
+                }
+            } else {
+                // Обычный сборщик (ручной ввод)
+                popupContent += `<div class="collector-detail">
+                                  <span class="popup-collector-name">${point.collectorInfo.name}</span>
+                                </div>`;
+                
+                if (point.collectorInfo.signature) {
+                    popupContent += `<div class="collector-detail">
+                                      <strong>Сообщение:</strong> ${point.collectorInfo.signature}
+                                    </div>`;
+                }
             }
-            popupContent += `<p style="margin: 4px 0;"><strong>Время:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>`;
+            
+            popupContent += `<div class="collector-detail">
+                              <strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}
+                            </div>`;
             
             // Добавляем селфи если есть
             if (point.collectorInfo.selfie) {
                 popupContent += '<div style="margin: 10px 0; text-align: center;">';
-                popupContent += `<img src="${point.collectorInfo.selfie}" style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer;" onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" title="Кликните для увеличения">`;
+                popupContent += `<img src="${point.collectorInfo.selfie}" 
+                                  style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+                                  onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" 
+                                  title="Кликните для увеличения">`;
                 popupContent += '</div>';
             }
             
