@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
+const crypto = require('crypto');
 const path = require('path');
 
 const app = express();
@@ -40,7 +41,7 @@ const connectDB = async () => {
 
 connectDB();
 
-// Схема для точек на карте
+// Обновленная схема для точек на карте с поддержкой Telegram
 const ModelPointSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: { type: String, required: true },
@@ -57,11 +58,34 @@ const ModelPointSchema = new mongoose.Schema({
   collectorInfo: {
     name: String,
     signature: String,
-    selfie: String
+    selfie: String,
+    authMethod: { type: String, enum: ['manual', 'telegram'], default: 'manual' },
+    telegramData: {
+      id: Number,
+      first_name: String,
+      last_name: String,
+      username: String,
+      photo_url: String,
+      auth_date: Number,
+      hash: String
+    }
   }
 });
 
 const ModelPoint = mongoose.model('ModelPoint', ModelPointSchema);
+
+// Функция проверки подлинности данных Telegram
+function verifyTelegramAuth(data, botToken) {
+  const secret = crypto.createHash('sha256').update(botToken).digest();
+  const checkString = Object.keys(data)
+    .filter(key => key !== 'hash')
+    .sort()
+    .map(key => `${key}=${data[key]}`)
+    .join('\n');
+  
+  const hmac = crypto.createHmac('sha256', secret).update(checkString).digest('hex');
+  return hmac === data.hash;
+}
 
 // Маршруты
 
@@ -76,7 +100,7 @@ app.get('/api/points', async (req, res) => {
     const now = new Date();
     const points = await ModelPoint.find({
       scheduledTime: { $lte: now }
-    }).select('-qrSecret');
+    }).select('-qrSecret -collectorInfo.telegramData.hash');
     
     res.json(points);
   } catch (error) {
@@ -184,13 +208,13 @@ app.get('/api/collect/:id', async (req, res) => {
   }
 });
 
-// Собрать модель
+// Собрать модель с поддержкой Telegram авторизации
 app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { secret, name, signature } = req.body;
+    const { secret, name, signature, authMethod, telegramData } = req.body;
 
-    console.log('Collect submission - ID:', id, 'Name:', name, 'Has selfie:', !!req.file);
+    console.log('Collect submission - ID:', id, 'Name:', name, 'Auth method:', authMethod, 'Has selfie:', !!req.file);
 
     const point = await ModelPoint.findOne({ id, qrSecret: secret });
     
@@ -211,17 +235,59 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       selfieBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
+    // Подготавливаем данные коллектора
+    const collectorInfo = {
+      name: name || 'Anonymous',
+      signature: signature || '',
+      selfie: selfieBase64,
+      authMethod: authMethod || 'manual'
+    };
+
+    // Обработка Telegram данных
+    if (authMethod === 'telegram' && telegramData) {
+      try {
+        const parsedTelegramData = JSON.parse(telegramData);
+        
+        // Проверяем подлинность данных Telegram (если установлен токен бота)
+        if (process.env.TELEGRAM_BOT_TOKEN) {
+          const isValid = verifyTelegramAuth(parsedTelegramData, process.env.TELEGRAM_BOT_TOKEN);
+          if (!isValid) {
+            console.log('Invalid Telegram authentication data');
+            return res.status(400).json({ error: 'Invalid Telegram authentication' });
+          }
+        }
+
+        // Проверяем, что данные не старше 1 дня
+        const authAge = Date.now() / 1000 - parsedTelegramData.auth_date;
+        if (authAge > 86400) { // 24 часа
+          console.log('Telegram auth data is too old');
+          return res.status(400).json({ error: 'Telegram authentication data is too old' });
+        }
+
+        collectorInfo.telegramData = {
+          id: parsedTelegramData.id,
+          first_name: parsedTelegramData.first_name,
+          last_name: parsedTelegramData.last_name,
+          username: parsedTelegramData.username,
+          photo_url: parsedTelegramData.photo_url,
+          auth_date: parsedTelegramData.auth_date,
+          hash: parsedTelegramData.hash
+        };
+
+        console.log('Telegram user authenticated:', parsedTelegramData.first_name, parsedTelegramData.last_name);
+      } catch (error) {
+        console.error('Error parsing Telegram data:', error);
+        return res.status(400).json({ error: 'Invalid Telegram data format' });
+      }
+    }
+
     // Обновляем точку
     point.status = 'collected';
     point.collectedAt = new Date();
-    point.collectorInfo = {
-      name: name || 'Anonymous',
-      signature: signature || '',
-      selfie: selfieBase64
-    };
+    point.collectorInfo = collectorInfo;
 
     await point.save();
-    console.log('Point successfully collected by:', name);
+    console.log('Point successfully collected by:', name, 'via', authMethod);
     
     res.json({ success: true, message: 'Model successfully collected!' });
   } catch (error) {
@@ -230,11 +296,26 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   }
 });
 
-// Получить информацию о собранной точке
+// Обработка Telegram авторизации (webhook endpoint)
+app.post('/telegram-auth', (req, res) => {
+  try {
+    console.log('Telegram auth webhook received:', req.body);
+    
+    // В реальном приложении здесь можно сохранить данные в сессию
+    // или выполнить другие действия после успешной авторизации
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error processing Telegram auth:', error);
+    res.status(500).json({ error: 'Error processing authentication' });
+  }
+});
+
+// Получить информацию о собранной точке с расширенными данными
 app.get('/api/point/:id/info', async (req, res) => {
   try {
     const { id } = req.params;
-    const point = await ModelPoint.findOne({ id }).select('-qrSecret');
+    const point = await ModelPoint.findOne({ id }).select('-qrSecret -collectorInfo.telegramData.hash');
     
     if (!point) {
       return res.status(404).json({ error: 'Точка не найдена' });
@@ -313,11 +394,95 @@ app.delete('/api/admin/points/:id', async (req, res) => {
   }
 });
 
+// Получить статистику сборов с разбивкой по методам авторизации
+app.get('/api/admin/stats', async (req, res) => {
+  try {
+    const password = req.headers['x-admin-password'] 
+      ? decodeURIComponent(req.headers['x-admin-password'])
+      : req.headers.authorization;
+      
+    if (password !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    const stats = await ModelPoint.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          collected: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'collected'] }, 1, 0]
+            }
+          },
+          available: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'available'] }, 1, 0]
+            }
+          },
+          manualAuth: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$status', 'collected'] },
+                    { $eq: ['$collectorInfo.authMethod', 'manual'] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          telegramAuth: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$status', 'collected'] },
+                    { $eq: ['$collectorInfo.authMethod', 'telegram'] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      total: 0,
+      collected: 0,
+      available: 0,
+      manualAuth: 0,
+      telegramAuth: 0
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting stats:', error);
+    res.status(500).json({ error: 'Failed to get statistics' });
+  }
+});
+
 // Проверка работоспособности
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    telegramAuth: !!process.env.TELEGRAM_BOT_TOKEN
+  });
 });
 
 app.listen(PORT, () => {
   console.log(`PlasticBoy сервер запущен на порту ${PORT}`);
+  if (process.env.TELEGRAM_BOT_TOKEN) {
+    console.log('✅ Telegram авторизация активна');
+  } else {
+    console.log('⚠️ Telegram BOT_TOKEN не установлен. Авторизация будет работать без проверки подлинности.');
+  }
 });
+
+module.exports = app;
