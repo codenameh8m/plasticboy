@@ -148,6 +148,7 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
     backdrop-filter: blur(15px) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    max-width: 280px !important;
 }
 
 .leaflet-popup-tip {
@@ -810,7 +811,136 @@ button:not(.control-btn):disabled {
     }
 }
 
-/* АДАПТИВНОСТЬ С КОМПАКТНЫМИ КАРТАМИ */
+/* Стили для Telegram данных в popup */
+.telegram-user-info {
+    background: linear-gradient(135deg, #0088cc, #00a0ff);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+}
+
+.telegram-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid white;
+    margin: 0 auto 8px;
+    display: block;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.telegram-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.telegram-username {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    text-decoration: none;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s;
+    padding: 4px 8px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.1);
+}
+
+.telegram-username:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+}
+
+.telegram-icon {
+    font-size: 0.8rem;
+}
+
+.collector-info-enhanced {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+    border-left: 4px solid #4CAF50;
+}
+
+.collector-info-enhanced h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.collector-detail {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.popup-collector-name {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Компактные popup на мобильных */
+@media (max-width: 768px) {
+    .leaflet-popup-content-wrapper {
+        max-width: 240px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .leaflet-popup-content {
+        margin: 10px 12px !important;
+        line-height: 1.3 !important;
+    }
+    
+    .popup-content h3 {
+        font-size: 1rem !important;
+        margin: 0 0 8px 0 !important;
+    }
+    
+    .telegram-user-info {
+        padding: 8px !important;
+        margin: 8px 0 !important;
+    }
+    
+    .telegram-avatar {
+        width: 35px !important;
+        height: 35px !important;
+        margin: 0 auto 6px !important;
+    }
+    
+    .telegram-name {
+        font-size: 0.9rem !important;
+        margin-bottom: 3px !important;
+    }
+    
+    .telegram-username {
+        font-size: 0.8rem !important;
+        padding: 3px 6px !important;
+    }
+    
+    .collector-info-enhanced {
+        padding: 8px !important;
+        margin: 8px 0 !important;
+    }
+    
+    .collector-info-enhanced h4 {
+        font-size: 0.85rem !important;
+        margin: 0 0 6px 0 !important;
+    }
+    
+    .collector-detail {
+        font-size: 0.8rem !important;
+        margin: 3px 0 !important;
+    }
+}
+
+/* АДАПТИВНОСТЬ С УВЕЛИЧЕННЫМИ КАРТАМИ */
 @media (max-width: 768px) {
     .container {
         padding: 10px;
@@ -824,10 +954,10 @@ button:not(.control-btn):disabled {
         font-size: 1rem;
     }
     
-    /* КОМПАКТНАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
+    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
     #map, #adminMap {
-        height: 350px !important;
-        min-height: 350px !important;
+        height: 420px !important;
+        min-height: 420px !important;
     }
     
     .modal-content {
@@ -879,10 +1009,67 @@ button:not(.control-btn):disabled {
         padding: 20px;
     }
     
-    /* КВАДРАТНАЯ КАРТА ДЛЯ СМАРТФОНОВ */
+    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ - НА 20% БОЛЬШЕ */
     #map, #adminMap {
-        height: 320px !important;
-        min-height: 320px !important;
+        height: 50vh !important;
+        min-height: 400px !important;
+    }
+    
+    .leaflet-popup-content-wrapper {
+        max-width: 200px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .leaflet-popup-content {
+        margin: 8px 10px !important;
+        line-height: 1.2 !important;
+    }
+    
+    .popup-content h3 {
+        font-size: 0.95rem !important;
+        margin: 0 0 6px 0 !important;
+    }
+    
+    .telegram-user-info {
+        padding: 6px !important;
+        margin: 6px 0 !important;
+    }
+    
+    .telegram-avatar {
+        width: 30px !important;
+        height: 30px !important;
+        margin: 0 auto 4px !important;
+    }
+    
+    .telegram-name {
+        font-size: 0.85rem !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .telegram-username {
+        font-size: 0.75rem !important;
+        padding: 2px 4px !important;
+    }
+    
+    .collector-info-enhanced {
+        padding: 6px !important;
+        margin: 6px 0 !important;
+    }
+    
+    .collector-info-enhanced h4 {
+        font-size: 0.8rem !important;
+        margin: 0 0 4px 0 !important;
+    }
+    
+    .collector-detail {
+        font-size: 0.75rem !important;
+        margin: 2px 0 !important;
+    }
+    
+    /* Компактные изображения селфи в popup */
+    .leaflet-popup-content img {
+        max-width: 120px !important;
+        max-height: 80px !important;
     }
     
     /* Адаптивная кнопка для смартфонов */
@@ -899,10 +1086,10 @@ button:not(.control-btn):disabled {
 }
 
 @media (max-width: 360px) {
-    /* КОМПАКТНАЯ КВАДРАТНАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    /* БОЛЬШАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
     #map, #adminMap {
-        height: 300px !important;
-        min-height: 300px !important;
+        height: 45vh !important;
+        min-height: 380px !important;
     }
     
     .container {
@@ -919,42 +1106,4 @@ button:not(.control-btn):disabled {
         max-width: 300px;
         padding: 14px;
     }
-}
-.telegram-user-info {
-    background: linear-gradient(135deg, #0088cc, #00a0ff);
-    color: white;
-    padding: 12px;
-    border-radius: 10px;
-    margin: 10px 0;
-    text-align: center;
-    box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
-}
-
-.telegram-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: 2px solid white;
-    margin: 0 auto 8px;
-    display: block;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.telegram-username {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    text-decoration: none;
-    color: white;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.3s;
-    padding: 4px 8px;
-    border-radius: 15px;
-    background: rgba(255,255,255,0.1);
-}
-
-.telegram-username:hover {
-    background: rgba(255,255,255,0.2);
-    transform: translateY(-1px);
 }
