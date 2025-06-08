@@ -429,6 +429,61 @@
                 font-size: 0.6rem;
             }
         }
+
+        /* Стили для кнопки рейтинга */
+        .leaderboard-btn {
+            background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
+            border: 2px solid rgba(0, 136, 204, 0.3) !important;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+            margin-top: 15px;
+            text-decoration: none;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .leaderboard-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .leaderboard-btn:hover::before {
+            left: 100%;
+        }
+
+        .leaderboard-btn:hover {
+            background: linear-gradient(45deg, #006699, #0088cc) !important;
+            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4) !important;
+            border-color: rgba(0, 136, 204, 0.5) !important;
+            transform: translateY(-3px);
+        }
+
+        .leaderboard-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Анимация иконки рейтинга */
+        .leaderboard-btn .trophy-icon {
+            animation: trophyBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes trophyBounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-3px);
+            }
+            60% {
+                transform: translateY(-1px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -504,11 +559,17 @@
                 </div>
             </div>
 
-            <!-- КНОПКА ГЕОЛОКАЦИИ -->
+            <!-- КНОПКИ УПРАВЛЕНИЯ -->
             <div class="map-controls">
                 <button class="control-btn location-btn" onclick="getCurrentLocation()">
                     📍 Моё местоположение
                 </button>
+                
+                <!-- КНОПКА РЕЙТИНГА TELEGRAM ПОЛЬЗОВАТЕЛЕЙ -->
+                <a href="/leaderboard.html" class="control-btn leaderboard-btn">
+                    <span class="trophy-icon">🏆</span>
+                    Рейтинг коллекторов
+                </a>
             </div>
         </div>
 
