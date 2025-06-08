@@ -1107,3 +1107,8 @@ button:not(.control-btn):disabled {
         padding: 14px;
     }
 }
+.leaderboard-btn {
+    background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
+    border: 2px solid rgba(0, 136, 204, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+}
