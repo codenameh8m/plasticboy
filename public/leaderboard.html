@@ -380,6 +380,63 @@
             font-weight: 500;
         }
 
+        /* Компактные стили для позиций 4-10 */
+        .leaderboard-item.compact {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .leaderboard-item.compact:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.1);
+            border-color: rgba(0, 136, 204, 0.2);
+        }
+
+        .leaderboard-item.compact .rank {
+            font-size: 1.4rem;
+            width: 50px;
+            margin-right: 20px;
+            color: #6c757d;
+        }
+
+        .user-info-compact {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-name-compact {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .collection-stats-compact {
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .collection-count-compact {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #0088cc, #00a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .collection-label-compact {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
         .loading-state {
             text-align: center;
             padding: 80px 20px;
@@ -586,6 +643,33 @@
                 font-size: 0.75rem;
                 padding: 4px 8px;
             }
+
+            /* Адаптация компактных элементов на мобильных */
+            .leaderboard-item.compact {
+                padding: 12px 18px;
+            }
+
+            .leaderboard-item.compact .rank {
+                font-size: 1.2rem;
+                width: 40px;
+                margin-right: 15px;
+            }
+
+            .user-name-compact {
+                font-size: 1rem;
+            }
+
+            .collection-stats-compact {
+                min-width: 70px;
+            }
+
+            .collection-count-compact {
+                font-size: 1.5rem;
+            }
+
+            .collection-label-compact {
+                font-size: 0.75rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -662,6 +746,33 @@
             .back-btn {
                 padding: 15px 25px;
                 font-size: 1rem;
+            }
+
+            /* Адаптация компактных элементов для маленьких экранов */
+            .leaderboard-item.compact {
+                padding: 10px 15px;
+            }
+
+            .leaderboard-item.compact .rank {
+                font-size: 1.1rem;
+                width: 35px;
+                margin-right: 12px;
+            }
+
+            .user-name-compact {
+                font-size: 0.9rem;
+            }
+
+            .collection-stats-compact {
+                min-width: 60px;
+            }
+
+            .collection-count-compact {
+                font-size: 1.3rem;
+            }
+
+            .collection-label-compact {
+                font-size: 0.7rem;
             }
         }
 
@@ -852,9 +963,10 @@
         function createLeaderboardItem(user, position) {
             const item = document.createElement('div');
             
-            // Определяем класс позиции
+            // Определяем класс позиции и тип отображения
             let positionClass = 'other';
             let rankContent = position;
+            let isCompact = position > 3; // Компактный режим после 3 места
             
             if (position === 1) {
                 positionClass = 'first';
@@ -867,58 +979,66 @@
                 rankContent = '<span class="medal">🥉</span>';
             }
             
-            item.className = `leaderboard-item ${positionClass}`;
+            item.className = `leaderboard-item ${positionClass} ${isCompact ? 'compact' : ''}`;
             
-            // Создаем аватар
-            let avatarElement = '';
-            if (user.photo_url) {
-                avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="user-avatar" onerror="this.outerHTML='<div class=&quot;user-avatar no-photo&quot;>${user.first_name.charAt(0).toUpperCase()}</div>'">`;
+            if (isCompact) {
+                // Компактное отображение для 4-10 мест
+                const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+                const displayName = user.username ? `@${user.username}` : fullName;
+                
+                item.innerHTML = `
+                    <div class="rank ${positionClass}">${position}</div>
+                    <div class="user-info-compact">
+                        <div class="user-name-compact">${displayName}</div>
+                    </div>
+                    <div class="collection-stats-compact">
+                        <span class="collection-count-compact">${user.totalCollections}</span>
+                        <div class="collection-label-compact">моделей</div>
+                    </div>
+                `;
             } else {
-                avatarElement = `<div class="user-avatar no-photo">${user.first_name.charAt(0).toUpperCase()}</div>`;
-            }
+                // Полное отображение для топ-3
+                let avatarElement = '';
+                if (user.photo_url) {
+                    avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="user-avatar" onerror="this.outerHTML='<div class=&quot;user-avatar no-photo&quot;>${user.first_name.charAt(0).toUpperCase()}</div>'">`;
+                } else {
+                    avatarElement = `<div class="user-avatar no-photo">${user.first_name.charAt(0).toUpperCase()}</div>`;
+                }
 
-            // Создаем полное имя
-            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
-            
-            // Создаем ссылку на профиль
-            let usernameElement = '';
-            if (user.username) {
-                usernameElement = `<a href="https://t.me/${user.username}" target="_blank" class="user-username">
-                    <span>✈️</span>
-                    @${user.username}
-                </a>`;
-            }
+                const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+                
+                let usernameElement = '';
+                if (user.username) {
+                    usernameElement = `<a href="https://t.me/${user.username}" target="_blank" class="user-username">
+                        <span>✈️</span>
+                        @${user.username}
+                    </a>`;
+                }
 
-            // Форматируем даты
-            const lastCollection = new Date(user.lastCollection).toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+                const lastCollection = new Date(user.lastCollection).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
 
-            const firstCollection = new Date(user.firstCollection).toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-
-            item.innerHTML = `
-                <div class="rank ${positionClass}">${rankContent}</div>
-                <div class="user-info">
-                    ${avatarElement}
-                    <div class="user-details">
-                        <div class="user-name">${fullName}</div>
-                        ${usernameElement}
+                item.innerHTML = `
+                    <div class="rank ${positionClass}">${rankContent}</div>
+                    <div class="user-info">
+                        ${avatarElement}
+                        <div class="user-details">
+                            <div class="user-name">${fullName}</div>
+                            ${usernameElement}
+                        </div>
                     </div>
-                </div>
-                <div class="collection-stats">
-                    <span class="collection-count">${user.totalCollections}</span>
-                    <div class="collection-label">моделей</div>
-                    <div class="last-collection">
-                        📅 ${lastCollection}
+                    <div class="collection-stats">
+                        <span class="collection-count">${user.totalCollections}</span>
+                        <div class="collection-label">моделей</div>
+                        <div class="last-collection">
+                            📅 ${lastCollection}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
 
             return item;
         }
