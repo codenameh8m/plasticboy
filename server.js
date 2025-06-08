@@ -1,36 +1,349 @@
-// Функция проверки админского пароля - ИСПРАВЛЕНА
-function checkAdminPassword(req) {
-    // Проверяем разные способы передачи пароля
-    let password = null;
-    
-    // 1. Заголовок Authorization
-    if (req.headers.authorization) {
-        password = req.headers.authorization;
+const express = require('express');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const path = require('path');
+const QRCode = require('qrcode');
+const crypto = require('crypto');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.static('public'));
+
+// Настройка multer для загрузки файлов
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB
+  }
+});
+
+// Подключение к MongoDB
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('✅ MongoDB подключена');
+  } catch (error) {
+    console.error('❌ Ошибка подключения к MongoDB:', error);
+    process.exit(1);
+  }
+};
+
+// Модель точки сбора
+const modelPointSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true, index: true },
+  name: { type: String, required: true },
+  coordinates: {
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
+  },
+  qrCode: { type: String, required: true },
+  qrSecret: { type: String, required: true, index: true },
+  status: { type: String, enum: ['available', 'collected'], default: 'available', index: true },
+  createdAt: { type: Date, default: Date.now, index: true },
+  scheduledTime: { type: Date, default: Date.now, index: true },
+  collectedAt: { type: Date },
+  collectorInfo: {
+    name: String,
+    signature: String,
+    selfie: String,
+    authMethod: { type: String, enum: ['manual', 'telegram'], default: 'manual' },
+    telegramData: {
+      id: Number,
+      first_name: String,
+      last_name: String,
+      username: String,
+      photo_url: String,
+      auth_date: Number,
+      hash: String
     }
-    
-    // 2. Заголовок X-Admin-Password (с декодированием)
-    if (!password && req.headers['x-admin-password']) {
-        password = decodeURIComponent(req.headers['x-admin-password']);
-    }
-    
-    // 3. Fallback для старых версий
-    if (!password && req.get('Authorization')) {
-        password = req.get('Authorization');
-    }
-    
-    console.log('🔑 Проверка админского пароля...');
-    console.log('   📋 Authorization header:', req.headers.authorization ? 'есть' : 'нет');
-    console.log('   📋 X-Admin-Password header:', req.headers['x-admin-password'] ? 'есть' : 'нет');
-    console.log('   🎯 Найденный пароль:', password ? 'найден' : 'не найден');
-    console.log('   ✅ Ожидаемый пароль:', process.env.ADMIN_PASSWORD ? 'установлен' : 'не установлен');
-    
-    const isValid = password && password === process.env.ADMIN_PASSWORD;
-    console.log('   🔐 Результат проверки:', isValid ? 'УСПЕХ' : 'ОШИБКА');
-    
-    return isValid;
+  }
+});
+
+// Индексы для оптимизации
+modelPointSchema.index({ id: 1, qrSecret: 1 });
+modelPointSchema.index({ status: 1, scheduledTime: 1 });
+modelPointSchema.index({ collectedAt: 1 });
+modelPointSchema.index({ 'collectorInfo.telegramData.id': 1 });
+
+const ModelPoint = mongoose.model('ModelPoint', modelPointSchema);
+
+// Логирование действий пользователей
+function logUserAction(action, data, req) {
+  const timestamp = new Date().toISOString();
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  console.log(`📝 [${timestamp}] ${action} - IP: ${ip} - Data:`, JSON.stringify(data));
 }
 
-// Получить все точки для админа - ИСПРАВЛЕНО
+// Функция проверки админского пароля
+function checkAdminPassword(req) {
+  let password = null;
+  
+  // 1. Заголовок Authorization
+  if (req.headers.authorization) {
+    password = req.headers.authorization;
+  }
+  
+  // 2. Заголовок X-Admin-Password (с декодированием)
+  if (!password && req.headers['x-admin-password']) {
+    password = decodeURIComponent(req.headers['x-admin-password']);
+  }
+  
+  // 3. Fallback для старых версий
+  if (!password && req.get('Authorization')) {
+    password = req.get('Authorization');
+  }
+  
+  console.log('🔑 Проверка админского пароля...');
+  console.log('   📋 Authorization header:', req.headers.authorization ? 'есть' : 'нет');
+  console.log('   📋 X-Admin-Password header:', req.headers['x-admin-password'] ? 'есть' : 'нет');
+  console.log('   🎯 Найденный пароль:', password ? 'найден' : 'не найден');
+  console.log('   ✅ Ожидаемый пароль:', process.env.ADMIN_PASSWORD ? 'установлен' : 'не установлен');
+  
+  const isValid = password && password === process.env.ADMIN_PASSWORD;
+  console.log('   🔐 Результат проверки:', isValid ? 'УСПЕХ' : 'ОШИБКА');
+  
+  return isValid;
+}
+
+// Маршруты
+
+// Health check
+app.get('/health', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    const totalPoints = await ModelPoint.countDocuments();
+    
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: dbState,
+      totalPoints,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
+
+// Получить все публичные точки (без секретной информации)
+app.get('/api/points', async (req, res) => {
+  try {
+    const now = new Date();
+    
+    // Загружаем только активные точки (время пришло)
+    const points = await ModelPoint.find({
+      scheduledTime: { $lte: now }
+    })
+    .select('-qrSecret') // Исключаем секретное поле
+    .lean()
+    .exec();
+    
+    logUserAction('POINTS_LOADED', { count: points.length }, req);
+    console.log(`📍 Загружено ${points.length} публичных точек`);
+    
+    res.json(points);
+  } catch (error) {
+    console.error('❌ Ошибка загрузки точек:', error);
+    res.status(500).json({ error: 'Failed to load points' });
+  }
+});
+
+// Получить информацию о точке для сбора
+app.get('/api/collect/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { secret } = req.query;
+    
+    if (!secret) {
+      return res.status(400).json({ error: 'Secret is required' });
+    }
+    
+    const point = await ModelPoint.findOne({
+      id: id.trim(),
+      qrSecret: secret.trim()
+    }).lean().exec();
+    
+    if (!point) {
+      logUserAction('COLLECT_NOT_FOUND', { pointId: id }, req);
+      return res.status(404).json({ error: 'Point not found or invalid secret' });
+    }
+    
+    if (point.status === 'collected') {
+      logUserAction('COLLECT_ALREADY_COLLECTED', { pointId: id }, req);
+      return res.status(409).json({ error: 'Point already collected' });
+    }
+    
+    // Проверяем, что время пришло
+    const now = new Date();
+    if (new Date(point.scheduledTime) > now) {
+      logUserAction('COLLECT_NOT_READY', { 
+        pointId: id, 
+        scheduledTime: point.scheduledTime,
+        currentTime: now
+      }, req);
+      return res.status(423).json({ 
+        error: 'Point not ready yet',
+        scheduledTime: point.scheduledTime
+      });
+    }
+    
+    logUserAction('COLLECT_INFO_VIEWED', { pointId: id }, req);
+    
+    // Возвращаем только необходимую информацию
+    res.json({
+      id: point.id,
+      name: point.name,
+      coordinates: point.coordinates,
+      scheduledTime: point.scheduledTime
+    });
+  } catch (error) {
+    console.error('❌ Ошибка получения информации о точке:', error);
+    res.status(500).json({ error: 'Failed to get point info' });
+  }
+});
+
+// Собрать модель
+app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { secret, name, signature, authMethod, telegramData } = req.body;
+    
+    console.log('📦 Начинаем сбор модели:', { id, authMethod });
+    
+    if (!secret || !name) {
+      return res.status(400).json({ error: 'Secret and name are required' });
+    }
+    
+    const point = await ModelPoint.findOne({
+      id: id.trim(),
+      qrSecret: secret.trim()
+    });
+    
+    if (!point) {
+      logUserAction('COLLECT_FAILED_NOT_FOUND', { pointId: id }, req);
+      return res.status(404).json({ error: 'Point not found or invalid secret' });
+    }
+    
+    if (point.status === 'collected') {
+      logUserAction('COLLECT_FAILED_ALREADY_COLLECTED', { pointId: id }, req);
+      return res.status(409).json({ error: 'Point already collected' });
+    }
+    
+    // Проверяем, что время пришло
+    const now = new Date();
+    if (new Date(point.scheduledTime) > now) {
+      logUserAction('COLLECT_FAILED_NOT_READY', { 
+        pointId: id, 
+        scheduledTime: point.scheduledTime 
+      }, req);
+      return res.status(423).json({ 
+        error: 'Point not ready yet',
+        scheduledTime: point.scheduledTime
+      });
+    }
+    
+    // Подготавливаем информацию о сборщике
+    const collectorInfo = {
+      name: name.trim(),
+      signature: signature ? signature.trim() : '',
+      authMethod: authMethod || 'manual'
+    };
+    
+    // Обрабатываем Telegram данные если есть
+    if (authMethod === 'telegram' && telegramData) {
+      try {
+        const parsedTelegramData = typeof telegramData === 'string' 
+          ? JSON.parse(telegramData) 
+          : telegramData;
+        
+        // Валидируем обязательные поля Telegram
+        if (parsedTelegramData.id && parsedTelegramData.first_name && parsedTelegramData.auth_date) {
+          collectorInfo.telegramData = {
+            id: parsedTelegramData.id,
+            first_name: parsedTelegramData.first_name,
+            last_name: parsedTelegramData.last_name || '',
+            username: parsedTelegramData.username || '',
+            photo_url: parsedTelegramData.photo_url || '',
+            auth_date: parsedTelegramData.auth_date,
+            hash: parsedTelegramData.hash || ''
+          };
+          
+          console.log('✅ Telegram данные обработаны для пользователя:', parsedTelegramData.first_name);
+        } else {
+          console.warn('⚠️ Неполные Telegram данные, используем ручной режим');
+          collectorInfo.authMethod = 'manual';
+        }
+      } catch (error) {
+        console.error('❌ Ошибка парсинга Telegram данных:', error);
+        collectorInfo.authMethod = 'manual';
+      }
+    }
+    
+    // Обрабатываем селфи если есть
+    if (req.file) {
+      try {
+        const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        collectorInfo.selfie = base64Image;
+        console.log('📸 Селфи обработано, размер:', req.file.size);
+      } catch (error) {
+        console.error('❌ Ошибка обработки селфи:', error);
+        // Продолжаем без селфи
+      }
+    }
+    
+    // Обновляем точку
+    point.status = 'collected';
+    point.collectedAt = now;
+    point.collectorInfo = collectorInfo;
+    
+    await point.save();
+    
+    const logData = {
+      pointId: id,
+      pointName: point.name,
+      collectorName: collectorInfo.name,
+      authMethod: collectorInfo.authMethod,
+      hasSelfie: !!collectorInfo.selfie,
+      telegramUserId: collectorInfo.telegramData?.id
+    };
+    
+    logUserAction('COLLECT_SUCCESS', logData, req);
+    console.log(`🎯 Модель собрана: ${point.name} пользователем ${collectorInfo.name}`);
+    
+    res.json({
+      success: true,
+      message: 'Point collected successfully',
+      point: {
+        id: point.id,
+        name: point.name,
+        collectedAt: point.collectedAt,
+        collectorName: collectorInfo.name
+      }
+    });
+  } catch (error) {
+    console.error('❌ Ошибка сбора модели:', error);
+    res.status(500).json({ error: 'Failed to collect point' });
+  }
+});
+
+// ============== АДМИНСКИЕ МАРШРУТЫ ==============
+
+// Получить все точки для админа
 app.get('/api/admin/points', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -56,7 +369,7 @@ app.get('/api/admin/points', async (req, res) => {
   }
 });
 
-// Создать новую точку (админ) - ИСПРАВЛЕНО
+// Создать новую точку (админ)
 app.post('/api/admin/points', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -128,7 +441,7 @@ app.post('/api/admin/points', async (req, res) => {
   }
 });
 
-// Удалить точку (админ) - ИСПРАВЛЕНО
+// Удалить точку (админ)
 app.delete('/api/admin/points/:id', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -163,40 +476,102 @@ app.delete('/api/admin/points/:id', async (req, res) => {
   }
 });
 
-// Получить топ коллекторов (для админа) - ИСПРАВЛЕНО
-app.get('/api/admin/top-collectors', async (req, res) => {
-  try {
-    if (!checkAdminPassword(req)) {
-      return res.status(401).json({ error: 'Invalid admin password' });
-    }
+// ============== TELEGRAM МАРШРУТЫ ==============
 
-    const topCollectors = await ModelPoint.aggregate([
-      { $match: { status: 'collected' } },
+// Получить рейтинг Telegram пользователей
+app.get('/api/telegram/leaderboard', async (req, res) => {
+  try {
+    console.log('🏆 Загружаем рейтинг Telegram пользователей...');
+    
+    // Агрегируем данные по Telegram пользователям
+    const leaderboard = await ModelPoint.aggregate([
       {
-        $group: {
-          _id: {
-            name: '$collectorInfo.name',
-            telegramId: '$collectorInfo.telegramData.id',
-            authMethod: '$collectorInfo.authMethod'
-          },
-          count: { $sum: 1 },
-          lastCollection: { $max: '$collectedAt' },
-          firstCollection: { $min: '$collectedAt' }
+        $match: {
+          status: 'collected',
+          'collectorInfo.authMethod': 'telegram',
+          'collectorInfo.telegramData.id': { $exists: true, $ne: null }
         }
       },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
+      {
+        $group: {
+          _id: '$collectorInfo.telegramData.id',
+          totalCollections: { $sum: 1 },
+          firstCollection: { $min: '$collectedAt' },
+          lastCollection: { $max: '$collectedAt' },
+          userData: { $first: '$collectorInfo.telegramData' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          telegramId: '$_id',
+          totalCollections: 1,
+          firstCollection: 1,
+          lastCollection: 1,
+          id: '$userData.id',
+          first_name: '$userData.first_name',
+          last_name: '$userData.last_name',
+          username: '$userData.username',
+          photo_url: '$userData.photo_url'
+        }
+      },
+      {
+        $sort: { totalCollections: -1, firstCollection: 1 }
+      },
+      {
+        $limit: 50 // Топ 50 пользователей
+      }
     ]);
 
-    logUserAction('ADMIN_TOP_COLLECTORS_VIEWED', { count: topCollectors.length }, req);
-    res.json(topCollectors);
+    // Получаем общую статистику
+    const stats = await ModelPoint.aggregate([
+      {
+        $match: {
+          status: 'collected',
+          'collectorInfo.authMethod': 'telegram'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalCollections: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalCollections: 1,
+          totalUsers: { $size: '$uniqueUsers' }
+        }
+      }
+    ]);
+
+    const statsResult = stats[0] || { totalCollections: 0, totalUsers: 0 };
+
+    const response = {
+      leaderboard,
+      stats: statsResult,
+      timestamp: new Date().toISOString()
+    };
+
+    logUserAction('TELEGRAM_LEADERBOARD_VIEWED', { 
+      leaderboardCount: leaderboard.length,
+      ...statsResult 
+    }, req);
+    
+    console.log(`🏆 Рейтинг загружен: ${leaderboard.length} пользователей, ${statsResult.totalCollections} сборов`);
+    
+    res.json(response);
   } catch (error) {
-    console.error('❌ Ошибка получения топа коллекторов:', error);
-    res.status(500).json({ error: 'Failed to get top collectors' });
+    console.error('❌ Ошибка загрузки рейтинга:', error);
+    res.status(500).json({ error: 'Failed to load leaderboard' });
   }
 });
 
-// Получить расширенную статистику - ИСПРАВЛЕНО
+// ============== ДОПОЛНИТЕЛЬНЫЕ АДМИНСКИЕ МАРШРУТЫ ==============
+
+// Получить расширенную статистику
 app.get('/api/admin/stats', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -308,70 +683,7 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 });
 
-// Получить активность по дням - ИСПРАВЛЕНО
-app.get('/api/admin/activity', async (req, res) => {
-  try {
-    if (!checkAdminPassword(req)) {
-      return res.status(401).json({ error: 'Invalid admin password' });
-    }
-
-    const { days = 7 } = req.query;
-    const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - parseInt(days));
-
-    const activity = await ModelPoint.aggregate([
-      {
-        $match: {
-          $or: [
-            { createdAt: { $gte: daysAgo } },
-            { collectedAt: { $gte: daysAgo } }
-          ]
-        }
-      },
-      {
-        $facet: {
-          created: [
-            { $match: { createdAt: { $gte: daysAgo } } },
-            {
-              $group: {
-                _id: {
-                  $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
-                },
-                count: { $sum: 1 }
-              }
-            },
-            { $sort: { _id: 1 } }
-          ],
-          collected: [
-            { 
-              $match: { 
-                status: 'collected',
-                collectedAt: { $gte: daysAgo } 
-              } 
-            },
-            {
-              $group: {
-                _id: {
-                  $dateToString: { format: '%Y-%m-%d', date: '$collectedAt' }
-                },
-                count: { $sum: 1 }
-              }
-            },
-            { $sort: { _id: 1 } }
-          ]
-        }
-      }
-    ]);
-
-    logUserAction('ADMIN_ACTIVITY_VIEWED', { days: parseInt(days) }, req);
-    res.json(activity[0]);
-  } catch (error) {
-    console.error('❌ Ошибка получения активности:', error);
-    res.status(500).json({ error: 'Failed to get activity data' });
-  }
-});
-
-// Экспорт данных (админ) - ИСПРАВЛЕНО
+// Экспорт данных (админ)
 app.get('/api/admin/export', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -422,3 +734,75 @@ app.get('/api/admin/export', async (req, res) => {
     res.status(500).json({ error: 'Failed to export data' });
   }
 });
+
+// ============== СТАТИЧЕСКИЕ ФАЙЛЫ И ОБРАБОТКА ОШИБОК ==============
+
+// Маршруты для HTML страниц
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/collect.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'collect.html'));
+});
+
+app.get('/leaderboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'leaderboard.html'));
+});
+
+// Обработка 404
+app.use((req, res) => {
+  console.log('❌ 404 - Страница не найдена:', req.url);
+  res.status(404).json({ error: 'Page not found' });
+});
+
+// Обработка ошибок
+app.use((error, req, res, next) => {
+  console.error('❌ Серверная ошибка:', error);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+});
+
+// Запуск сервера
+const startServer = async () => {
+  try {
+    await connectDB();
+    
+    app.listen(PORT, () => {
+      console.log('🚀 PlasticBoy Server запущен');
+      console.log(`📍 URL: http://localhost:${PORT}`);
+      console.log(`🛡️ Админ панель: http://localhost:${PORT}/admin.html`);
+      console.log(`🏆 Рейтинг: http://localhost:${PORT}/leaderboard.html`);
+      console.log(`🔐 Админ пароль: ${process.env.ADMIN_PASSWORD ? 'установлен' : 'НЕ УСТАНОВЛЕН!'}`);
+      console.log(`📱 Telegram бот: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'НЕ НАСТРОЕН'}`);
+    });
+  } catch (error) {
+    console.error('❌ Ошибка запуска сервера:', error);
+    process.exit(1);
+  }
+};
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('📛 SIGTERM получен, завершаем сервер...');
+  mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('📛 SIGINT получен, завершаем сервер...');
+  mongoose.connection.close();
+  process.exit(0);
+});
+
+startServer();
