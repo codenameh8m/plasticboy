@@ -1,14 +1,17 @@
 {
   "name": "plasticboy",
-  "version": "2.1.0",
-  "description": "3D Model Collection App for Almaty with Advanced Caching & Telegram Auth",
+  "version": "2.2.0",
+  "description": "3D Model Collection App for Almaty with Advanced Caching & Telegram Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "bot": "node bot.js",
+    "bot:dev": "nodemon bot.js",
+    "both": "concurrently \"npm run dev\" \"npm run bot:dev\"",
+    "both:prod": "concurrently \"npm start\" \"npm run bot\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "setup": "node setup.js",
-    "telegram:setup": "node scripts/setup-telegram.js"
+    "setup": "node setup.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -17,10 +20,12 @@
     "multer": "^1.4.5-lts.1",
     "qrcode": "^1.5.3",
     "crypto": "^1.0.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "node-telegram-bot-api": "^0.63.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.2.0"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -33,6 +38,7 @@
     "geolocation",
     "cache",
     "telegram",
+    "telegram-bot",
     "oauth",
     "almaty",
     "collection",
@@ -47,14 +53,5 @@
   "bugs": {
     "url": "https://github.com/your-org/plasticboy/issues"
   },
-  "homepage": "https://github.com/your-org/plasticboy#readme",
-  "config": {
-    "telegram": {
-      "required": false,
-      "botSetupUrl": "https://t.me/botfather"
-    },
-    "mongodb": {
-      "uri": "mongodb://localhost:27017/plasticboy"
-    }
-  }
+  "homepage": "https://github.com/your-org/plasticboy#readme"
 }
