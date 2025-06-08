@@ -639,7 +639,7 @@
             <div class="stat-card">
                 <span class="stat-icon">📊</span>
                 <span class="stat-number" id="averageCollections">-</span>
-                <span class="stat-label">В среднем</span>
+                <span class="stat-label">Средний результат</span>
             </div>
         </div>
 
@@ -818,7 +818,7 @@
             // Создаем аватар
             let avatarElement = '';
             if (user.photo_url) {
-                avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="user-avatar" onerror="this.outerHTML='<div class=\\"user-avatar no-photo\\">${user.first_name.charAt(0).toUpperCase()}</div>'">`;
+                avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="user-avatar" onerror="this.outerHTML='<div class=&quot;user-avatar no-photo&quot;>${user.first_name.charAt(0).toUpperCase()}</div>'">`;
             } else {
                 avatarElement = `<div class="user-avatar no-photo">${user.first_name.charAt(0).toUpperCase()}</div>`;
             }
