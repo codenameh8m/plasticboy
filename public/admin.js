@@ -120,7 +120,7 @@ function setupEventListeners() {
 }
 
 // Вход в админ панель
-function adminLogin() {
+async function adminLogin() {
     const password = document.getElementById('adminPassword').value;
     
     if (!password) {
@@ -128,9 +128,52 @@ function adminLogin() {
         return;
     }
     
+    // Сначала проверяем пароль
+    const isValid = await checkPassword(password);
+    if (!isValid) {
+        showNotification('Неверный пароль администратора', 'error');
+        return;
+    }
+    
     currentPassword = password;
     sessionStorage.setItem('adminPassword', password);
     showAdminPanel();
+}
+
+// Проверка пароля администратора
+async function checkPassword(password) {
+    try {
+        console.log('🔐 Проверяем пароль администратора...');
+        
+        const response = await fetch('/api/admin/points', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': password
+            }
+        });
+        
+        console.log('📡 Ответ проверки пароля:', response.status);
+        
+        if (response.status === 401) {
+            console.log('❌ Неверный пароль');
+            return false;
+        }
+        
+        if (!response.ok) {
+            console.warn('⚠️ Неожиданный ответ сервера:', response.status);
+            return false;
+        }
+        
+        console.log('✅ Пароль верный');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Ошибка проверки пароля:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+        return false;
+    }
 }
 
 // Показать админ панель
@@ -147,6 +190,12 @@ async function showAdminPanel() {
     } catch (error) {
         console.error('❌ Ошибка показа админ панели:', error);
         showNotification('Ошибка инициализации панели', 'error');
+        
+        // При ошибке возвращаемся к форме входа
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        sessionStorage.removeItem('adminPassword');
+        currentPassword = '';
     }
 }
 
@@ -828,7 +877,8 @@ window.deletePoint = deletePoint;
 window.closeAddModal = closeAddModal;
 window.closeQrModal = closeQrModal;
 window.downloadQR = downloadQR;
-window.debugAdminState = debugAdminState;Ответ сервера для админ точек:', response.status);
+window.debugAdminState = debugAdminState;
+window.checkPassword = checkPassword;Ответ сервера для админ точек:', response.status);
         
         if (!response.ok) {
             if (response.status === 401) {
