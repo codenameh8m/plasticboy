@@ -636,11 +636,6 @@
                 <span class="stat-number" id="totalCollections">-</span>
                 <span class="stat-label">Собрано моделей</span>
             </div>
-            <div class="stat-card">
-                <span class="stat-icon">📊</span>
-                <span class="stat-number" id="averageCollections">-</span>
-                <span class="stat-label">Средний результат</span>
-            </div>
         </div>
 
         <!-- Рейтинговая таблица -->
@@ -767,9 +762,6 @@
             
             animateNumber(document.getElementById('totalUsers'), stats.totalUsers);
             animateNumber(document.getElementById('totalCollections'), stats.totalCollections);
-            
-            const average = stats.totalUsers > 0 ? (stats.totalCollections / stats.totalUsers).toFixed(1) : '0.0';
-            document.getElementById('averageCollections').textContent = average;
         }
 
         // Обновить рейтинговую таблицу
