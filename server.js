@@ -193,6 +193,11 @@ app.get('/collect.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'collect.html'));
 });
 
+// Страница рейтинга Telegram пользователей
+app.get('/leaderboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'leaderboard.html'));
+});
+
 // Получить все точки для пользователей (только активные и по времени)
 app.get('/api/points', async (req, res) => {
   try {
@@ -209,6 +214,96 @@ app.get('/api/points', async (req, res) => {
   } catch (error) {
     console.error('❌ Ошибка получения точек:', error);
     res.status(500).json({ error: 'Ошибка получения точек' });
+  }
+});
+
+// Получить рейтинг Telegram пользователей (публичный endpoint)
+app.get('/api/telegram/leaderboard', async (req, res) => {
+  try {
+    console.log('🏆 Запрос рейтинга Telegram пользователей');
+    
+    // Агрегация для получения рейтинга только Telegram пользователей
+    const leaderboard = await ModelPoint.aggregate([
+      {
+        $match: {
+          status: 'collected',
+          'collectorInfo.authMethod': 'telegram',
+          'collectorInfo.telegramData.id': { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$collectorInfo.telegramData.id',
+          totalCollections: { $sum: 1 },
+          lastCollection: { $max: '$collectedAt' },
+          firstCollection: { $min: '$collectedAt' },
+          // Берем данные пользователя из последнего сбора
+          userData: { $last: '$collectorInfo.telegramData' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          telegramId: '$_id',
+          totalCollections: 1,
+          lastCollection: 1,
+          firstCollection: 1,
+          first_name: '$userData.first_name',
+          last_name: '$userData.last_name',
+          username: '$userData.username',
+          photo_url: '$userData.photo_url'
+        }
+      },
+      { $sort: { totalCollections: -1, lastCollection: -1 } },
+      { $limit: 50 } // Ограничиваем топ-50
+    ]);
+
+    // Получаем общую статистику
+    const stats = await ModelPoint.aggregate([
+      {
+        $match: {
+          status: 'collected',
+          'collectorInfo.authMethod': 'telegram',
+          'collectorInfo.telegramData.id': { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalCollections: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalCollections: 1,
+          totalUsers: { $size: '$uniqueUsers' }
+        }
+      }
+    ]);
+
+    const statsData = stats[0] || { totalCollections: 0, totalUsers: 0 };
+
+    logUserAction('TELEGRAM_LEADERBOARD_VIEWED', {
+      leaderboardSize: leaderboard.length,
+      totalUsers: statsData.totalUsers,
+      totalCollections: statsData.totalCollections
+    }, req);
+
+    console.log(`📊 Рейтинг Telegram: ${leaderboard.length} записей, ${statsData.totalUsers} пользователей, ${statsData.totalCollections} сборов`);
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      stats: statsData,
+      leaderboard: leaderboard
+    });
+
+  } catch (error) {
+    console.error('❌ Ошибка получения рейтинга Telegram:', error);
+    logUserAction('TELEGRAM_LEADERBOARD_ERROR', { error: error.message }, req);
+    res.status(500).json({ error: 'Failed to get Telegram leaderboard' });
   }
 });
 
@@ -631,6 +726,43 @@ app.delete('/api/admin/points/:id', async (req, res) => {
   }
 });
 
+// Получить топ коллекторов (для админа)
+app.get('/api/admin/top-collectors', async (req, res) => {
+  try {
+    const password = req.headers['x-admin-password'] 
+      ? decodeURIComponent(req.headers['x-admin-password'])
+      : req.headers.authorization;
+      
+    if (password !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    const topCollectors = await ModelPoint.aggregate([
+      { $match: { status: 'collected' } },
+      {
+        $group: {
+          _id: {
+            name: '$collectorInfo.name',
+            telegramId: '$collectorInfo.telegramData.id',
+            authMethod: '$collectorInfo.authMethod'
+          },
+          count: { $sum: 1 },
+          lastCollection: { $max: '$collectedAt' },
+          firstCollection: { $min: '$collectedAt' }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    logUserAction('ADMIN_TOP_COLLECTORS_VIEWED', { count: topCollectors.length }, req);
+    res.json(topCollectors);
+  } catch (error) {
+    console.error('❌ Ошибка получения топа коллекторов:', error);
+    res.status(500).json({ error: 'Failed to get top collectors' });
+  }
+});
+
 // Получить расширенную статистику
 app.get('/api/admin/stats', async (req, res) => {
   try {
@@ -791,43 +923,6 @@ app.post('/telegram-auth', (req, res) => {
   }
 });
 
-// Получить топ коллекторов
-app.get('/api/admin/top-collectors', async (req, res) => {
-  try {
-    const password = req.headers['x-admin-password'] 
-      ? decodeURIComponent(req.headers['x-admin-password'])
-      : req.headers.authorization;
-      
-    if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    const topCollectors = await ModelPoint.aggregate([
-      { $match: { status: 'collected' } },
-      {
-        $group: {
-          _id: {
-            name: '$collectorInfo.name',
-            telegramId: '$collectorInfo.telegramData.id',
-            authMethod: '$collectorInfo.authMethod'
-          },
-          count: { $sum: 1 },
-          lastCollection: { $max: '$collectedAt' },
-          firstCollection: { $min: '$collectedAt' }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
-
-    logUserAction('ADMIN_TOP_COLLECTORS_VIEWED', { count: topCollectors.length }, req);
-    res.json(topCollectors);
-  } catch (error) {
-    console.error('❌ Ошибка получения топа коллекторов:', error);
-    res.status(500).json({ error: 'Failed to get top collectors' });
-  }
-});
-
 // Получить активность по дням
 app.get('/api/admin/activity', async (req, res) => {
   try {
@@ -964,6 +1059,11 @@ app.get('/health', (req, res) => {
         botUsername: process.env.TELEGRAM_BOT_USERNAME || 'not configured',
         configured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME)
       },
+      leaderboard: {
+        enabled: true,
+        endpoint: '/api/telegram/leaderboard',
+        page: '/leaderboard.html'
+      },
       mongodb: {
         connected: mongoose.connection.readyState === 1,
         host: mongoose.connection.host,
@@ -1049,6 +1149,7 @@ app.listen(PORT, () => {
   console.log(`   🗄️  MongoDB: ${process.env.MONGODB_URI ? '✅ настроена' : '❌ не настроена'}`);
   console.log(`   🛡️  Админ: ${process.env.ADMIN_PASSWORD ? '✅ настроен' : '❌ не настроен'}`);
   console.log(`   📸 Ограничения селфи: ❌ убраны (принимаются файлы любого размера)`);
+  console.log(`   🏆 Рейтинг Telegram: ✅ включен`);
   
   // Проверяем Telegram конфигурацию
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME) {
@@ -1067,6 +1168,7 @@ app.listen(PORT, () => {
   console.log('\n🔗 Полезные ссылки:');
   console.log(`   🏠 Главная: http://localhost:${PORT}`);
   console.log(`   🛡️  Админ: http://localhost:${PORT}/admin.html`);
+  console.log(`   🏆 Рейтинг: http://localhost:${PORT}/leaderboard.html`);
   console.log(`   ❤️  Health: http://localhost:${PORT}/health`);
   console.log('🚀 ==========================================\n');
 });
