@@ -1,4 +1,4 @@
-// bot.js - Telegram бот для PlasticBoy
+// bot.js - Telegram бот для PlasticBoy с улучшенной диагностикой
 const TelegramBot = require('node-telegram-bot-api');
 const mongoose = require('mongoose');
 require('dotenv').config();
@@ -16,9 +16,17 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
     process.exit(1);
 }
 
-// Создаем бота
+console.log('✅ Токен найден:', process.env.TELEGRAM_BOT_TOKEN.substring(0, 10) + '...');
+
+// Создаем бота с дополнительными настройками для диагностики
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { 
-    polling: true,
+    polling: {
+        interval: 300,
+        autoStart: true,
+        params: {
+            timeout: 10
+        }
+    },
     request: {
         agentOptions: {
             keepAlive: true,
@@ -28,6 +36,26 @@ const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
 });
 
 console.log('✅ Telegram бот инициализирован');
+
+// Тестируем соединение с Telegram API
+bot.getMe().then((botInfo) => {
+    console.log('✅ Успешное подключение к Telegram API');
+    console.log('🤖 Информация о боте:', {
+        id: botInfo.id,
+        username: botInfo.username,
+        first_name: botInfo.first_name,
+        can_join_groups: botInfo.can_join_groups,
+        can_read_all_group_messages: botInfo.can_read_all_group_messages,
+        supports_inline_queries: botInfo.supports_inline_queries
+    });
+}).catch((error) => {
+    console.error('❌ Ошибка подключения к Telegram API:', error);
+    console.log('💡 Проверьте:');
+    console.log('1. Правильность токена');
+    console.log('2. Подключение к интернету');
+    console.log('3. Не заблокирован ли Telegram API');
+    process.exit(1);
+});
 
 // Подключение к MongoDB (используем ту же базу что и основное приложение)
 mongoose.connect(process.env.MONGODB_URI, {
@@ -105,10 +133,32 @@ function getMainKeyboard() {
     };
 }
 
+// ========== ОБРАБОТЧИКИ СОБЫТИЙ БОТА ==========
+
+// Обработка всех входящих сообщений для диагностики
+bot.on('message', (msg) => {
+    console.log('📨 Получено сообщение:', {
+        messageId: msg.message_id,
+        chatId: msg.chat.id,
+        userId: msg.from.id,
+        username: msg.from.username,
+        firstName: msg.from.first_name,
+        text: msg.text,
+        date: new Date(msg.date * 1000).toISOString()
+    });
+});
+
 // Команда /start
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const user = msg.from;
+    
+    console.log('🚀 Команда /start получена от:', {
+        userId: user.id,
+        username: user.username,
+        firstName: user.first_name,
+        chatId: chatId
+    });
     
     logBotAction('START_COMMAND', user.id, user.username, { chatId });
     
@@ -132,10 +182,28 @@ bot.onText(/\/start/, async (msg) => {
 Используйте кнопки ниже для навигации! ⬇️
     `;
     
-    await bot.sendMessage(chatId, welcomeMessage, {
-        parse_mode: 'Markdown',
-        ...getMainKeyboard()
-    });
+    try {
+        const result = await bot.sendMessage(chatId, welcomeMessage, {
+            parse_mode: 'Markdown',
+            ...getMainKeyboard()
+        });
+        
+        console.log('✅ Сообщение /start успешно отправлено:', {
+            messageId: result.message_id,
+            chatId: result.chat.id
+        });
+        
+    } catch (error) {
+        console.error('❌ Ошибка отправки сообщения /start:', error);
+        
+        // Пробуем отправить простое сообщение без форматирования
+        try {
+            await bot.sendMessage(chatId, 'Добро пожаловать в PlasticBoy! Бот работает.');
+            console.log('✅ Простое сообщение отправлено успешно');
+        } catch (simpleError) {
+            console.error('❌ Ошибка отправки простого сообщения:', simpleError);
+        }
+    }
 });
 
 // Команда /help
@@ -143,6 +211,7 @@ bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
     const user = msg.from;
     
+    console.log('❓ Команда /help получена от:', user.username || user.first_name);
     logBotAction('HELP_COMMAND', user.id, user.username);
     
     const helpMessage = `
@@ -151,6 +220,7 @@ bot.onText(/\/help/, async (msg) => {
 *Основные команды:*
 /start — Начать работу с ботом
 /help — Показать эту справку
+/test — Проверить работу бота
 
 *Кнопки меню:*
 🎯 *Открыть PlasticBoy* — Запуск веб-приложения
@@ -168,10 +238,47 @@ bot.onText(/\/help/, async (msg) => {
 *Сайт:* ${WEB_APP_URL}
     `;
     
-    await bot.sendMessage(chatId, helpMessage, {
-        parse_mode: 'Markdown',
-        ...getMainKeyboard()
-    });
+    try {
+        await bot.sendMessage(chatId, helpMessage, {
+            parse_mode: 'Markdown',
+            ...getMainKeyboard()
+        });
+        console.log('✅ Сообщение /help отправлено');
+    } catch (error) {
+        console.error('❌ Ошибка отправки /help:', error);
+    }
+});
+
+// Добавляем команду /test для диагностики
+bot.onText(/\/test/, async (msg) => {
+    const chatId = msg.chat.id;
+    const user = msg.from;
+    
+    console.log('🧪 Команда /test получена от:', user.username || user.first_name);
+    
+    const testMessage = `
+🧪 *Тест PlasticBoy Bot*
+
+✅ Бот работает!
+📅 Время: ${new Date().toLocaleString('ru-RU')}
+🆔 Ваш ID: ${user.id}
+👤 Имя: ${user.first_name}
+🔗 Username: ${user.username || 'не установлен'}
+💬 Chat ID: ${chatId}
+
+*Настройки:*
+🌐 URL: ${WEB_APP_URL}
+🤖 Bot Username: @${process.env.TELEGRAM_BOT_USERNAME || 'не настроен'}
+    `;
+    
+    try {
+        await bot.sendMessage(chatId, testMessage, {
+            parse_mode: 'Markdown'
+        });
+        console.log('✅ Тест сообщение отправлено');
+    } catch (error) {
+        console.error('❌ Ошибка отправки тест сообщения:', error);
+    }
 });
 
 // 1️⃣ ОБРАБОТКА КНОПКИ "ДОСТУПНЫЕ МОДЕЛИ"
@@ -179,6 +286,7 @@ bot.onText(/^📦 Доступные модели$/, async (msg) => {
     const chatId = msg.chat.id;
     const user = msg.from;
     
+    console.log('📦 Запрос доступных моделей от:', user.username || user.first_name);
     logBotAction('AVAILABLE_MODELS_REQUEST', user.id, user.username);
     
     try {
@@ -261,6 +369,7 @@ bot.onText(/^📦 Доступные модели$/, async (msg) => {
             ...getMainKeyboard()
         });
         
+        console.log('✅ Информация о доступных моделях отправлена');
         logBotAction('AVAILABLE_MODELS_SENT', user.id, user.username, {
             availableCount: availablePoints.length,
             scheduledCount: scheduledPoints.length
@@ -279,6 +388,7 @@ bot.onText(/^🏆 Топ игроков$/, async (msg) => {
     const chatId = msg.chat.id;
     const user = msg.from;
     
+    console.log('🏆 Запрос топа игроков от:', user.username || user.first_name);
     logBotAction('LEADERBOARD_REQUEST', user.id, user.username);
     
     try {
@@ -403,6 +513,7 @@ bot.onText(/^🏆 Топ игроков$/, async (msg) => {
         // Отправляем основную клавиатуру отдельным сообщением
         await bot.sendMessage(chatId, 'Выберите действие:', getMainKeyboard());
         
+        console.log('✅ Рейтинг игроков отправлен');
         logBotAction('LEADERBOARD_SENT', user.id, user.username, {
             topPlayersCount: leaderboard.length,
             totalPlayers: stats.uniqueUsers.length,
@@ -431,25 +542,46 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const user = msg.from;
     
+    console.log('💬 Неизвестное сообщение от:', user.username || user.first_name, '- текст:', msg.text);
     logBotAction('UNKNOWN_MESSAGE', user.id, user.username, { text: msg.text });
     
     // Если сообщение содержит текст, отвечаем подсказкой
     if (msg.text && !msg.web_app_data) {
-        await bot.sendMessage(chatId, 
-            'Используйте кнопки меню ниже для навигации! 👇\n\nИли напишите /help для получения справки.', 
-            getMainKeyboard()
-        );
+        try {
+            await bot.sendMessage(chatId, 
+                'Используйте кнопки меню ниже для навигации! 👇\n\nИли напишите /help для получения справки.', 
+                getMainKeyboard()
+            );
+            console.log('✅ Подсказка отправлена');
+        } catch (error) {
+            console.error('❌ Ошибка отправки подсказки:', error);
+        }
     }
 });
 
-// Обработка ошибок
+// ========== ОБРАБОТКА ОШИБОК ==========
+
+// Обработка ошибок бота
 bot.on('error', (error) => {
     console.error('❌ Ошибка Telegram бота:', error);
 });
 
+// Обработка ошибок polling
 bot.on('polling_error', (error) => {
     console.error('❌ Ошибка polling Telegram бота:', error);
+    console.log('💡 Возможные причины:');
+    console.log('1. Проблемы с интернет соединением');
+    console.log('2. Неверный токен бота');
+    console.log('3. Бот заблокирован Telegram');
+    console.log('4. Превышен лимит запросов API');
 });
+
+// Обработка неопознанных обновлений
+bot.on('webhook_error', (error) => {
+    console.error('❌ Webhook ошибка:', error);
+});
+
+// ========== GRACEFUL SHUTDOWN ==========
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -466,7 +598,19 @@ process.on('SIGINT', () => {
     process.exit(0);
 });
 
+// Обработка неперехваченных исключений
+process.on('uncaughtException', (error) => {
+    console.error('❌ Неперехваченное исключение:', error);
+    // Не завершаем процесс, пытаемся продолжить работу
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Неперехваченное отклонение Promise:', reason);
+    // Не завершаем процесс, пытаемся продолжить работу
+});
+
 console.log(`🤖 PlasticBoy Telegram Bot запущен!`);
 console.log(`📱 Bot username: @${process.env.TELEGRAM_BOT_USERNAME || 'UNKNOWN'}`);
 console.log(`🌐 Web App URL: ${WEB_APP_URL}`);
 console.log(`💡 Найдите бота в Telegram и отправьте /start для проверки`);
+console.log(`🔧 Для тестирования используйте команду /test`);
