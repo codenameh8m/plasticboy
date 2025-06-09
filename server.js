@@ -81,8 +81,34 @@ async function handleTelegramUpdate(update) {
             break;
             
           case 'help':
-            const helpMessage = `❓ *Помощь PlasticBoy*\n\n🎯 *Цель игры:* Собери как можно больше 3D моделей!\n\n📱 *Команды:*\n/start - Главное меню\n/help - Эта помощь\n/stats - Статистика\n\nУдачи! 🚀`;
+            const helpMessage = `❓ *Помощь PlasticBoy*\n\n🎯 *Цель игры:* Собери как можно больше 3D моделей!\n\n📱 *Команды:*\n/start - Главное меню\n/map - Открыть карту\n/leaderboard - Рейтинг игроков\n/stats - Статистика игры\n/help - Эта помощь\n\nУдачи! 🚀`;
             await sendTelegramMessage(chatId, helpMessage);
+            break;
+            
+          case 'map':
+            const mapMessage = `🗺️ *Карта PlasticBoy*\n\nОткройте интерактивную карту для поиска 3D моделей в Алматы!\n\n🎯 На карте вы увидите:\n• 🟢 Доступные модели\n• 🔴 Уже собранные модели\n• 📍 Ваше местоположение`;
+            
+            await sendTelegramMessage(chatId, mapMessage, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🗺️ Открыть карту', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [{ text: '📊 Статистика', callback_data: 'stats' }]
+                ]
+              }
+            });
+            break;
+            
+          case 'leaderboard':
+            const leaderboardMessage = `🏆 *Рейтинг коллекторов*\n\nПосмотрите топ игроков PlasticBoy!\n\n⭐ В рейтинге участвуют только пользователи, авторизованные через Telegram\n\n🥇🥈🥉 Кто соберет больше всех моделей?`;
+            
+            await sendTelegramMessage(chatId, leaderboardMessage, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🏆 Открыть рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }],
+                  [{ text: '🗺️ К карте', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+                ]
+              }
+            });
             break;
             
           case 'stats':
@@ -91,19 +117,65 @@ async function handleTelegramUpdate(update) {
               const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
               const availablePoints = totalPoints - collectedPoints;
               
-              const statsMessage = `📊 *Статистика PlasticBoy*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*\n\n🎯 Присоединяйся к игре!`;
-              await sendTelegramMessage(chatId, statsMessage);
+              // Получаем статистику Telegram пользователей
+              const telegramStats = await ModelPoint.aggregate([
+                {
+                  $match: {
+                    status: 'collected',
+                    'collectorInfo.authMethod': 'telegram'
+                  }
+                },
+                {
+                  $group: {
+                    _id: null,
+                    telegramCollections: { $sum: 1 },
+                    uniqueTelegramUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+                  }
+                }
+              ]);
+              
+              const tgStats = telegramStats[0] || { telegramCollections: 0, uniqueTelegramUsers: [] };
+              const telegramUsers = tgStats.uniqueTelegramUsers.length;
+              const telegramCollections = tgStats.telegramCollections;
+              
+              const statsMessage = `📊 *Статистика PlasticBoy*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*\n\n📱 *Telegram игроки:*\n👥 Участников: *${telegramUsers}*\n🎯 Собрано ими: *${telegramCollections}*\n\n🎮 Присоединяйся к игре!`;
+              
+              await sendTelegramMessage(chatId, statsMessage, {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🗺️ Играть', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                    [{ text: '🏆 Рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
+                  ]
+                }
+              });
             } catch (error) {
               await sendTelegramMessage(chatId, '❌ Ошибка получения статистики');
             }
             break;
             
           default:
-            await sendTelegramMessage(chatId, `Неизвестная команда: ${command}\n\nИспользуйте /help для списка команд.`);
+            const unknownMessage = `❓ Неизвестная команда: /${command}\n\n📱 *Доступные команды:*\n/start - Главное меню\n/map - Открыть карту\n/leaderboard - Рейтинг игроков\n/stats - Статистика игры\n/help - Помощь\n\n🎯 Используйте команды для навигации!`;
+            await sendTelegramMessage(chatId, unknownMessage, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🗺️ Открыть карту', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [
+                    { text: '🏆 Рейтинг', callback_data: 'leaderboard' },
+                    { text: '📊 Статистика', callback_data: 'stats' }
+                  ]
+                ]
+              }
+            });
         }
       } else if (text) {
         // Обычное сообщение
-        await sendTelegramMessage(chatId, `Получил ваше сообщение: "${text}"\n\nИспользуйте /help для списка команд.`);
+        await sendTelegramMessage(chatId, `Получил ваше сообщение: "${text}"\n\nИспользуйте /help для списка команд.`, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🗺️ Играть', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+            ]
+          }
+        });
       }
     }
     
@@ -131,11 +203,12 @@ async function handleTelegramUpdate(update) {
           await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
             chat_id: chatId,
             message_id: messageId,
-            text: '🏆 *Рейтинг коллекторов*\n\nОткройте веб-версию для просмотра полного рейтинга.',
+            text: '🏆 *Рейтинг коллекторов*\n\nОткройте веб-версию для просмотра полного рейтинга игроков!',
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '🏆 Открыть рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
+                [{ text: '🏆 Открыть рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }],
+                [{ text: '🗺️ К карте', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
               ]
             }
           });
@@ -147,14 +220,36 @@ async function handleTelegramUpdate(update) {
             const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
             const availablePoints = totalPoints - collectedPoints;
             
+            // Получаем статистику Telegram пользователей
+            const telegramStats = await ModelPoint.aggregate([
+              {
+                $match: {
+                  status: 'collected',
+                  'collectorInfo.authMethod': 'telegram'
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  telegramCollections: { $sum: 1 },
+                  uniqueTelegramUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+                }
+              }
+            ]);
+            
+            const tgStats = telegramStats[0] || { telegramCollections: 0, uniqueTelegramUsers: [] };
+            const telegramUsers = tgStats.uniqueTelegramUsers.length;
+            const telegramCollections = tgStats.telegramCollections;
+            
             await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
               chat_id: chatId,
               message_id: messageId,
-              text: `📊 *Статистика игры*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*`,
+              text: `📊 *Статистика игры*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*\n\n📱 *Telegram игроки:*\n👥 Участников: *${telegramUsers}*\n🎯 Собрано ими: *${telegramCollections}*`,
               parse_mode: 'Markdown',
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🗺️ К карте', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+                  [{ text: '🗺️ Играть', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [{ text: '🏆 Рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
                 ]
               }
             });
