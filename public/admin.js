@@ -18,24 +18,35 @@ const MAX_LOGIN_ATTEMPTS = 3;
 // Координаты Алматы
 const ALMATY_CENTER = [43.2220, 76.8512];
 
-// === ИНИЦИАЛИЗАЦИЯ ===
+// === ИНИЦИАЛИЗАЦИЯ - FAST VERSION ===
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM готов, запуск админ панели');
-    initializeAdminPanel();
-});
-
-function initializeAdminPanel() {
-    // Проверяем сохраненный пароль
+    console.log('🚀 DOM готов, быстрый запуск админ панели');
+    
+    // Проверяем сохраненный пароль немедленно
     const savedPassword = sessionStorage.getItem('adminPassword');
     if (savedPassword) {
-        console.log('🔑 Найден сохраненный пароль, автовход');
+        console.log('🔑 Найден сохраненный пароль, быстрый автовход');
         currentPassword = savedPassword;
-        validatePasswordAndShowPanel(savedPassword);
+        
+        // Показываем панель сразу, проверяем в фоне
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        
+        // Быстрая проверка в фоне
+        checkPassword(savedPassword)
+            .then(isValid => {
+                if (isValid) {
+                    initAdminMapWithRetry().then(() => loadAdminPoints());
+                } else {
+                    logout();
+                }
+            })
+            .catch(() => logout());
     }
     
     setupEventListeners();
     console.log('✅ Админ панель инициализирована');
-}
+});
 
 // === ОБРАБОТЧИКИ СОБЫТИЙ ===
 function setupEventListeners() {
@@ -95,7 +106,7 @@ function setupEventListeners() {
     }, 150));
 }
 
-// === ФУНКЦИИ ВХОДА ===
+// === ФУНКЦИИ ВХОДА - FAST VERSION ===
 async function adminLogin() {
     const password = document.getElementById('adminPassword').value;
     const loginBtn = document.getElementById('loginBtn');
@@ -117,9 +128,9 @@ async function adminLogin() {
     
     try {
         loginAttempts++;
-        console.log(`🔐 Попытка входа ${loginAttempts}/${MAX_LOGIN_ATTEMPTS}`);
+        console.log(`🔐 Быстрая попытка входа ${loginAttempts}/${MAX_LOGIN_ATTEMPTS}`);
         
-        const isValid = await checkPasswordWithTimeout(password, 10000);
+        const isValid = await checkPassword(password);
         
         if (isValid) {
             loginAttempts = 0; // Сброс счетчика при успехе
@@ -138,10 +149,11 @@ async function adminLogin() {
         }
     } catch (error) {
         console.error('❌ Ошибка входа:', error);
-        showLoginError('Ошибка соединения с сервером: ' + error.message);
         
         if (error.message.includes('timeout')) {
-            showLoginError('Сервер не отвечает. Проверьте соединение.');
+            showLoginError('Сервер не отвечает (3с). Попробуйте еще раз.');
+        } else {
+            showLoginError('Ошибка соединения: ' + error.message);
         }
     } finally {
         loginBtn.disabled = false;
@@ -149,29 +161,12 @@ async function adminLogin() {
     }
 }
 
-async function checkPasswordWithTimeout(password, timeout = 10000) {
-    return new Promise(async (resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-            reject(new Error('timeout'));
-        }, timeout);
-        
-        try {
-            const result = await checkPassword(password);
-            clearTimeout(timeoutId);
-            resolve(result);
-        } catch (error) {
-            clearTimeout(timeoutId);
-            reject(error);
-        }
-    });
-}
-
 async function checkPassword(password) {
     try {
-        console.log('🔐 Проверка пароля с сервером...');
+        console.log('🔐 Быстрая проверка пароля...');
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды
         
         const response = await fetch('/api/admin/points', {
             method: 'GET',
@@ -185,21 +180,22 @@ async function checkPassword(password) {
         
         clearTimeout(timeoutId);
         
-        console.log('📡 Ответ проверки пароля:', response.status);
+        console.log('📡 Быстрый ответ:', response.status);
         
+        // Простая проверка статуса
         if (response.status === 401) {
             return false;
         }
         
-        if (!response.ok) {
-            throw new Error(`Ошибка сервера: ${response.status}`);
+        if (response.status === 200) {
+            return true;
         }
         
-        return true;
+        throw new Error(`Ошибка сервера: ${response.status}`);
         
     } catch (error) {
         if (error.name === 'AbortError') {
-            throw new Error('timeout');
+            throw new Error('timeout (3s)');
         }
         console.error('❌ Ошибка проверки пароля:', error);
         throw error;
