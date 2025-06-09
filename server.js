@@ -253,34 +253,23 @@ function logUserAction(action, data, req) {
 function checkAdminPassword(req) {
   let password = null;
   
-  // 1. Заголовок Authorization
   if (req.headers.authorization) {
     password = req.headers.authorization;
   }
   
-  // 2. Заголовок X-Admin-Password (с декодированием)
   if (!password && req.headers['x-admin-password']) {
     password = decodeURIComponent(req.headers['x-admin-password']);
   }
   
-  // 3. Fallback для старых версий
   if (!password && req.get('Authorization')) {
     password = req.get('Authorization');
   }
   
-  console.log('🔑 Проверка админского пароля...');
-  console.log('   📋 Authorization header:', req.headers.authorization ? 'есть' : 'нет');
-  console.log('   📋 X-Admin-Password header:', req.headers['x-admin-password'] ? 'есть' : 'нет');
-  console.log('   🎯 Найденный пароль:', password ? 'найден' : 'не найден');
-  console.log('   ✅ Ожидаемый пароль:', process.env.ADMIN_PASSWORD ? 'установлен' : 'не установлен');
-  
   const isValid = password && password === process.env.ADMIN_PASSWORD;
-  console.log('   🔐 Результат проверки:', isValid ? 'УСПЕХ' : 'ОШИБКА');
+  console.log('🔐 Проверка админского пароля:', isValid ? 'УСПЕХ' : 'ОШИБКА');
   
   return isValid;
 }
-
-// Маршруты
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -305,16 +294,15 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Получить все публичные точки (без секретной информации)
+// Получить все публичные точки
 app.get('/api/points', async (req, res) => {
   try {
     const now = new Date();
     
-    // Загружаем только активные точки (время пришло)
     const points = await ModelPoint.find({
       scheduledTime: { $lte: now }
     })
-    .select('-qrSecret') // Исключаем секретное поле
+    .select('-qrSecret')
     .lean()
     .exec();
     
@@ -353,7 +341,6 @@ app.get('/api/collect/:id', async (req, res) => {
       return res.status(409).json({ error: 'Point already collected' });
     }
     
-    // Проверяем, что время пришло
     const now = new Date();
     if (new Date(point.scheduledTime) > now) {
       logUserAction('COLLECT_NOT_READY', { 
@@ -369,7 +356,6 @@ app.get('/api/collect/:id', async (req, res) => {
     
     logUserAction('COLLECT_INFO_VIEWED', { pointId: id }, req);
     
-    // Возвращаем только необходимую информацию
     res.json({
       id: point.id,
       name: point.name,
@@ -409,7 +395,6 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       return res.status(409).json({ error: 'Point already collected' });
     }
     
-    // Проверяем, что время пришло
     const now = new Date();
     if (new Date(point.scheduledTime) > now) {
       logUserAction('COLLECT_FAILED_NOT_READY', { 
@@ -422,21 +407,18 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       });
     }
     
-    // Подготавливаем информацию о сборщике
     const collectorInfo = {
       name: name.trim(),
       signature: signature ? signature.trim() : '',
       authMethod: authMethod || 'manual'
     };
     
-    // Обрабатываем Telegram данные если есть
     if (authMethod === 'telegram' && telegramData) {
       try {
         const parsedTelegramData = typeof telegramData === 'string' 
           ? JSON.parse(telegramData) 
           : telegramData;
         
-        // Валидируем обязательные поля Telegram
         if (parsedTelegramData.id && parsedTelegramData.first_name && parsedTelegramData.auth_date) {
           collectorInfo.telegramData = {
             id: parsedTelegramData.id,
@@ -459,7 +441,6 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       }
     }
     
-    // Обрабатываем селфи если есть
     if (req.file) {
       try {
         const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -467,11 +448,9 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
         console.log('📸 Селфи обработано, размер:', req.file.size);
       } catch (error) {
         console.error('❌ Ошибка обработки селфи:', error);
-        // Продолжаем без селфи
       }
     }
     
-    // Обновляем точку
     point.status = 'collected';
     point.collectedAt = now;
     point.collectorInfo = collectorInfo;
@@ -506,19 +485,13 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   }
 });
 
-// ============== АДМИНСКИЕ МАРШРУТЫ ==============
+// АДМИНСКИЕ МАРШРУТЫ
 
 // Получить все точки для админа
 app.get('/api/admin/points', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
-      logUserAction('ADMIN_ACCESS_DENIED', { 
-        ip: req.ip,
-        headers: {
-          authorization: req.headers.authorization ? 'present' : 'missing',
-          xAdminPassword: req.headers['x-admin-password'] ? 'present' : 'missing'
-        }
-      }, req);
+      logUserAction('ADMIN_ACCESS_DENIED', { ip: req.ip }, req);
       return res.status(401).json({ error: 'Invalid admin password' });
     }
     
@@ -538,19 +511,12 @@ app.get('/api/admin/points', async (req, res) => {
 app.post('/api/admin/points', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
-      logUserAction('ADMIN_CREATE_DENIED', { 
-        ip: req.ip,
-        headers: {
-          authorization: req.headers.authorization ? 'present' : 'missing',
-          xAdminPassword: req.headers['x-admin-password'] ? 'present' : 'missing'
-        }
-      }, req);
+      logUserAction('ADMIN_CREATE_DENIED', { ip: req.ip }, req);
       return res.status(401).json({ error: 'Invalid admin password' });
     }
 
     const { name, coordinates, delayMinutes } = req.body;
     
-    // Валидация данных
     if (!name || !coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
       return res.status(400).json({ error: 'Invalid point data' });
     }
@@ -563,12 +529,10 @@ app.post('/api/admin/points', async (req, res) => {
       scheduledTime.setMinutes(scheduledTime.getMinutes() + parseInt(delayMinutes));
     }
 
-    // Создаем URL для сканирования QR кода
     const protocol = req.get('x-forwarded-proto') || req.protocol;
     const host = req.get('host');
     const collectUrl = `${protocol}://${host}/collect.html?id=${pointId}&secret=${qrSecret}`;
     
-    // Генерируем QR код
     const qrCodeDataUrl = await QRCode.toDataURL(collectUrl, {
       width: 400,
       margin: 2,
@@ -610,14 +574,7 @@ app.post('/api/admin/points', async (req, res) => {
 app.delete('/api/admin/points/:id', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
-      logUserAction('ADMIN_DELETE_DENIED', { 
-        ip: req.ip,
-        pointId: req.params.id,
-        headers: {
-          authorization: req.headers.authorization ? 'present' : 'missing',
-          xAdminPassword: req.headers['x-admin-password'] ? 'present' : 'missing'
-        }
-      }, req);
+      logUserAction('ADMIN_DELETE_DENIED', { ip: req.ip, pointId: req.params.id }, req);
       return res.status(401).json({ error: 'Invalid admin password' });
     }
 
@@ -641,14 +598,13 @@ app.delete('/api/admin/points/:id', async (req, res) => {
   }
 });
 
-// ============== TELEGRAM МАРШРУТЫ ==============
+// TELEGRAM МАРШРУТЫ
 
 // Получить рейтинг Telegram пользователей
 app.get('/api/telegram/leaderboard', async (req, res) => {
   try {
     console.log('🏆 Загружаем рейтинг Telegram пользователей...');
     
-    // Агрегируем данные по Telegram пользователям
     const leaderboard = await ModelPoint.aggregate([
       {
         $match: {
@@ -684,11 +640,10 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
         $sort: { totalCollections: -1, firstCollection: 1 }
       },
       {
-        $limit: 50 // Топ 50 пользователей
+        $limit: 50
       }
     ]);
 
-    // Получаем общую статистику
     const stats = await ModelPoint.aggregate([
       {
         $match: {
@@ -700,7 +655,7 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
         $group: {
           _id: null,
           totalCollections: { $sum: 1 },
-id' }
+          uniqueUsers: { $addToSet: '$collectorInfo.telegramData.id' }
         }
       },
       {
@@ -734,175 +689,8 @@ id' }
   }
 });
 
-// ============== ДОПОЛНИТЕЛЬНЫЕ АДМИНСКИЕ МАРШРУТЫ ==============
+// СТАТИЧЕСКИЕ ФАЙЛЫ
 
-// Получить расширенную статистику
-app.get('/api/admin/stats', async (req, res) => {
-  try {
-    if (!checkAdminPassword(req)) {
-      return res.status(401).json({ error: 'Invalid admin password' });
-    }
-
-    const now = new Date();
-    const stats = await ModelPoint.aggregate([
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          collected: {
-            $sum: {
-              $cond: [{ $eq: ['$status', 'collected'] }, 1, 0]
-            }
-          },
-          available: {
-            $sum: {
-              $cond: [{ $eq: ['$status', 'available'] }, 1, 0]
-            }
-          },
-          scheduled: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$status', 'available'] },
-                    { $gt: ['$scheduledTime', now] }
-                  ]
-                },
-                1,
-                0
-              ]
-            }
-          },
-          manualAuth: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$status', 'collected'] },
-                    { $eq: ['$collectorInfo.authMethod', 'manual'] }
-                  ]
-                },
-                1,
-                0
-              ]
-            }
-          },
-          telegramAuth: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$status', 'collected'] },
-                    { $eq: ['$collectorInfo.authMethod', 'telegram'] }
-                  ]
-                },
-                1,
-                0
-              ]
-            }
-          },
-          withSelfie: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$status', 'collected'] },
-                    { $ne: ['$collectorInfo.selfie', null] },
-                    { $ne: ['$collectorInfo.selfie', ''] }
-                  ]
-                },
-                1,
-                0
-              ]
-            }
-          }
-        }
-      }
-    ]);
-
-    const result = stats[0] || {
-      total: 0,
-      collected: 0,
-      available: 0,
-      scheduled: 0,
-      manualAuth: 0,
-      telegramAuth: 0,
-      withSelfie: 0
-    };
-
-    // Дополнительная статистика
-    const recentCollections = await ModelPoint.find({
-      status: 'collected',
-      collectedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-    }).countDocuments();
-
-    result.recentCollections = recentCollections;
-
-    logUserAction('ADMIN_STATS_VIEWED', result, req);
-    console.log(`📊 Статистика загружена: ${result.total} всего, ${result.collected} собрано`);
-    
-    res.json(result);
-  } catch (error) {
-    console.error('❌ Ошибка получения статистики:', error);
-    res.status(500).json({ error: 'Failed to get statistics' });
-  }
-});
-
-// Экспорт данных (админ)
-app.get('/api/admin/export', async (req, res) => {
-  try {
-    if (!checkAdminPassword(req)) {
-      return res.status(401).json({ error: 'Invalid admin password' });
-    }
-
-    const { format = 'json' } = req.query;
-    
-    const points = await ModelPoint.find({})
-      .select('-qrSecret -collectorInfo.telegramData.hash')
-      .lean()
-      .exec();
-
-    logUserAction('ADMIN_DATA_EXPORTED', { 
-      format, 
-      pointsCount: points.length 
-    }, req);
-
-    if (format === 'csv') {
-      // Простой CSV экспорт
-      const csvHeader = 'ID,Name,Status,Created,Collected,Collector,AuthMethod,Lat,Lng\n';
-      const csvData = points.map(point => {
-        return [
-          point.id,
-          `"${point.name}"`,
-          point.status,
-          point.createdAt?.toISOString() || '',
-          point.collectedAt?.toISOString() || '',
-          `"${point.collectorInfo?.name || ''}"`,
-          point.collectorInfo?.authMethod || '',
-          point.coordinates.lat,
-          point.coordinates.lng
-        ].join(',');
-      }).join('\n');
-
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="plasticboy-export.csv"');
-      res.send(csvHeader + csvData);
-    } else {
-      res.json({
-        exportDate: new Date().toISOString(),
-        totalPoints: points.length,
-        data: points
-      });
-    }
-  } catch (error) {
-    console.error('❌ Ошибка экспорта данных:', error);
-    res.status(500).json({ error: 'Failed to export data' });
-  }
-});
-
-// ============== СТАТИЧЕСКИЕ ФАЙЛЫ И ОБРАБОТКА ОШИБОК ==============
-
-// Маршруты для HTML страниц
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -932,49 +720,4 @@ app.use((req, res) => {
 // Обработка ошибок
 app.use((error, req, res, next) => {
   console.error('❌ Серверная ошибка:', error);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : undefined
-  });
-});
-
-// Запуск сервера
-const startServer = async () => {
-  try {
-    await connectDB();
-    
-    app.listen(PORT, () => {
-      console.log('🚀 PlasticBoy Server запущен');
-      console.log(`📍 URL: http://localhost:${PORT}`);
-      console.log(`🛡️ Админ панель: http://localhost:${PORT}/admin.html`);
-      console.log(`🏆 Рейтинг: http://localhost:${PORT}/leaderboard.html`);
-      console.log(`🔐 Админ пароль: ${process.env.ADMIN_PASSWORD ? 'установлен' : 'НЕ УСТАНОВЛЕН!'}`);
-      console.log(`📱 Telegram бот: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'НЕ НАСТРОЕН'}`);
-      
-      if (BOT_TOKEN) {
-        console.log(`🔗 Telegram webhook: /${BOT_TOKEN}`);
-        console.log(`📱 Telegram интеграция: АКТИВНА`);
-      } else {
-        console.log(`📱 Telegram интеграция: НЕ НАСТРОЕНА`);
-      }
-    });
-  } catch (error) {
-    console.error('❌ Ошибка запуска сервера:', error);
-    process.exit(1);
-  }
-};
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('📛 SIGTERM получен, завершаем сервер...');
-  mongoose.connection.close();
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('📛 SIGINT получен, завершаем сервер...');
-  mongoose.connection.close();
-  process.exit(0);
-});
-
-startServer();
+  res.status(500).json({
