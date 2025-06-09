@@ -1,0 +1,33 @@
+{
+  "name": "plasticboy-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram бот для PlasticBoy - игры по сбору 3D моделей в Алматы",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js",
+    "setup": "node setup-bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.65.1",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "plasticboy",
+    "almaty",
+    "collection",
+    "game",
+    "qr-code"
+  ],
+  "author": "PlasticBoy Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
