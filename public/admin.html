@@ -12,79 +12,79 @@
     <div class="container">
         <header class="header">
             <h1>PlasticBoy Admin</h1>
-            <p>Управление точками сбора</p>
+            <p>Collection points management</p>
         </header>
 
-        <!-- Форма входа -->
+        <!-- Login form -->
         <div id="loginForm" class="form-container">
-            <h2>Вход в админ панель</h2>
-            <input type="password" id="adminPassword" placeholder="Пароль администратора">
-            <button onclick="adminLogin()">Войти</button>
+            <h2>Admin panel login</h2>
+            <input type="password" id="adminPassword" placeholder="Administrator password">
+            <button onclick="adminLogin()">Login</button>
         </div>
 
-        <!-- Админ панель -->
+        <!-- Admin panel -->
         <div id="adminPanel" style="display: none;">
             <div class="admin-controls">
-                <h3>Добавить новую точку</h3>
-                <p>Кликните по карте, чтобы добавить точку</p>
-                <button id="addModeBtn" onclick="toggleAddMode()">Режим добавления: ВЫКЛ</button>
+                <h3>Add new point</h3>
+                <p>Click on the map to add a point</p>
+                <button id="addModeBtn" onclick="toggleAddMode()">Add mode: OFF</button>
             </div>
 
             <div class="stats admin-stats">
                 <div class="stat-item">
                     <span class="stat-number" id="totalPoints">0</span>
-                    <span class="stat-label">Всего точек</span>
+                    <span class="stat-label">Total points</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number" id="activePoints">0</span>
-                    <span class="stat-label">Активных</span>
+                    <span class="stat-label">Active</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number" id="scheduledPoints">0</span>
-                    <span class="stat-label">Запланированных</span>
+                    <span class="stat-label">Scheduled</span>
                 </div>
             </div>
 
-            <!-- УВЕЛИЧЕННАЯ КАРТА ДЛЯ АДМИНА -->
+            <!-- ENLARGED MAP FOR ADMIN -->
             <div class="map-container">
                 <div id="adminMap"></div>
             </div>
 
-            <!-- КНОПКА ГЕОЛОКАЦИИ ДЛЯ АДМИНА -->
+            <!-- LOCATION BUTTON FOR ADMIN -->
             <div class="map-controls">
                 <button class="control-btn location-btn" onclick="getAdminLocation()">
-                    📍 Моё местоположение
+                    📍 My location
                 </button>
             </div>
 
             <div class="points-list">
-                <h3>Список точек</h3>
+                <h3>Points list</h3>
                 <div id="pointsList"></div>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно для добавления точки -->
+    <!-- Modal window for adding point -->
     <div id="addPointModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeAddModal()">&times;</span>
-            <h2>Добавить новую точку</h2>
+            <h2>Add new point</h2>
             <form id="addPointForm">
-                <input type="text" id="modelName" placeholder="Название модели" required>
-                <input type="number" id="delayMinutes" placeholder="Задержка в минутах (необязательно)" min="0">
-                <button type="submit">Создать точку</button>
+                <input type="text" id="modelName" placeholder="Model name" required>
+                <input type="number" id="delayMinutes" placeholder="Delay in minutes (optional)" min="0">
+                <button type="submit">Create point</button>
             </form>
         </div>
     </div>
 
-    <!-- Модальное окно для отображения QR кода -->
+    <!-- Modal window for displaying QR code -->
     <div id="qrModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeQrModal()">&times;</span>
-            <h2>QR код для модели</h2>
+            <h2>QR code for model</h2>
             <div id="qrCodeDisplay"></div>
-            <p>Сохраните и распечатайте этот QR код</p>
-            <button onclick="downloadQR()">Скачать QR код</button>
+            <p>Save and print this QR code</p>
+            <button onclick="downloadQR()">Download QR code</button>
         </div>
     </div>
 
