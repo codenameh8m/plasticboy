@@ -1,7 +1,7 @@
-# render.yaml - ИСПРАВЛЕННАЯ конфигурация для PlasticBoy
+# render.yaml - ОБНОВЛЕННАЯ конфигурация для PlasticBoy
 
 services:
-  # Основное веб-приложение (карта, админка, API)
+  # Основное веб-приложение (карта, админка, API + Telegram webhook)
   - type: web
     name: plasticboy-web
     env: node
@@ -20,9 +20,9 @@ services:
         value: 10000
       - fromGroup: plasticboy-env
 
-  # Telegram бот (Worker сервис)
+  # Telegram бот worker (только настройка и мониторинг)
   - type: worker
-    name: plasticboy-bot
+    name: plasticboy-bot-worker
     env: node
     repo: https://github.com/your-username/plasticboy.git
     buildCommand: npm install
@@ -34,8 +34,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - fromGroup: plasticboy-env
 
 # Группы переменных окружения
@@ -56,22 +54,30 @@ envVarGroups:
       - key: TELEGRAM_BOT_USERNAME
         value: PlasticBoyBot
 
-# ВАЖНЫЕ ПРИМЕЧАНИЯ:
+# ВАЖНЫЕ ИЗМЕНЕНИЯ В v2:
 # 
-# 1. WEBHOOK SETUP:
-#    После деплоя web-сервиса, bot-сервис автоматически настроит webhook
-#    используя RENDER_EXTERNAL_URL веб-сервиса
+# 1. WEBHOOK ИНТЕГРАЦИЯ:
+#    - Telegram webhook теперь обрабатывается основным веб-сервисом
+#    - Worker только настраивает webhook и мониторит состояние
+#    - Вся логика бота в server.js
 #
-# 2. ПРОВЕРКА ПОСЛЕ ДЕПЛОЯ:
+# 2. УПРОЩЕННАЯ АРХИТЕКТУРА:
+#    - Один сервис обрабатывает и веб-запросы и Telegram
+#    - Worker только для настройки и мониторинга
+#    - Меньше проблем с синхронизацией
+#
+# 3. ПРОВЕРКА ПОСЛЕ ДЕПЛОЯ:
 #    - Откройте https://your-app-name.onrender.com/health
-#    - Проверьте логи bot-сервиса в Render Dashboard
+#    - Проверьте логи web-сервиса в Render Dashboard
+#    - Проверьте логи worker-сервиса для настройки
 #    - Отправьте /start боту @PlasticBoyBot
 #
-# 3. TROUBLESHOOTING:
-#    - Если бот не отвечает, перезапустите bot-сервис
-#    - Проверьте Environment Variables в настройках
+# 4. TROUBLESHOOTING:
+#    - Если бот не отвечает, проверьте логи web-сервиса
+#    - Worker должен показать успешную настройку webhook
 #    - Убедитесь что оба сервиса запущены
+#    - Health check должен показывать telegramWebhook: "configured"
 #
-# 4. UPGRADE TO PAID PLAN:
+# 5. UPGRADE TO PAID PLAN:
 #    Для стабильной работы в продакшене рекомендуется 
 #    план Starter ($7/месяц) для избежания sleep mode
