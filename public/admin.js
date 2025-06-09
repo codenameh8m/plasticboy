@@ -1,57 +1,45 @@
-// Admin panel variables
-let adminMap;
+// ИСПРАВЛЕННАЯ АДМИН ПАНЕЛЬ - admin.js
+// Полностью переписанная версия без багов
+
+console.log('🛡️ Admin Panel - Fixed Version v2.0');
+
+// === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+let adminMap = null;
 let adminMarkers = [];
 let isAddMode = false;
 let currentPassword = '';
 let allPoints = [];
 let currentQRCode = '';
+let isInitialized = false;
+let isLoading = false;
+let loginAttempts = 0;
+const MAX_LOGIN_ATTEMPTS = 3;
 
-// Almaty coordinates
+// Координаты Алматы
 const ALMATY_CENTER = [43.2220, 76.8512];
 
-// Admin panel initialization
+// === ИНИЦИАЛИЗАЦИЯ ===
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🛡️ Admin panel - initialization');
-    
-    // Check saved password
-    const savedPassword = sessionStorage.getItem('adminPassword');
-    if (savedPassword) {
-        currentPassword = savedPassword;
-        showAdminPanel();
-    }
-    
-    // Initialize admin buttons
-    initAdminControlButtons();
-    
-    // Add event handlers
-    setupEventListeners();
+    console.log('🚀 DOM готов, запуск админ панели');
+    initializeAdminPanel();
 });
 
-// Initialize admin control buttons
-function initAdminControlButtons() {
-    const checkAdminPanel = setInterval(() => {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && adminPanel.style.display !== 'none') {
-            const locationBtn = document.querySelector('.location-btn');
-            
-            if (locationBtn) {
-                locationBtn.addEventListener('mousedown', function() {
-                    this.style.transform = 'translateY(-1px)';
-                });
-                
-                locationBtn.addEventListener('mouseup', function() {
-                    this.style.transform = '';
-                });
-                
-                clearInterval(checkAdminPanel);
-            }
-        }
-    }, 100);
+function initializeAdminPanel() {
+    // Проверяем сохраненный пароль
+    const savedPassword = sessionStorage.getItem('adminPassword');
+    if (savedPassword) {
+        console.log('🔑 Найден сохраненный пароль, автовход');
+        currentPassword = savedPassword;
+        validatePasswordAndShowPanel(savedPassword);
+    }
+    
+    setupEventListeners();
+    console.log('✅ Админ панель инициализирована');
 }
 
-// Setup event listeners
+// === ОБРАБОТЧИКИ СОБЫТИЙ ===
 function setupEventListeners() {
-    // Enter handler in password field
+    // Обработчик поля пароля
     const passwordInput = document.getElementById('adminPassword');
     if (passwordInput) {
         passwordInput.addEventListener('keypress', function(e) {
@@ -59,93 +47,131 @@ function setupEventListeners() {
                 adminLogin();
             }
         });
+        
+        passwordInput.addEventListener('input', hideLoginError);
     }
 
-    // Add point form handler
+    // Обработчик формы добавления точки
     const form = document.getElementById('addPointForm');
     if (form) {
         form.addEventListener('submit', handleAddPointSubmit);
     }
 
-    // Close modal windows when clicking outside
+    // Закрытие модальных окон
     window.addEventListener('click', function(event) {
         const addModal = document.getElementById('addPointModal');
         const qrModal = document.getElementById('qrModal');
         
-        if (event.target === addModal) {
-            closeAddModal();
-        }
-        
-        if (event.target === qrModal) {
-            closeQrModal();
-        }
+        if (event.target === addModal) closeAddModal();
+        if (event.target === qrModal) closeQrModal();
     });
 
-    // Handle window resize for admin map
-    window.addEventListener('resize', function() {
-        if (adminMap) {
-            clearTimeout(window.adminResizeTimeout);
-            window.adminResizeTimeout = setTimeout(() => {
-                adminMap.invalidateSize();
-            }, 150);
-        }
-    });
-
-    // Enhanced key handling for admin
+    // Горячие клавиши
     document.addEventListener('keydown', function(event) {
-        // Close modal windows with Escape
         if (event.key === 'Escape') {
             closeAddModal();
             closeQrModal();
         }
         
-        // Get location with Ctrl+L
-        if (event.ctrlKey && event.key === 'l') {
-            const adminPanel = document.getElementById('adminPanel');
-            if (adminPanel && adminPanel.style.display !== 'none') {
+        const adminPanel = document.getElementById('adminPanel');
+        if (adminPanel && adminPanel.style.display !== 'none') {
+            if (event.ctrlKey && event.key === 'l') {
                 event.preventDefault();
                 getAdminLocation();
             }
-        }
-        
-        // Toggle add mode with Ctrl+A
-        if (event.ctrlKey && event.key === 'a') {
-            const adminPanel = document.getElementById('adminPanel');
-            if (adminPanel && adminPanel.style.display !== 'none') {
+            
+            if (event.ctrlKey && event.key === 'a') {
                 event.preventDefault();
                 toggleAddMode();
             }
         }
     });
+
+    // Изменение размера окна
+    window.addEventListener('resize', debounce(() => {
+        if (adminMap) {
+            adminMap.invalidateSize();
+        }
+    }, 150));
 }
 
-// Admin panel login
+// === ФУНКЦИИ ВХОДА ===
 async function adminLogin() {
     const password = document.getElementById('adminPassword').value;
+    const loginBtn = document.getElementById('loginBtn');
     
     if (!password) {
-        showNotification('Enter password', 'error');
+        showLoginError('Введите пароль');
         return;
     }
     
-    console.log('🔐 Attempting admin panel login...');
-    
-    // First check password
-    const isValid = await checkPassword(password);
-    if (!isValid) {
-        showNotification('Invalid administrator password', 'error');
+    if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        showLoginError('Превышено количество попыток входа. Попробуйте позже.');
         return;
     }
     
-    currentPassword = password;
-    sessionStorage.setItem('adminPassword', password);
-    showAdminPanel();
+    // Блокируем кнопку
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Проверка...';
+    hideLoginError();
+    
+    try {
+        loginAttempts++;
+        console.log(`🔐 Попытка входа ${loginAttempts}/${MAX_LOGIN_ATTEMPTS}`);
+        
+        const isValid = await checkPasswordWithTimeout(password, 10000);
+        
+        if (isValid) {
+            loginAttempts = 0; // Сброс счетчика при успехе
+            currentPassword = password;
+            sessionStorage.setItem('adminPassword', password);
+            await showAdminPanel();
+        } else {
+            showLoginError('Неверный пароль администратора');
+            sessionStorage.removeItem('adminPassword');
+            currentPassword = '';
+            
+            if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+                showLoginError('Превышено количество попыток. Попробуйте позже.');
+                setTimeout(() => { loginAttempts = 0; }, 30000); // Разблокировка через 30 сек
+            }
+        }
+    } catch (error) {
+        console.error('❌ Ошибка входа:', error);
+        showLoginError('Ошибка соединения с сервером: ' + error.message);
+        
+        if (error.message.includes('timeout')) {
+            showLoginError('Сервер не отвечает. Проверьте соединение.');
+        }
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Войти';
+    }
 }
 
-// Check administrator password
+async function checkPasswordWithTimeout(password, timeout = 10000) {
+    return new Promise(async (resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            reject(new Error('timeout'));
+        }, timeout);
+        
+        try {
+            const result = await checkPassword(password);
+            clearTimeout(timeoutId);
+            resolve(result);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            reject(error);
+        }
+    });
+}
+
 async function checkPassword(password) {
     try {
-        console.log('🔐 Checking administrator password...');
+        console.log('🔐 Проверка пароля с сервером...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         
         const response = await fetch('/api/admin/points', {
             method: 'GET',
@@ -153,130 +179,581 @@ async function checkPassword(password) {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': password
-            }
+            },
+            signal: controller.signal
         });
         
-        console.log('📡 Password check response:', response.status);
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Ответ проверки пароля:', response.status);
         
         if (response.status === 401) {
-            console.log('❌ Invalid password');
             return false;
         }
         
         if (!response.ok) {
-            console.warn('⚠️ Unexpected server response:', response.status);
-            return false;
+            throw new Error(`Ошибка сервера: ${response.status}`);
         }
         
-        console.log('✅ Password correct');
         return true;
         
     } catch (error) {
-        console.error('❌ Password check error:', error);
-        showNotification('Server connection error', 'error');
-        return false;
+        if (error.name === 'AbortError') {
+            throw new Error('timeout');
+        }
+        console.error('❌ Ошибка проверки пароля:', error);
+        throw error;
     }
 }
 
-// Show admin panel
+async function validatePasswordAndShowPanel(password) {
+    try {
+        const isValid = await checkPasswordWithTimeout(password, 10000);
+        
+        if (isValid) {
+            currentPassword = password;
+            sessionStorage.setItem('adminPassword', password);
+            await showAdminPanel();
+        } else {
+            logout();
+        }
+    } catch (error) {
+        console.error('❌ Ошибка валидации пароля:', error);
+        logout();
+    }
+}
+
+// === ПОКАЗ АДМИН ПАНЕЛИ ===
 async function showAdminPanel() {
     try {
+        console.log('🛡️ Показ админ панели...');
+        
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         
-        // Initialize map
-        await initAdminMap();
+        // Инициализация карты с повторными попытками
+        await initAdminMapWithRetry(3);
         
-        // Load points
+        // Загрузка точек
         await loadAdminPoints();
-    } catch (error) {
-        console.error('❌ Admin panel display error:', error);
-        showNotification('Panel initialization error', 'error');
         
-        // Return to login form on error
-        document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('loginForm').style.display = 'block';
-        sessionStorage.removeItem('adminPassword');
-        currentPassword = '';
+        console.log('✅ Админ панель готова');
+        showNotification('Добро пожаловать в админ панель!', 'success');
+        
+    } catch (error) {
+        console.error('❌ Ошибка инициализации админ панели:', error);
+        showNotification('Ошибка инициализации: ' + error.message, 'error');
+        logout();
     }
 }
 
-// Admin map initialization
+// === ИНИЦИАЛИЗАЦИЯ КАРТЫ ===
+async function initAdminMapWithRetry(maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`🗺️ Попытка инициализации карты ${attempt}/${maxRetries}`);
+            await initAdminMap();
+            return;
+        } catch (error) {
+            console.error(`❌ Попытка ${attempt} не удалась:`, error);
+            
+            if (attempt === maxRetries) {
+                throw new Error(`Не удалось инициализировать карту после ${maxRetries} попыток`);
+            }
+            
+            // Ждем перед повторной попыткой
+            await sleep(1000 * attempt);
+        }
+    }
+}
+
 function initAdminMap() {
     return new Promise((resolve, reject) => {
         try {
+            console.log('🗺️ Создание админ карты...');
+            
+            // Проверяем доступность Leaflet
+            if (typeof L === 'undefined') {
+                throw new Error('Leaflet не загружен');
+            }
+            
+            const mapElement = document.getElementById('adminMap');
+            if (!mapElement) {
+                throw new Error('Элемент карты не найден');
+            }
+            
+            // Удаляем существующую карту
             if (adminMap) {
                 adminMap.remove();
                 adminMap = null;
             }
             
-            console.log('🗺️ Admin map initialization');
+            // Создаем карту
+            adminMap = L.map('adminMap', {
+                center: ALMATY_CENTER,
+                zoom: 13,
+                zoomControl: true,
+                preferCanvas: true,
+                attributionControl: true
+            });
             
-            // Check Leaflet availability
-            if (typeof L === 'undefined') {
-                throw new Error('Leaflet not loaded');
-            }
-            
-            const mapElement = document.getElementById('adminMap');
-            if (!mapElement) {
-                throw new Error('Map element not found');
-            }
-            
-            adminMap = L.map('adminMap').setView(ALMATY_CENTER, 13);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // Добавляем тайлы
+            const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
-            }).addTo(adminMap);
+                maxZoom: 18,
+                tileSize: 256,
+                crossOrigin: true
+            });
             
-            // Add click handler for adding points
+            tileLayer.addTo(adminMap);
+            
+            // Обработчик клика для добавления точек
             adminMap.on('click', function(e) {
                 if (isAddMode) {
                     openAddPointModal(e.latlng);
                 }
             });
             
-            // Force map size update after initialization
-            setTimeout(() => {
-                if (adminMap) {
-                    adminMap.invalidateSize();
-                    console.log('✅ Admin map ready');
-                    resolve();
-                }
-            }, 200);
+            // Ждем готовности карты
+            adminMap.whenReady(() => {
+                setTimeout(() => {
+                    if (adminMap) {
+                        adminMap.invalidateSize();
+                        isInitialized = true;
+                        console.log('✅ Админ карта готова');
+                        resolve();
+                    }
+                }, 500);
+            });
+            
+            // Обработка ошибок загрузки тайлов
+            tileLayer.on('tileerror', (e) => {
+                console.warn('⚠️ Ошибка загрузки тайла:', e);
+            });
             
         } catch (error) {
-            console.error('❌ Admin map initialization error:', error);
+            console.error('❌ Ошибка создания карты:', error);
             reject(error);
         }
     });
 }
 
-// FIXED Get geolocation for admin - WITHOUT popup
+// === ЗАГРУЗКА ТОЧЕК ===
+async function loadAdminPoints() {
+    if (isLoading) {
+        console.log('⏳ Загрузка точек уже выполняется');
+        return;
+    }
+    
+    isLoading = true;
+    
+    try {
+        console.log('📍 Загрузка админ точек...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        const response = await fetch('/api/admin/points', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': currentPassword
+            },
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Ответ загрузки точек:', response.status);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Недействительный пароль');
+            }
+            throw new Error(`Ошибка сервера: ${response.status}`);
+        }
+        
+        allPoints = await response.json();
+        console.log('✅ Загружено админ точек:', allPoints.length);
+        
+        updateAdminMap();
+        updateAdminStats();
+        updatePointsList();
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки точек:', error);
+        
+        if (error.name === 'AbortError') {
+            showNotification('Превышено время ожидания загрузки точек', 'error');
+        } else if (error.message.includes('Недействительный пароль')) {
+            showNotification('Сессия истекла. Войдите заново.', 'error');
+            logout();
+        } else {
+            showNotification('Ошибка загрузки точек: ' + error.message, 'error');
+        }
+    } finally {
+        isLoading = false;
+    }
+}
+
+// === ОБНОВЛЕНИЕ КАРТЫ ===
+function updateAdminMap() {
+    if (!adminMap || !allPoints) {
+        console.warn('⚠️ Карта или точки не готовы для обновления');
+        return;
+    }
+    
+    console.log('🗺️ Обновление карты с', allPoints.length, 'точками');
+    
+    try {
+        // Очищаем существующие маркеры
+        adminMarkers.forEach(marker => {
+            if (adminMap.hasLayer(marker)) {
+                adminMap.removeLayer(marker);
+            }
+        });
+        adminMarkers = [];
+        
+        // Добавляем новые маркеры
+        allPoints.forEach((point, index) => {
+            try {
+                const marker = createAdminMarker(point);
+                if (marker) {
+                    marker.addTo(adminMap);
+                    adminMarkers.push(marker);
+                }
+            } catch (error) {
+                console.error('❌ Ошибка создания маркера:', error, point);
+            }
+        });
+        
+        console.log('✅ Добавлено', adminMarkers.length, 'админ маркеров');
+        
+    } catch (error) {
+        console.error('❌ Ошибка обновления карты:', error);
+    }
+}
+
+function createAdminMarker(point) {
+    const now = new Date();
+    const isScheduled = new Date(point.scheduledTime) > now;
+    const isCollected = point.status === 'collected';
+    
+    let iconColor = '#4CAF50'; // зеленый для доступных
+    let iconEmoji = '📦';
+    
+    if (isCollected) {
+        iconColor = '#f44336'; // красный для собранных
+        iconEmoji = '✅';
+    } else if (isScheduled) {
+        iconColor = '#ff9800'; // оранжевый для запланированных
+        iconEmoji = '⏱️';
+    }
+    
+    const icon = L.divIcon({
+        className: 'admin-marker',
+        html: `<div class="admin-marker-dot" style="
+            background: ${iconColor};
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            font-size: 16px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        ">${iconEmoji}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    
+    const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon });
+    
+    // Содержимое попапа
+    const popupContent = createAdminPopupContent(point, isScheduled);
+    marker.bindPopup(popupContent, { maxWidth: 300 });
+    
+    return marker;
+}
+
+function createAdminPopupContent(point, isScheduled) {
+    let content = `
+        <div class="admin-popup">
+            <h3>${escapeHtml(point.name)}</h3>
+            <p><strong>ID:</strong> ${escapeHtml(point.id)}</p>
+            <p><strong>Статус:</strong> ${getStatusText(point, isScheduled)}</p>
+            <p><strong>Создано:</strong> ${new Date(point.createdAt).toLocaleString('ru-RU')}</p>
+    `;
+    
+    if (isScheduled) {
+        content += `<p><strong>Появится:</strong> ${new Date(point.scheduledTime).toLocaleString('ru-RU')}</p>`;
+    }
+    
+    if (point.status === 'collected' && point.collectorInfo) {
+        content += `
+            <p><strong>Собрано:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+            <p><strong>Сборщик:</strong> ${escapeHtml(point.collectorInfo.name)}</p>
+        `;
+    }
+    
+    content += `
+            <div style="margin-top: 12px;">
+                <button onclick="showQRCode('${escapeHtml(point.id)}')" class="admin-btn">Показать QR</button>
+                <button onclick="deletePoint('${escapeHtml(point.id)}')" class="admin-btn delete-btn">Удалить</button>
+            </div>
+        </div>
+    `;
+    
+    return content;
+}
+
+function getStatusText(point, isScheduled) {
+    if (point.status === 'collected') return '🔴 Собрано';
+    if (isScheduled) return '🟡 Запланировано';
+    return '🟢 Доступно';
+}
+
+// === СТАТИСТИКА ===
+function updateAdminStats() {
+    const now = new Date();
+    const total = allPoints.length;
+    const scheduled = allPoints.filter(p => new Date(p.scheduledTime) > now && p.status !== 'collected').length;
+    const active = allPoints.filter(p => new Date(p.scheduledTime) <= now && p.status === 'available').length;
+    
+    animateNumber(document.getElementById('totalPoints'), total);
+    animateNumber(document.getElementById('activePoints'), active);
+    animateNumber(document.getElementById('scheduledPoints'), scheduled);
+}
+
+// === СПИСОК ТОЧЕК ===
+function updatePointsList() {
+    const container = document.getElementById('pointsList');
+    
+    if (!container) {
+        console.warn('⚠️ Контейнер списка точек не найден');
+        return;
+    }
+    
+    if (allPoints.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Точки не созданы</p>';
+        return;
+    }
+    
+    const sortedPoints = [...allPoints].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    container.innerHTML = sortedPoints.map(point => {
+        const now = new Date();
+        const isScheduled = new Date(point.scheduledTime) > now;
+        const statusClass = point.status === 'collected' ? 'collected' : (isScheduled ? 'scheduled' : 'available');
+        
+        return `
+            <div class="point-item ${statusClass}">
+                <div class="point-header">
+                    <h4>${escapeHtml(point.name)}</h4>
+                    <span class="point-status">${getStatusText(point, isScheduled)}</span>
+                </div>
+                <p><strong>ID:</strong> ${escapeHtml(point.id)}</p>
+                <p><strong>Координаты:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
+                <p><strong>Создано:</strong> ${new Date(point.createdAt).toLocaleString('ru-RU')}</p>
+                ${isScheduled ? `<p><strong>Появится:</strong> ${new Date(point.scheduledTime).toLocaleString('ru-RU')}</p>` : ''}
+                ${point.status === 'collected' && point.collectorInfo ? `
+                    <p><strong>Собрано:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}</p>
+                    <p><strong>Сборщик:</strong> ${escapeHtml(point.collectorInfo.name)}</p>
+                ` : ''}
+                <div class="point-actions">
+                    <button onclick="showQRCode('${escapeHtml(point.id)}')" class="admin-btn">QR код</button>
+                    <button onclick="deletePoint('${escapeHtml(point.id)}')" class="admin-btn delete-btn">Удалить</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// === РЕЖИМ ДОБАВЛЕНИЯ ===
+function toggleAddMode() {
+    isAddMode = !isAddMode;
+    const btn = document.getElementById('addModeBtn');
+    
+    if (!btn) {
+        console.warn('⚠️ Кнопка режима добавления не найдена');
+        return;
+    }
+    
+    if (isAddMode) {
+        btn.textContent = 'Режим добавления: ВКЛ';
+        btn.classList.add('active');
+        if (adminMap) {
+            adminMap.getContainer().style.cursor = 'crosshair';
+        }
+        showNotification('Кликните на карте для добавления точки', 'info');
+    } else {
+        btn.textContent = 'Режим добавления: ВЫКЛ';
+        btn.classList.remove('active');
+        if (adminMap) {
+            adminMap.getContainer().style.cursor = '';
+        }
+    }
+}
+
+// === МОДАЛЬНЫЕ ОКНА ===
+function openAddPointModal(latlng) {
+    window.tempCoordinates = latlng;
+    const modal = document.getElementById('addPointModal');
+    const input = document.getElementById('modelName');
+    
+    if (modal && input) {
+        modal.style.display = 'block';
+        setTimeout(() => input.focus(), 100);
+    }
+}
+
+function closeAddModal() {
+    const modal = document.getElementById('addPointModal');
+    const form = document.getElementById('addPointForm');
+    
+    if (modal) modal.style.display = 'none';
+    if (form) form.reset();
+    
+    // Сброс состояния кнопки
+    const btn = document.getElementById('createPointBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Создать точку';
+    }
+}
+
+function closeQrModal() {
+    const modal = document.getElementById('qrModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// === ОБРАБОТКА ФОРМЫ ДОБАВЛЕНИЯ ===
+async function handleAddPointSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('modelName').value;
+    const delayMinutes = document.getElementById('delayMinutes').value;
+    const submitBtn = document.getElementById('createPointBtn');
+    
+    if (!window.tempCoordinates) {
+        showNotification('Ошибка координат', 'error');
+        return;
+    }
+    
+    if (!name || !name.trim()) {
+        showNotification('Введите название модели', 'error');
+        return;
+    }
+    
+    // Блокируем кнопку
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Создание...';
+    
+    try {
+        const requestData = {
+            name: name.trim(),
+            coordinates: {
+                lat: parseFloat(window.tempCoordinates.lat),
+                lng: parseFloat(window.tempCoordinates.lng)
+            },
+            delayMinutes: delayMinutes ? parseInt(delayMinutes) : 0
+        };
+        
+        console.log('📤 Создание точки:', requestData);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        const response = await fetch('/api/admin/points', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': currentPassword
+            },
+            body: JSON.stringify(requestData),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Сессия истекла');
+            }
+            
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+        }
+        
+        const responseData = await response.json();
+        console.log('✅ Точка создана:', responseData);
+        
+        closeAddModal();
+        showNotification('Точка успешно создана!', 'success');
+        
+        // Показываем QR код
+        if (responseData.qrCode) {
+            setTimeout(() => showQRCode(responseData.id, responseData.qrCode), 500);
+        }
+        
+        // Перезагружаем точки
+        await loadAdminPoints();
+        
+    } catch (error) {
+        console.error('❌ Ошибка создания точки:', error);
+        
+        if (error.name === 'AbortError') {
+            showNotification('Превышено время ожидания создания точки', 'error');
+        } else if (error.message.includes('Сессия истекла')) {
+            showNotification('Сессия истекла. Войдите заново.', 'error');
+            logout();
+        } else {
+            showNotification('Ошибка создания: ' + error.message, 'error');
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Создать точку';
+    }
+}
+
+// === ГЕОЛОКАЦИЯ ===
 function getAdminLocation() {
     const locationBtn = document.querySelector('.location-btn');
     
     if (!navigator.geolocation) {
-        showNotification('Geolocation not supported', 'error');
+        showNotification('Геолокация не поддерживается', 'error');
         return;
     }
     
     if (!adminMap) {
-        showNotification('Map not ready', 'error');
+        showNotification('Карта не готова', 'error');
         return;
     }
     
     const originalText = locationBtn.innerHTML;
-    locationBtn.innerHTML = '⏳ Locating...';
+    locationBtn.innerHTML = '⏳ Определение...';
     locationBtn.disabled = true;
-    locationBtn.style.opacity = '0.8';
     
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            // Create enhanced user marker for admin
+            // Удаляем предыдущий маркер
+            if (window.adminUserMarker) {
+                adminMap.removeLayer(window.adminUserMarker);
+            }
+            
+            // Создаем маркер пользователя
             const userIcon = L.divIcon({
                 className: 'admin-user-location-marker',
                 html: `<div style="
@@ -287,7 +764,6 @@ function getAdminLocation() {
                     border: 3px solid white; 
                     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
                     position: relative;
-                    transition: all 0.3s ease;
                 ">
                     <div style="
                         position: absolute;
@@ -305,52 +781,40 @@ function getAdminLocation() {
                 iconAnchor: [13, 13]
             });
             
-            // Add pulse animation styles for admin
+            // Добавляем стили анимации
             addAdminUserPulseStyles();
             
-            // Remove previous admin marker if exists
-            if (window.adminUserMarker) {
-                adminMap.removeLayer(window.adminUserMarker);
-            }
-            
-            // Add new marker БЕЗ popup для админа тоже
             window.adminUserMarker = L.marker([lat, lng], { icon: userIcon }).addTo(adminMap);
-            
-            // Smoothly center map on admin БЕЗ popup
             adminMap.flyTo([lat, lng], 16, {
                 duration: 1.5,
                 easeLinearity: 0.5
             });
             
-            showNotification('Location determined', 'success');
+            showNotification('Местоположение определено', 'success');
             
-            // Restore button
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
-            locationBtn.style.opacity = '';
         },
         function(error) {
-            console.error('Geolocation error:', error);
-            let errorMessage = 'Could not determine location';
+            console.error('❌ Ошибка геолокации:', error);
             
+            let errorMessage = 'Не удалось определить местоположение';
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    errorMessage = 'Geolocation access denied';
+                    errorMessage = 'Доступ к геолокации запрещен';
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Location unavailable';
+                    errorMessage = 'Местоположение недоступно';
                     break;
                 case error.TIMEOUT:
-                    errorMessage = 'Timeout exceeded';
+                    errorMessage = 'Превышено время ожидания';
                     break;
             }
             
             showNotification(errorMessage, 'error');
             
-            // Restore button
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
-            locationBtn.style.opacity = '';
         },
         {
             enableHighAccuracy: true,
@@ -360,7 +824,6 @@ function getAdminLocation() {
     );
 }
 
-// Add pulse animation styles for admin
 function addAdminUserPulseStyles() {
     if (!document.getElementById('admin-user-pulse-styles')) {
         const style = document.createElement('style');
@@ -379,170 +842,155 @@ function addAdminUserPulseStyles() {
                     opacity: 0;
                 }
             }
-            
-            .admin-user-location-marker:hover > div {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-            }
         `;
         document.head.appendChild(style);
     }
 }
 
-// Load points for admin
-async function loadAdminPoints() {
+// === QR КОД ===
+function showQRCode(pointId, qrCodeData = null) {
+    if (qrCodeData) {
+        currentQRCode = qrCodeData;
+        displayQRModal(qrCodeData, pointId);
+        return;
+    }
+    
+    const point = allPoints.find(p => p.id === pointId);
+    if (!point) {
+        showNotification('Точка не найдена', 'error');
+        return;
+    }
+    
+    currentQRCode = point.qrCode;
+    displayQRModal(point.qrCode, pointId, point.name);
+}
+
+function displayQRModal(qrCode, pointId, pointName = '') {
+    const qrDisplay = document.getElementById('qrCodeDisplay');
+    if (qrDisplay) {
+        qrDisplay.innerHTML = `
+            <img src="${qrCode}" alt="QR код" style="max-width: 280px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            ${pointName ? `<p style="font-weight: 600; margin-top: 15px;"><strong>${escapeHtml(pointName)}</strong></p>` : ''}
+            <p style="color: #666;">ID: ${escapeHtml(pointId)}</p>
+        `;
+    }
+    
+    const modal = document.getElementById('qrModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function downloadQR() {
+    if (!currentQRCode) {
+        showNotification('QR код не найден', 'error');
+        return;
+    }
+    
     try {
-        console.log('🔄 Loading points for admin...');
+        const link = document.createElement('a');
+        link.download = `plasticboy-qr-${Date.now()}.png`;
+        link.href = currentQRCode;
+        link.click();
         
-        const response = await fetch('/api/admin/points', {
-            method: 'GET',
+        showNotification('QR код загружен', 'success');
+    } catch (error) {
+        console.error('❌ Ошибка загрузки QR кода:', error);
+        showNotification('Ошибка загрузки QR кода', 'error');
+    }
+}
+
+// === УДАЛЕНИЕ ТОЧКИ ===
+async function deletePoint(pointId) {
+    if (!confirm('Вы уверены, что хотите удалить эту точку?')) {
+        return;
+    }
+    
+    try {
+        console.log('🗑️ Удаление точки:', pointId);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`/api/admin/points/${encodeURIComponent(pointId)}`, {
+            method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': currentPassword
-            }
+            },
+            signal: controller.signal
         });
         
-        console.log('📡 Server response for admin points:', response.status);
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
             if (response.status === 401) {
-                showNotification('Invalid password', 'error');
-                sessionStorage.removeItem('adminPassword');
-                
-                // Return to login form
-                document.getElementById('adminPanel').style.display = 'none';
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('adminPassword').value = '';
-                currentPassword = '';
-                
-                return;
+                throw new Error('Сессия истекла');
             }
-            const errorText = await response.text();
-            console.error('❌ Server response error:', errorText);
-            throw new Error(`Server error: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Ошибка удаления точки');
         }
         
-        allPoints = await response.json();
-        console.log('✅ Loaded points for admin:', allPoints.length);
-        
-        updateAdminMap();
-        updateAdminStats();
-        updatePointsList();
+        showNotification('Точка успешно удалена', 'success');
+        await loadAdminPoints();
         
     } catch (error) {
-        console.error('❌ Admin points loading error:', error);
-        showNotification(`Data loading error: ${error.message}`, 'error');
+        console.error('❌ Ошибка удаления точки:', error);
         
-        // Return to login form on network error
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            sessionStorage.removeItem('adminPassword');
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('adminPassword').value = '';
-            currentPassword = '';
-            showNotification('Check server connection', 'error');
+        if (error.name === 'AbortError') {
+            showNotification('Превышено время ожидания удаления', 'error');
+        } else if (error.message.includes('Сессия истекла')) {
+            showNotification('Сессия истекла. Войдите заново.', 'error');
+            logout();
+        } else {
+            showNotification('Ошибка удаления: ' + error.message, 'error');
         }
     }
 }
 
-// Update admin map with enhanced markers
-function updateAdminMap() {
-    if (!adminMap || !allPoints) {
-        console.warn('⚠️ Map or points not ready for update');
-        return;
+// === ВЫХОД ===
+function logout() {
+    sessionStorage.removeItem('adminPassword');
+    currentPassword = '';
+    allPoints = [];
+    loginAttempts = 0;
+    
+    if (adminMap) {
+        adminMap.remove();
+        adminMap = null;
     }
     
-    // Clear existing markers
-    adminMarkers.forEach(marker => {
-        if (adminMap.hasLayer(marker)) {
-            adminMap.removeLayer(marker);
-        }
-    });
     adminMarkers = [];
+    isInitialized = false;
+    isAddMode = false;
     
-    allPoints.forEach(point => {
-        try {
-            const now = new Date();
-            const isScheduled = new Date(point.scheduledTime) > now;
-            const isCollected = point.status === 'collected';
-            
-            let iconColor = '#4CAF50'; // green for available
-            if (isCollected) iconColor = '#f44336'; // red for collected
-            else if (isScheduled) iconColor = '#ff9800'; // orange for scheduled
-            
-            const icon = L.divIcon({
-                className: 'admin-marker',
-                html: `<div class="admin-marker-dot" style="background: ${iconColor};">
-                         ${isScheduled ? '⏱️' : (isCollected ? '✅' : '📦')}
-                       </div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-            
-            const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
-                .addTo(adminMap);
-            
-            // Enhanced popup for admin
-            let popupContent = `
-                <div class="admin-popup">
-                    <h3>${point.name}</h3>
-                    <p><strong>ID:</strong> ${point.id}</p>
-                    <p><strong>Status:</strong> ${getStatusText(point, isScheduled)}</p>
-                    <p><strong>Created:</strong> ${new Date(point.createdAt).toLocaleString('en-US')}</p>
-            `;
-            
-            if (isScheduled) {
-                popupContent += `<p><strong>Will appear:</strong> ${new Date(point.scheduledTime).toLocaleString('en-US')}</p>`;
-            }
-            
-            if (point.status === 'collected') {
-                popupContent += `
-                    <p><strong>Collected:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}</p>
-                    <p><strong>Collector:</strong> ${point.collectorInfo.name}</p>
-                `;
-            }
-            
-            popupContent += `
-                    <div style="margin-top: 12px;">
-                        <button onclick="showQRCode('${point.id}')" class="admin-btn">Show QR</button>
-                        <button onclick="deletePoint('${point.id}')" class="admin-btn delete-btn">Delete</button>
-                    </div>
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent);
-            adminMarkers.push(marker);
-        } catch (error) {
-            console.error('❌ Marker addition error:', error, point);
-        }
-    });
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('adminPassword').value = '';
+    hideLoginError();
     
-    addAdminMarkerStyles();
+    console.log('👋 Выход из админ панели');
 }
 
-// Get status text
-function getStatusText(point, isScheduled) {
-    if (point.status === 'collected') return '🔴 Collected';
-    if (isScheduled) return '🟡 Scheduled';
-    return '🟢 Available';
+// === ОШИБКИ ВХОДА ===
+function showLoginError(message) {
+    const errorDiv = document.getElementById('loginError');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
 }
 
-// Update admin statistics with animation
-function updateAdminStats() {
-    const now = new Date();
-    const total = allPoints.length;
-    const scheduled = allPoints.filter(p => new Date(p.scheduledTime) > now && p.status !== 'collected').length;
-    const active = allPoints.filter(p => new Date(p.scheduledTime) <= now && p.status === 'available').length;
-    
-    // Animated update
-    animateAdminNumber(document.getElementById('totalPoints'), total);
-    animateAdminNumber(document.getElementById('activePoints'), active);
-    animateAdminNumber(document.getElementById('scheduledPoints'), scheduled);
+function hideLoginError() {
+    const errorDiv = document.getElementById('loginError');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
 }
 
-// Number animation for admin panel
-function animateAdminNumber(element, targetValue) {
+// === АНИМАЦИЯ ЧИСЕЛ ===
+function animateNumber(element, targetValue) {
     if (!element) return;
     
     const currentValue = parseInt(element.textContent) || 0;
@@ -573,450 +1021,48 @@ function animateAdminNumber(element, targetValue) {
     }, stepDuration);
 }
 
-// Update points list
-function updatePointsList() {
-    const container = document.getElementById('pointsList');
-    
-    if (!container) {
-        console.warn('⚠️ Points list container not found');
-        return;
-    }
-    
-    if (allPoints.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No points created</p>';
-        return;
-    }
-    
-    const sortedPoints = [...allPoints].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    container.innerHTML = sortedPoints.map(point => {
-        const now = new Date();
-        const isScheduled = new Date(point.scheduledTime) > now;
-        const statusClass = point.status === 'collected' ? 'collected' : (isScheduled ? 'scheduled' : 'available');
-        
-        return `
-            <div class="point-item ${statusClass}">
-                <div class="point-header">
-                    <h4>${point.name}</h4>
-                    <span class="point-status">${getStatusText(point, isScheduled)}</span>
-                </div>
-                <p><strong>ID:</strong> ${point.id}</p>
-                <p><strong>Coordinates:</strong> ${point.coordinates.lat.toFixed(6)}, ${point.coordinates.lng.toFixed(6)}</p>
-                <p><strong>Created:</strong> ${new Date(point.createdAt).toLocaleString('en-US')}</p>
-                ${isScheduled ? `<p><strong>Will appear:</strong> ${new Date(point.scheduledTime).toLocaleString('en-US')}</p>` : ''}
-                ${point.status === 'collected' ? `
-                    <p><strong>Collected:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}</p>
-                    <p><strong>Collector:</strong> ${point.collectorInfo.name}</p>
-                ` : ''}
-                <div class="point-actions">
-                    <button onclick="showQRCode('${point.id}')" class="admin-btn">QR code</button>
-                    <button onclick="deletePoint('${point.id}')" class="admin-btn delete-btn">Delete</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-// Toggle add mode
-function toggleAddMode() {
-    isAddMode = !isAddMode;
-    const btn = document.getElementById('addModeBtn');
-    
-    if (!btn) {
-        console.warn('⚠️ Add mode button not found');
-        return;
-    }
-    
-    if (isAddMode) {
-        btn.textContent = 'Add mode: ON';
-        btn.classList.add('active');
-        if (adminMap) {
-            adminMap.getContainer().style.cursor = 'crosshair';
-        }
-        showNotification('Click on map to add point', 'info');
-    } else {
-        btn.textContent = 'Add mode: OFF';
-        btn.classList.remove('active');
-        if (adminMap) {
-            adminMap.getContainer().style.cursor = '';
-        }
-    }
-}
-
-// Open add point modal window
-function openAddPointModal(latlng) {
-    window.tempCoordinates = latlng;
-    const modal = document.getElementById('addPointModal');
-    const input = document.getElementById('modelName');
-    
-    if (modal && input) {
-        modal.style.display = 'block';
-        input.focus();
-    }
-}
-
-// Close add modal window
-function closeAddModal() {
-    const modal = document.getElementById('addPointModal');
-    const form = document.getElementById('addPointForm');
-    
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    if (form) {
-        form.reset();
-    }
-}
-
-// Handle add point form
-async function handleAddPointSubmit(e) {
-    e.preventDefault();
-    
-    console.log('🚀 Starting point creation...');
-    
-    const name = document.getElementById('modelName').value;
-    const delayMinutes = document.getElementById('delayMinutes').value;
-    
-    console.log('📝 Form data:', { name, delayMinutes });
-    
-    if (!window.tempCoordinates) {
-        console.error('❌ No coordinates');
-        showNotification('Coordinates error', 'error');
-        return;
-    }
-    
-    console.log('📍 Coordinates:', window.tempCoordinates);
-    
-    if (!name || !name.trim()) {
-        console.error('❌ Point name empty');
-        showNotification('Enter model name', 'error');
-        return;
-    }
-    
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalHTML = submitBtn.innerHTML;
-    
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span style="animation: spin 1s linear infinite;">⏳</span> Creating...';
-    submitBtn.style.opacity = '0.8';
-
-    try {
-        const requestData = {
-            name: name.trim(),
-            coordinates: {
-                lat: parseFloat(window.tempCoordinates.lat),
-                lng: parseFloat(window.tempCoordinates.lng)
-            },
-            delayMinutes: delayMinutes ? parseInt(delayMinutes) : 0
-        };
-
-        console.log('📤 Sending data:', requestData);
-        console.log('🔑 Admin password:', currentPassword ? 'set' : 'not set');
-
-        const response = await fetch('/api/admin/points', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': currentPassword
-            },
-            body: JSON.stringify(requestData)
-        });
-        
-        console.log('📡 Server response:', {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries())
-        });
-        
-        let responseData;
-        const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-            responseData = await response.json();
-        } else {
-            const textResponse = await response.text();
-            console.error('❌ Server returned non-JSON:', textResponse);
-            throw new Error(`Server returned invalid response: ${textResponse.substring(0, 100)}`);
-        }
-        
-        console.log('📥 Response data:', responseData);
-        
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.error('❌ Invalid admin password');
-                showNotification('Invalid administrator password', 'error');
-                sessionStorage.removeItem('adminPassword');
-                
-                // Return to login form
-                document.getElementById('adminPanel').style.display = 'none';
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('adminPassword').value = '';
-                currentPassword = '';
-                
-                setTimeout(() => location.reload(), 2000);
-                return;
-            }
-            
-            const errorMessage = responseData.error || `HTTP ${response.status}: ${response.statusText}`;
-            console.error('❌ Server error:', errorMessage);
-            throw new Error(errorMessage);
-        }
-        
-        console.log('✅ Point successfully created:', responseData);
-        
-        closeAddModal();
-        showNotification('Point successfully created!', 'success');
-        
-        // Show QR code for new point
-        if (responseData.qrCode) {
-            showQRCodeForNewPoint(responseData);
-        }
-        
-        // Update data
-        await loadAdminPoints();
-        
-    } catch (error) {
-        console.error('❌ Point creation error:', error);
-        console.error('❌ Stack trace:', error.stack);
-        
-        // Show detailed error
-        let errorMessage = 'Unknown error';
-        
-        if (error.message.includes('Failed to fetch')) {
-            errorMessage = 'Could not connect to server. Check connection.';
-        } else if (error.message.includes('NetworkError')) {
-            errorMessage = 'Network error. Try again later.';
-        } else if (error.message.includes('Invalid')) {
-            errorMessage = 'Invalid data: ' + error.message;
-        } else {
-            errorMessage = error.message;
-        }
-        
-        showNotification(errorMessage, 'error');
-    } finally {
-        // Restore button
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalHTML;
-        submitBtn.style.opacity = '';
-    }
-}
-
-// Show QR code for newly created point
-function showQRCodeForNewPoint(point) {
-    currentQRCode = point.qrCode;
-    
-    const qrDisplay = document.getElementById('qrCodeDisplay');
-    if (qrDisplay) {
-        qrDisplay.innerHTML = `
-            <img src="${point.qrCode}" alt="QR code for ${point.name}" style="max-width: 280px; border-radius: 12px;">
-            <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
-            <p style="color: #666;">ID: ${point.id}</p>
-        `;
-    }
-    
-    const modal = document.getElementById('qrModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-// Show QR code for existing points
-function showQRCode(pointId, qrCodeData = null) {
-    // If ready QR code passed (for new points), use it
-    if (qrCodeData) {
-        currentQRCode = qrCodeData;
-        const qrDisplay = document.getElementById('qrCodeDisplay');
-        if (qrDisplay) {
-            qrDisplay.innerHTML = `
-                <img src="${qrCodeData}" alt="QR code" style="max-width: 280px; border-radius: 12px;">
-                <p style="color: #666; margin-top: 15px;">ID: ${pointId}</p>
-            `;
-        }
-        const modal = document.getElementById('qrModal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
-        return;
-    }
-    
-    // For existing points search in list
-    const point = allPoints.find(p => p.id === pointId);
-    if (!point) {
-        showNotification('Point not found', 'error');
-        return;
-    }
-    
-    currentQRCode = point.qrCode;
-    
-    const qrDisplay = document.getElementById('qrCodeDisplay');
-    if (qrDisplay) {
-        qrDisplay.innerHTML = `
-            <img src="${point.qrCode}" alt="QR code for ${point.name}" style="max-width: 280px; border-radius: 12px;">
-            <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
-            <p style="color: #666;">ID: ${pointId}</p>
-        `;
-    }
-    
-    const modal = document.getElementById('qrModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-// Close QR modal window
-function closeQrModal() {
-    const modal = document.getElementById('qrModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Download QR code
-function downloadQR() {
-    if (!currentQRCode) return;
-    
-    const link = document.createElement('a');
-    link.download = `plasticboy-qr-${Date.now()}.png`;
-    link.href = currentQRCode;
-    link.click();
-}
-
-// Delete point
-async function deletePoint(pointId) {
-    if (!confirm('Are you sure you want to delete this point?')) {
-        return;
-    }
-    
-    try {
-        console.log('🗑️ Deleting point:', pointId);
-        
-        const response = await fetch(`/api/admin/points/${pointId}`, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': currentPassword
-            }
-        });
-        
-        console.log('📡 Delete response:', response.status);
-        
-        if (!response.ok) {
-            if (response.status === 401) {
-                showNotification('Invalid administrator password', 'error');
-                sessionStorage.removeItem('adminPassword');
-                location.reload();
-                return;
-            }
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to delete point');
-        }
-        
-        showNotification('Point deleted', 'success');
-        await loadAdminPoints();
-        
-    } catch (error) {
-        console.error('❌ Point deletion error:', error);
-        showNotification('Point deletion error: ' + error.message, 'error');
-    }
-}
-
-// Add enhanced styles for admin markers
-function addAdminMarkerStyles() {
-    if (!document.getElementById('admin-marker-styles')) {
-        const style = document.createElement('style');
-        style.id = 'admin-marker-styles';
-        style.textContent = `
-            .admin-marker {
-                background: none !important;
-                border: none !important;
-            }
-            
-            .admin-marker-dot {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid white;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-                font-size: 16px;
-                color: white;
-                font-weight: bold;
-                transition: all 0.3s ease;
-                cursor: pointer;
-            }
-            
-            .admin-marker-dot:hover {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-            }
-            
-            .admin-popup {
-                min-width: 220px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            }
-            
-            .admin-popup h3 {
-                margin: 0 0 12px 0;
-                color: #333;
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            
-            .admin-popup p {
-                margin: 6px 0;
-                font-size: 0.9rem;
-            }
-            
-            .admin-btn {
-                background: linear-gradient(45deg, #667eea, #764ba2);
-                color: white;
-                border: none;
-                padding: 8px 14px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 0.85rem;
-                margin: 6px 6px 0 0;
-                min-width: 90px;
-                transition: all 0.3s;
-                font-weight: 500;
-            }
-            
-            .admin-btn:hover {
-                background: linear-gradient(45deg, #5a67d8, #6b46c1);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            }
-            
-            .delete-btn {
-                background: linear-gradient(45deg, #f44336, #e53935) !important;
-            }
-            
-            .delete-btn:hover {
-                background: linear-gradient(45deg, #d32f2f, #c62828) !important;
-                box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Enhanced notification function for admin
+// === УВЕДОМЛЕНИЯ ===
 function showNotification(message, type = 'info') {
-    console.log(`🔔 Notification: ${type} - ${message}`);
+    console.log(`🔔 Уведомление: ${type} - ${message}`);
+    
+    // Удаляем существующие уведомления
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(n => n.remove());
     
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
         <div class="notification-content">
-            <span>${getNotificationIcon(type)} ${message}</span>
+            <span>${getNotificationIcon(type)} ${escapeHtml(message)}</span>
             <button onclick="this.parentElement.parentElement.remove()">×</button>
         </div>
     `;
     
+    // Добавляем стили если их нет
+    ensureNotificationStyles();
+    
+    document.body.appendChild(notification);
+    
+    // Автоудаление через 5 секунд
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        error: '❌',
+        success: '✅',
+        info: 'ℹ️',
+        warning: '⚠️'
+    };
+    return icons[type] || icons.info;
+}
+
+function ensureNotificationStyles() {
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
         style.id = 'notification-styles';
@@ -1036,6 +1082,7 @@ function showNotification(message, type = 'info') {
                 animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 border: 1px solid rgba(255,255,255,0.2);
                 font-weight: 500;
+                font-family: 'ABC Oracle', sans-serif;
             }
             
             .notification.error {
@@ -1091,43 +1138,51 @@ function showNotification(message, type = 'info') {
                     opacity: 1;
                 }
             }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0) scale(1);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%) scale(0.9);
+                    opacity: 0;
+                }
+            }
         `;
         document.head.appendChild(style);
     }
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        }
-    }, 5000);
 }
 
-// Get notification icon
-function getNotificationIcon(type) {
-    const icons = {
-        error: '❌',
-        success: '✅',
-        info: 'ℹ️',
-        warning: '⚠️'
+// === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
     };
-    return icons[type] || icons.info;
+    return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-// Debug function to check state
-function debugAdminState() {
-    console.log('🔍 Admin panel state debug:', {
-        currentPassword: currentPassword ? 'set' : 'not set',
-        isAddMode: isAddMode,
-        allPointsCount: allPoints.length,
-        adminMapReady: !!adminMap,
-        tempCoordinates: window.tempCoordinates
-    });
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Export functions for global use (if needed)
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// === ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ HTML ===
 window.adminLogin = adminLogin;
 window.toggleAddMode = toggleAddMode;
 window.getAdminLocation = getAdminLocation;
@@ -1136,5 +1191,5 @@ window.deletePoint = deletePoint;
 window.closeAddModal = closeAddModal;
 window.closeQrModal = closeQrModal;
 window.downloadQR = downloadQR;
-window.debugAdminState = debugAdminState;
-window.checkPassword = checkPassword;
+
+console.log('🛡️ Админ панель - Исправленная версия готова');
