@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -487,7 +487,7 @@
     </style>
 </head>
 <body>
-    <!-- ЗАГРУЗОЧНЫЙ ЭКРАН -->
+    <!-- LOADING SCREEN -->
     <div class="loading-screen" id="loadingScreen">
         <!-- CRT эффект -->
         <div class="crt-effect"></div>
@@ -526,7 +526,7 @@
         </div>
     </div>
 
-    <!-- ОСНОВНОЙ КОНТЕНТ ПРИЛОЖЕНИЯ -->
+    <!-- MAIN APPLICATION CONTENT -->
     <div class="main-content" id="mainContent">
         <div class="container">
             <header class="header">
@@ -537,11 +537,11 @@
             <div class="stats">
                 <div class="stat-item">
                     <span class="stat-number" id="availableCount">0</span>
-                    <span class="stat-label">Доступно для сбора</span>
+                    <span class="stat-label">Available to collect</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number" id="collectedCount">0</span>
-                    <span class="stat-label">Собрано другими</span>
+                    <span class="stat-label">Collected by others</span>
                 </div>
             </div>
 
@@ -550,46 +550,46 @@
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-dot green"></div>
-                        <span>Доступные модели</span>
+                        <span>Available models</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot red"></div>
-                        <span>Собранные модели</span>
+                        <span>Collected models</span>
                     </div>
                 </div>
             </div>
 
-           <!-- КНОПКИ УПРАВЛЕНИЯ - РАЗДЕЛЕННЫЕ -->
-            <!-- Кнопка геолокации -->
+           <!-- CONTROL BUTTONS - SEPARATED -->
+            <!-- Location button -->
             <div class="map-controls">
                 <button class="control-btn location-btn" onclick="getCurrentLocation()">
-                    📍 Моё местоположение
+                    📍 My location
                 </button>
             </div>
 
-            <!-- Кнопка рейтинга -->
+            <!-- Leaderboard button -->
             <div class="map-controls">
                 <a href="/leaderboard.html" class="control-btn leaderboard-btn">
                     <span class="trophy-icon">🏆</span>
-                    Рейтинг коллекторов
+                    Collectors Leaderboard
                 </a>
             </div>
         </div>
 
-        <!-- Модальное окно для информации о собранной модели -->
+        <!-- Modal window for collected model information -->
         <div id="infoModal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="closeModal()">&times;</span>
-                <h2 id="modalTitle">Информация о модели</h2>
+                <h2 id="modalTitle">Model Information</h2>
                 <div id="modalBody"></div>
             </div>
         </div>
     </div>
 
-    <!-- Скрипт системы загрузки -->
+    <!-- Loading system script -->
     <script>
-        // ПРОСТАЯ И НАДЕЖНАЯ СИСТЕМА ЗАГРУЗКИ
-        console.log('🎯 PlasticBoy - Запуск системы');
+        // SIMPLE AND RELIABLE LOADING SYSTEM
+        console.log('🎯 PlasticBoy - Starting system');
         
         let loadingSteps = [
             "INITIALIZING...",
@@ -605,7 +605,7 @@
         let arePointsLoaded = false;
         let isLeafletReady = false;
 
-        // Создание простого матричного фона
+        // Create simple matrix background
         function createMatrix() {
             const matrixBg = document.getElementById('matrixBg');
             const numberOfDots = window.innerWidth < 768 ? 10 : 20;
@@ -620,13 +620,13 @@
             }
         }
 
-        // Обновление загрузочного экрана
+        // Update loading screen
         function updateLoader() {
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const loadingStatus = document.getElementById('loadingStatus');
             
-            // Простое увеличение прогресса
+            // Simple progress increase
             if (isLeafletReady && progress < 40) {
                 progress = 40;
             }
@@ -644,14 +644,14 @@
             progressBar.style.width = progress + '%';
             progressText.textContent = Math.floor(progress) + '%';
             
-            // Обновление статуса
+            // Update status
             const targetStep = Math.floor(progress / 25);
             if (targetStep > currentStep && currentStep < loadingSteps.length - 1) {
                 currentStep = targetStep;
                 loadingStatus.textContent = loadingSteps[currentStep];
             }
             
-            // Завершение загрузки
+            // Complete loading
             if (arePointsLoaded && progress >= 100) {
                 loadingStatus.textContent = loadingSteps[loadingSteps.length - 1];
                 setTimeout(finishLoading, 500);
@@ -660,7 +660,7 @@
             return false;
         }
 
-        // Завершение загрузки
+        // Finish loading
         function finishLoading() {
             const loadingScreen = document.getElementById('loadingScreen');
             const mainContent = document.getElementById('mainContent');
@@ -673,35 +673,35 @@
             }, 600);
         }
 
-        // Экспорт для использования в script.js
+        // Export for use in script.js
         window.AppLoader = {
             onLeafletReady: () => { 
                 isLeafletReady = true; 
-                console.log('✅ Leaflet готов');
+                console.log('✅ Leaflet ready');
             },
             onMapReady: () => { 
                 isMapReady = true; 
-                console.log('✅ Карта готова');
+                console.log('✅ Map ready');
             },
             onPointsLoaded: () => { 
                 arePointsLoaded = true; 
-                console.log('✅ Точки загружены');
+                console.log('✅ Points loaded');
             },
             updateLoader: updateLoader
         };
 
-        // Инициализация
+        // Initialization
         document.addEventListener('DOMContentLoaded', function() {
             createMatrix();
             
-            // Основной цикл загрузки
+            // Main loading loop
             const loaderInterval = setInterval(() => {
                 if (updateLoader()) {
                     clearInterval(loaderInterval);
                 }
             }, 300);
             
-            // Таймаут безопасности
+            // Safety timeout
             setTimeout(() => {
                 arePointsLoaded = true;
                 progress = 100;
@@ -709,10 +709,10 @@
         });
     </script>
     
-    <!-- Подключение Leaflet -->
+    <!-- Leaflet connection -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Основной скрипт приложения -->
+    <!-- Main application script -->
     <script src="script.js"></script>
 </body>
 </html>
