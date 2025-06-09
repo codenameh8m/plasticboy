@@ -65,7 +65,7 @@ async function handleTelegramUpdate(update) {
         
         switch (command) {
           case 'start':
-            const welcomeMessage = `🎯 *PlasticBoy - Almaty Edition*\n\nHello, ${user.first_name}! 👋\n\nWelcome to the 3D model collection game in Almaty!\n\n🎮 *How to play:*\n• Find QR codes of models around the city\n• Scan them and collect your collection\n• Compete with other players\n\nHappy hunting! 🎯`;
+            const welcomeMessage = `🎯 *PlasticBoy - Almight Edition*\n\nHello, ${user.first_name}! 👋\n\nWelcome to the 3D model collection hunt game in Almaty!\n\n🎮 *How to play:*\n• Find QR codes of models around the city\n• Scan them and collect your collection\n• Compete with other players\n\nHappy hunting! 🎯`;
             
             await sendTelegramMessage(chatId, welcomeMessage, {
               reply_markup: {
