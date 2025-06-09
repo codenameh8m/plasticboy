@@ -1,23 +1,23 @@
-// PlasticBoy v2.0 - Исправленная версия с улучшенной загрузкой и Telegram интеграцией
+// PlasticBoy v2.0 - Fixed version with improved loading and Telegram integration
 (function() {
     'use strict';
     
-    console.log('🎯 PlasticBoy - Инициализация скрипта');
+    console.log('🎯 PlasticBoy - Script initialization');
     
-    // Глобальные переменные
+    // Global variables
     let map = null;
     let markers = [];
     let isInitialized = false;
     let initAttempts = 0;
     const MAX_INIT_ATTEMPTS = 10;
     
-    // Координаты Алматы
+    // Almaty coordinates
     const ALMATY_CENTER = [43.2220, 76.8512];
     
-    // Система кэширования
+    // Caching system
     const Cache = {
         key: 'plasticboy_points_v2',
-        ttl: 5 * 60 * 1000, // 5 минут
+        ttl: 5 * 60 * 1000, // 5 minutes
         
         save: function(data) {
             try {
@@ -26,9 +26,9 @@
                     timestamp: Date.now()
                 };
                 localStorage.setItem(this.key, JSON.stringify(item));
-                console.log('💾 Сохранено ' + data.length + ' точек в кэш');
+                console.log('💾 Saved ' + data.length + ' points to cache');
             } catch (e) {
-                console.warn('⚠️ Ошибка сохранения кэша:', e);
+                console.warn('⚠️ Cache save error:', e);
             }
         },
         
@@ -41,25 +41,25 @@
                 const age = Date.now() - parsed.timestamp;
                 
                 if (age > this.ttl) {
-                    console.log('⏰ Кэш устарел');
+                    console.log('⏰ Cache expired');
                     return null;
                 }
                 
-                console.log('📦 Загружено ' + parsed.data.length + ' точек из кэша');
+                console.log('📦 Loaded ' + parsed.data.length + ' points from cache');
                 return parsed.data;
             } catch (e) {
-                console.warn('⚠️ Ошибка чтения кэша:', e);
+                console.warn('⚠️ Cache read error:', e);
                 return null;
             }
         },
         
         clear: function() {
             localStorage.removeItem(this.key);
-            console.log('🗑️ Кэш очищен');
+            console.log('🗑️ Cache cleared');
         }
     };
     
-    // Проверка готовности DOM
+    // Wait for DOM ready
     function waitForDOM() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
@@ -70,12 +70,12 @@
         });
     }
     
-    // Проверка загрузки Leaflet
+    // Check Leaflet loading
     function waitForLeaflet() {
         return new Promise((resolve, reject) => {
             const checkLeaflet = () => {
                 if (typeof L !== 'undefined' && L.map) {
-                    console.log('✅ Leaflet загружен');
+                    console.log('✅ Leaflet loaded');
                     resolve();
                 } else {
                     setTimeout(checkLeaflet, 100);
@@ -84,62 +84,62 @@
             
             checkLeaflet();
             
-            // Таймаут для загрузки Leaflet
+            // Timeout for Leaflet loading
             setTimeout(() => {
                 if (typeof L === 'undefined') {
-                    console.error('❌ Leaflet не загрузился за 10 секунд');
+                    console.error('❌ Leaflet failed to load in 10 seconds');
                     reject(new Error('Leaflet timeout'));
                 }
             }, 10000);
         });
     }
     
-    // Основная инициализация
+    // Main initialization
     async function init() {
         try {
-            console.log('🚀 Начинаем инициализацию PlasticBoy');
+            console.log('🚀 Starting PlasticBoy initialization');
             
-            // Ждем DOM
+            // Wait for DOM
             await waitForDOM();
-            console.log('✅ DOM готов');
+            console.log('✅ DOM ready');
             
-            // Уведомляем загрузчик о готовности DOM
+            // Notify loader about DOM readiness
             if (window.AppLoader && window.AppLoader.updateLoader) {
                 window.AppLoader.updateLoader();
             }
             
-            // Ждем Leaflet
+            // Wait for Leaflet
             await waitForLeaflet();
             
-            // Уведомляем загрузчик о готовности Leaflet
+            // Notify loader about Leaflet readiness
             if (window.AppLoader && window.AppLoader.onLeafletReady) {
                 window.AppLoader.onLeafletReady();
             }
             
-            // Инициализируем карту
+            // Initialize map
             await initMap();
             
-            // Загружаем точки
+            // Load points
             await loadPoints();
             
-            console.log('🎉 PlasticBoy успешно инициализирован');
+            console.log('🎉 PlasticBoy successfully initialized');
             
         } catch (error) {
-            console.error('❌ Ошибка инициализации:', error);
+            console.error('❌ Initialization error:', error);
             
-            // Попытаемся переинициализировать через 2 секунды
+            // Try to reinitialize after 2 seconds
             if (initAttempts < MAX_INIT_ATTEMPTS) {
                 initAttempts++;
-                console.log(`🔄 Попытка переинициализации ${initAttempts}/${MAX_INIT_ATTEMPTS}`);
+                console.log(`🔄 Reinitialization attempt ${initAttempts}/${MAX_INIT_ATTEMPTS}`);
                 setTimeout(init, 2000);
             } else {
-                console.error('💥 Превышено максимальное количество попыток инициализации');
-                showErrorMessage('Не удалось загрузить приложение. Попробуйте обновить страницу.');
+                console.error('💥 Maximum initialization attempts exceeded');
+                showErrorMessage('Failed to load application. Try refreshing the page.');
             }
         }
     }
     
-    // Инициализация карты
+    // Map initialization
     function initMap() {
         return new Promise((resolve, reject) => {
             if (isInitialized) {
@@ -149,26 +149,26 @@
             
             const mapElement = document.getElementById('map');
             if (!mapElement) {
-                reject(new Error('Элемент карты не найден'));
+                reject(new Error('Map element not found'));
                 return;
             }
             
             try {
-                console.log('🗺️ Создание карты');
+                console.log('🗺️ Creating map');
                 
-                // Проверяем, что Leaflet действительно доступен
+                // Check that Leaflet is actually available
                 if (typeof L === 'undefined' || !L.map) {
-                    throw new Error('Leaflet не загружен');
+                    throw new Error('Leaflet not loaded');
                 }
                 
                 map = L.map('map', {
                     center: ALMATY_CENTER,
                     zoom: 13,
                     zoomControl: true,
-                    preferCanvas: true // Улучшаем производительность на мобильных
+                    preferCanvas: true // Improve performance on mobile
                 });
                 
-                // Добавляем тайлы
+                // Add tiles
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors',
                     maxZoom: 18,
@@ -176,22 +176,22 @@
                     crossOrigin: true
                 }).addTo(map);
                 
-                // Добавляем стили
+                // Add styles
                 addMapStyles();
                 
-                // Уведомляем загрузчик о готовности карты
+                // Notify loader about map readiness
                 if (window.AppLoader && window.AppLoader.onMapReady) {
                     window.AppLoader.onMapReady();
                 }
                 
-                // Ждем полной загрузки карты
+                // Wait for full map loading
                 map.whenReady(() => {
                     setTimeout(() => {
                         map.invalidateSize();
-                        console.log('✅ Карта готова');
+                        console.log('✅ Map ready');
                         isInitialized = true;
                         
-                        // Автообновление каждые 30 секунд
+                        // Auto-update every 30 seconds
                         setInterval(loadPoints, 30000);
                         
                         resolve();
@@ -199,13 +199,13 @@
                 });
                 
             } catch (error) {
-                console.error('❌ Ошибка создания карты:', error);
+                console.error('❌ Map creation error:', error);
                 reject(error);
             }
         });
     }
     
-    // Добавление стилей
+    // Add styles
     function addMapStyles() {
         if (document.getElementById('map-styles')) return;
         
@@ -273,7 +273,7 @@
                 100% { transform: scale(2); opacity: 0; }
             }
 
-            /* Стили для Telegram данных в popup */
+            /* Styles for Telegram data in popup */
             .telegram-user-info {
                 background: linear-gradient(135deg, #0088cc, #00a0ff);
                 color: white;
@@ -351,37 +351,37 @@
         document.head.appendChild(style);
     }
     
-    // Загрузка точек
+    // Load points
     function loadPoints() {
         return new Promise((resolve) => {
-            console.log('📍 Загрузка точек');
+            console.log('📍 Loading points');
             
-            // Сначала проверяем кэш
+            // First check cache
             const cachedPoints = Cache.load();
             if (cachedPoints) {
                 updateMap(cachedPoints);
                 updateStats(cachedPoints);
                 
-                // Уведомляем загрузчик
+                // Notify loader
                 if (window.AppLoader && window.AppLoader.onPointsLoaded) {
                     window.AppLoader.onPointsLoaded();
                 }
                 
-                // Обновляем в фоне
+                // Update in background
                 setTimeout(() => fetchPointsFromServer(false), 1000);
                 resolve();
                 return;
             }
             
-            // Загружаем с сервера
+            // Load from server
             fetchPointsFromServer(true).then(resolve);
         });
     }
     
-    // Загрузка с сервера
+    // Load from server
     function fetchPointsFromServer(notifyLoader = true) {
         return new Promise((resolve) => {
-            console.log('🌐 Загрузка точек с сервера');
+            console.log('🌐 Loading points from server');
             
             fetch('/api/points', {
                 method: 'GET',
@@ -392,7 +392,7 @@
                 cache: 'no-cache'
             })
             .then(response => {
-                console.log('📡 Ответ сервера:', response.status);
+                console.log('📡 Server response:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -401,16 +401,16 @@
                 return response.json();
             })
             .then(points => {
-                console.log('✅ Загружено ' + points.length + ' точек с сервера');
+                console.log('✅ Loaded ' + points.length + ' points from server');
                 
-                // Сохраняем в кэш
+                // Save to cache
                 Cache.save(points);
                 
-                // Обновляем карту
+                // Update map
                 updateMap(points);
                 updateStats(points);
                 
-                // Уведомляем загрузчик
+                // Notify loader
                 if (notifyLoader && window.AppLoader && window.AppLoader.onPointsLoaded) {
                     window.AppLoader.onPointsLoaded();
                 }
@@ -418,17 +418,17 @@
                 resolve();
             })
             .catch(error => {
-                console.error('❌ Ошибка загрузки точек:', error);
+                console.error('❌ Points loading error:', error);
                 
-                // Пытаемся загрузить из кэша как fallback
+                // Try to load from cache as fallback
                 const cachedPoints = Cache.load();
                 if (cachedPoints) {
-                    console.log('📦 Используем кэшированные данные как fallback');
+                    console.log('📦 Using cached data as fallback');
                     updateMap(cachedPoints);
                     updateStats(cachedPoints);
                 }
                 
-                // Уведомляем загрузчик даже при ошибке
+                // Notify loader even on error
                 if (notifyLoader && window.AppLoader && window.AppLoader.onPointsLoaded) {
                     window.AppLoader.onPointsLoaded();
                 }
@@ -438,17 +438,17 @@
         });
     }
     
-    // Обновление карты
+    // Update map
     function updateMap(points) {
         if (!map || !points) {
-            console.warn('⚠️ Карта или точки не готовы для обновления');
+            console.warn('⚠️ Map or points not ready for update');
             return;
         }
         
-        console.log('🗺️ Обновление карты (' + points.length + ' точек)');
+        console.log('🗺️ Map update (' + points.length + ' points)');
         
         try {
-            // Очищаем старые маркеры
+            // Clear old markers
             markers.forEach(marker => {
                 if (map.hasLayer(marker)) {
                     map.removeLayer(marker);
@@ -456,7 +456,7 @@
             });
             markers = [];
             
-            // Добавляем новые маркеры
+            // Add new markers
             points.forEach(point => {
                 try {
                     const isAvailable = point.status === 'available';
@@ -470,53 +470,53 @@
                     
                     const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon: icon });
                     
-                    // Создаем содержимое popup с улучшенной поддержкой Telegram
+                    // Create popup content with enhanced Telegram support
                     const popupContent = createPopupContent(point, isAvailable);
                     marker.bindPopup(popupContent);
                     
                     marker.addTo(map);
                     markers.push(marker);
                 } catch (error) {
-                    console.error('❌ Ошибка добавления маркера:', error, point);
+                    console.error('❌ Marker addition error:', error, point);
                 }
             });
             
-            console.log('✅ Добавлено ' + markers.length + ' маркеров');
+            console.log('✅ Added ' + markers.length + ' markers');
             
         } catch (error) {
-            console.error('❌ Ошибка обновления карты:', error);
+            console.error('❌ Map update error:', error);
         }
     }
     
-    // Создание содержимого popup с поддержкой Telegram
+    // Create popup content with Telegram support
     function createPopupContent(point, isAvailable) {
         let popupContent = '<div style="min-width: 200px;">';
         popupContent += `<h3 style="margin: 0 0 10px 0;">${point.name}</h3>`;
         popupContent += `<p style="font-weight: 600; color: ${isAvailable ? '#4CAF50' : '#f44336'};">`;
-        popupContent += isAvailable ? '🟢 Доступна для сбора' : '🔴 Уже собрана';
+        popupContent += isAvailable ? '🟢 Available for collection' : '🔴 Already collected';
         popupContent += '</p>';
         
         if (!isAvailable && point.collectorInfo) {
             popupContent += '<div class="collector-info-enhanced">';
-            popupContent += '<h4>Информация о сборщике:</h4>';
+            popupContent += '<h4>Collector information:</h4>';
             
-            // Если пользователь авторизован через Telegram
+            // If user is authorized via Telegram
             if (point.collectorInfo.authMethod === 'telegram' && point.collectorInfo.telegramData) {
                 const tgData = point.collectorInfo.telegramData;
                 
                 popupContent += '<div class="telegram-user-info">';
                 
-                // Аватар пользователя
+                // User avatar
                 if (tgData.photo_url) {
                     popupContent += `<img src="${tgData.photo_url}" alt="Avatar" class="telegram-avatar" 
                                       onerror="this.style.display='none';">`;
                 }
                 
-                // Имя пользователя
+                // User name
                 const fullName = [tgData.first_name, tgData.last_name].filter(Boolean).join(' ');
                 popupContent += `<div class="telegram-name">${fullName}</div>`;
                 
-                // Ссылка на Telegram профиль
+                // Telegram profile link
                 if (tgData.username) {
                     popupContent += `<a href="https://t.me/${tgData.username}" 
                                       target="_blank" class="telegram-username">
@@ -524,7 +524,7 @@
                                       @${tgData.username}
                                     </a>`;
                 } else {
-                    // Если username нет, показываем Telegram ID
+                    // If no username, show Telegram ID
                     popupContent += `<div class="telegram-username" style="cursor: default;">
                                       <span class="telegram-icon">🆔</span>
                                       ID: ${tgData.id}
@@ -533,36 +533,36 @@
                 
                 popupContent += '</div>';
                 
-                // Дополнительная информация
+                // Additional information
                 if (point.collectorInfo.signature) {
                     popupContent += `<div class="collector-detail">
-                                      <strong>Сообщение:</strong> ${point.collectorInfo.signature}
+                                      <strong>Message:</strong> ${point.collectorInfo.signature}
                                     </div>`;
                 }
             } else {
-                // Обычный сборщик (ручной ввод)
+                // Regular collector (manual input)
                 popupContent += `<div class="collector-detail">
                                   <span class="popup-collector-name">${point.collectorInfo.name}</span>
                                 </div>`;
                 
                 if (point.collectorInfo.signature) {
                     popupContent += `<div class="collector-detail">
-                                      <strong>Сообщение:</strong> ${point.collectorInfo.signature}
+                                      <strong>Message:</strong> ${point.collectorInfo.signature}
                                     </div>`;
                 }
             }
             
             popupContent += `<div class="collector-detail">
-                              <strong>Время сбора:</strong> ${new Date(point.collectedAt).toLocaleString('ru-RU')}
+                              <strong>Collection time:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}
                             </div>`;
             
-            // Добавляем селфи если есть
+            // Add selfie if available
             if (point.collectorInfo.selfie) {
                 popupContent += '<div style="margin: 10px 0; text-align: center;">';
                 popupContent += `<img src="${point.collectorInfo.selfie}" 
                                   style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
                                   onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" 
-                                  title="Кликните для увеличения">`;
+                                  title="Click to enlarge">`;
                 popupContent += '</div>';
             }
             
@@ -573,7 +573,7 @@
         return popupContent;
     }
     
-    // Обновление статистики
+    // Update statistics
     function updateStats(points) {
         const available = points.filter(p => p.status === 'available').length;
         const collected = points.filter(p => p.status === 'collected').length;
@@ -588,10 +588,10 @@
             animateNumber(collectedEl, collected);
         }
         
-        console.log('📊 Статистика: ' + available + ' доступно, ' + collected + ' собрано');
+        console.log('📊 Statistics: ' + available + ' available, ' + collected + ' collected');
     }
     
-    // Анимация чисел
+    // Number animation
     function animateNumber(element, targetValue) {
         const currentValue = parseInt(element.textContent) || 0;
         if (currentValue === targetValue) return;
@@ -617,7 +617,7 @@
         }, stepDuration);
     }
     
-    // Показ ошибки
+    // Show error
     function showErrorMessage(message) {
         const container = document.querySelector('.container');
         if (container) {
@@ -633,7 +633,7 @@
                 font-weight: 600;
             `;
             errorDiv.innerHTML = `
-                <h3>❌ Ошибка загрузки</h3>
+                <h3>❌ Loading error</h3>
                 <p>${message}</p>
                 <button onclick="window.location.reload()" style="
                     background: #f44336;
@@ -643,22 +643,22 @@
                     border-radius: 6px;
                     cursor: pointer;
                     margin-top: 10px;
-                ">Обновить страницу</button>
+                ">Refresh page</button>
             `;
             container.appendChild(errorDiv);
         }
     }
     
-    // Глобальные функции
+    // Global functions
     window.getCurrentLocation = function() {
         const btn = document.querySelector('.location-btn');
         if (!navigator.geolocation || !map) {
-            console.warn('⚠️ Геолокация недоступна');
+            console.warn('⚠️ Geolocation unavailable');
             return;
         }
         
         const originalText = btn.innerHTML;
-        btn.innerHTML = '⏳ Определение...';
+        btn.innerHTML = '⏳ Locating...';
         btn.disabled = true;
         
         navigator.geolocation.getCurrentPosition(
@@ -666,12 +666,12 @@
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 
-                // Удаляем старый маркер
+                // Remove old marker
                 if (window.userMarker && map.hasLayer(window.userMarker)) {
                     map.removeLayer(window.userMarker);
                 }
                 
-                // Создаем новый маркер
+                // Create new marker
                 const userIcon = L.divIcon({
                     className: 'user-marker',
                     html: '<div class="user-dot"></div>',
@@ -681,16 +681,16 @@
                 
                 window.userMarker = L.marker([lat, lng], { icon: userIcon })
                     .addTo(map)
-                    .bindPopup('<div style="text-align: center;"><strong>📍 Ваше местоположение</strong></div>');
+                    .bindPopup('<div style="text-align: center;"><strong>📍 Your location</strong></div>');
                 
                 map.flyTo([lat, lng], 16);
-                console.log('✅ Местоположение найдено');
+                console.log('✅ Location found');
                 
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             },
             function(error) {
-                console.error('❌ Ошибка геолокации:', error);
+                console.error('❌ Geolocation error:', error);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             },
@@ -702,7 +702,7 @@
         );
     };
     
-    // Показ полного изображения
+    // Show full image
     window.showFullImage = function(imageSrc, title) {
         const modal = document.createElement('div');
         modal.style.cssText = `
@@ -739,15 +739,15 @@
         document.body.appendChild(modal);
     };
     
-    // Обработчики событий
+    // Event handlers
     window.addEventListener('resize', function() {
         if (map) {
             setTimeout(() => map.invalidateSize(), 100);
         }
     });
     
-    // Запускаем инициализацию
+    // Start initialization
     init();
     
-    console.log('🚀 PlasticBoy скрипт загружен');
+    console.log('🚀 PlasticBoy script loaded');
 })();
