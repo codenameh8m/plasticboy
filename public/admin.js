@@ -252,7 +252,7 @@ function initAdminMap() {
     });
 }
 
-// Get geolocation for admin
+// FIXED Get geolocation for admin - WITHOUT popup
 function getAdminLocation() {
     const locationBtn = document.querySelector('.location-btn');
     
@@ -313,19 +313,10 @@ function getAdminLocation() {
                 adminMap.removeLayer(window.adminUserMarker);
             }
             
-            // Add new marker
-            window.adminUserMarker = L.marker([lat, lng], { icon: userIcon })
-                .addTo(adminMap)
-                .bindPopup(`
-                    <div style="text-align: center; min-width: 150px;">
-                        <strong>🛡️ Admin location</strong><br>
-                        <small style="color: #666;">
-                            ${lat.toFixed(6)}, ${lng.toFixed(6)}
-                        </small>
-                    </div>
-                `);
+            // Add new marker БЕЗ popup для админа тоже
+            window.adminUserMarker = L.marker([lat, lng], { icon: userIcon }).addTo(adminMap);
             
-            // Smoothly center map on admin
+            // Smoothly center map on admin БЕЗ popup
             adminMap.flyTo([lat, lng], 16, {
                 duration: 1.5,
                 easeLinearity: 0.5
@@ -1007,60 +998,6 @@ function addAdminMarkerStyles() {
             .delete-btn:hover {
                 background: linear-gradient(45deg, #d32f2f, #c62828) !important;
                 box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
-            }
-            
-            .point-item {
-                border-radius: 12px;
-                padding: 16px;
-                margin-bottom: 16px;
-                background: white;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                transition: all 0.3s ease;
-            }
-            
-            .point-item:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-            }
-            
-            .point-item.available {
-                border-left: 4px solid #4CAF50;
-            }
-            
-            .point-item.collected {
-                border-left: 4px solid #f44336;
-            }
-            
-            .point-item.scheduled {
-                border-left: 4px solid #ff9800;
-            }
-            
-            .point-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-            
-            .point-header h4 {
-                margin: 0;
-                color: #333;
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            
-            .point-status {
-                font-size: 0.9rem;
-                font-weight: 600;
-                padding: 4px 8px;
-                border-radius: 12px;
-                background: rgba(255,255,255,0.8);
-            }
-            
-            .point-actions {
-                margin-top: 12px;
-                padding-top: 12px;
-                border-top: 1px solid #eee;
             }
         `;
         document.head.appendChild(style);
