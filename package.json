@@ -11,6 +11,7 @@
     "bot:dev": "nodemon bot-server.js",
     "bot:setup": "node setup-telegram-bot.js",
     "bot:diagnose": "node diagnose-bot.js",
+    "bot:fix": "node fix-webhook.js",
     
     "dev:all": "concurrently \"npm run dev\" \"npm run bot:dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
