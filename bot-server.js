@@ -87,8 +87,10 @@ async function createBot() {
                 webHook: false
             });
             
+            // Убираем двойной слеш в URL
             const webhookPath = `/${BOT_TOKEN}`;
-            const webhookUrl = `${WEB_APP_URL}${webhookPath}`;
+            const baseUrl = WEB_APP_URL.endsWith('/') ? WEB_APP_URL.slice(0, -1) : WEB_APP_URL;
+            const webhookUrl = `${baseUrl}${webhookPath}`;
             
             // Добавляем обработчик webhook
             app.post(webhookPath, (req, res) => {
@@ -97,7 +99,9 @@ async function createBot() {
                 res.sendStatus(200);
             });
             
-            console.log(`🔗 Webhook URL: ${webhookUrl}`);
+            console.log(`🔗 Base URL: ${baseUrl}`);
+            console.log(`🔗 Webhook path: ${webhookPath}`);
+            console.log(`🔗 Final webhook URL: ${webhookUrl}`);
             
             // Устанавливаем webhook через API
             try {
