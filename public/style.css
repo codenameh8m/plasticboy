@@ -1,4 +1,16 @@
-/* Базовые стили */
+/* === ПОДКЛЮЧЕНИЕ КАСТОМНОГО ШРИФТА === */
+@font-face {
+    font-family: 'Microgramma';
+    src: url('./fonts/microgrammanormal.woff2') format('woff2'),
+         url('./fonts/microgrammanormal.woff') format('woff'),
+         url('./fonts/microgrammanormal.ttf') format('truetype'),
+         url('./fonts/microgrammanormal.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap; /* Улучшает производительность */
+}
+
+/* Базовые стили с кастомным шрифтом */
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +18,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Microgramma', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     min-height: 100vh;
     color: #333;
@@ -31,6 +43,7 @@ body {
 }
 
 .header h1 {
+    font-family: 'Microgramma', monospace; /* Усиление для заголовков */
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 10px;
@@ -38,12 +51,15 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    letter-spacing: 2px; /* Добавляем spacing для футуристичного вида */
 }
 
 .header p {
+    font-family: 'Microgramma', sans-serif;
     font-size: 1.1rem;
     color: #666;
     font-weight: 500;
+    letter-spacing: 1px;
 }
 
 /* Статистика */
@@ -68,17 +84,22 @@ body {
 }
 
 .stat-number {
+    font-family: 'Microgramma', monospace;
     display: block;
     font-size: 2rem;
     font-weight: 700;
     color: #667eea;
     margin-bottom: 5px;
+    letter-spacing: 1px;
 }
 
 .stat-label {
+    font-family: 'Microgramma', sans-serif;
     font-size: 0.9rem;
     color: #666;
     font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 /* УВЕЛИЧЕННЫЕ КАРТЫ */
@@ -113,7 +134,7 @@ body {
 /* Кастомные стили для Leaflet карты */
 .leaflet-container {
     background: #f8f9fa !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Microgramma', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 .leaflet-control-zoom a {
@@ -123,6 +144,7 @@ body {
     backdrop-filter: blur(10px) !important;
     transition: all 0.3s !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    font-family: 'Microgramma', sans-serif !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -140,6 +162,7 @@ body {
     backdrop-filter: blur(10px) !important;
     border: 1px solid rgba(108, 117, 125, 0.1) !important;
     padding: 2px 5px !important;
+    font-family: 'Microgramma', sans-serif !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -149,6 +172,7 @@ body {
     backdrop-filter: blur(15px) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     max-width: 280px !important;
+    font-family: 'Microgramma', sans-serif !important;
 }
 
 .leaflet-popup-tip {
@@ -162,6 +186,7 @@ body {
     padding: 8px !important;
     transition: color 0.3s !important;
     font-weight: bold !important;
+    font-family: 'Microgramma', sans-serif !important;
 }
 
 .leaflet-popup-close-button:hover {
@@ -180,6 +205,7 @@ body {
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     z-index: 1000;
+    font-family: 'Microgramma', sans-serif;
 }
 
 .legend-item {
@@ -187,6 +213,7 @@ body {
     align-items: center;
     margin-bottom: 5px;
     font-size: 0.9rem;
+    letter-spacing: 0.5px;
 }
 
 .legend-item:last-child {
@@ -247,6 +274,9 @@ body {
     margin: 0 !important;
     min-height: 60px;
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
 }
 
 .control-btn::before {
@@ -322,6 +352,10 @@ body {
     margin-bottom: 8px;
     font-weight: 600;
     color: #333;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
 }
 
 input, textarea, select {
@@ -332,6 +366,8 @@ input, textarea, select {
     font-size: 1rem;
     transition: border-color 0.3s, box-shadow 0.3s;
     background: white;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -352,6 +388,9 @@ button:not(.control-btn) {
     transition: all 0.3s;
     width: 100%;
     margin-top: 10px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 button:not(.control-btn):hover {
@@ -382,17 +421,24 @@ button:not(.control-btn):disabled {
 .admin-controls h3 {
     margin-bottom: 10px;
     color: #333;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
 }
 
 .admin-controls p {
     color: #666;
     margin-bottom: 15px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
 }
 
 #addModeBtn {
     background: #4CAF50;
     width: auto;
     margin: 0;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 #addModeBtn.active {
@@ -438,11 +484,16 @@ button:not(.control-btn):disabled {
 .point-header h4 {
     margin: 0;
     color: #333;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
 }
 
 .point-status {
     font-size: 0.9rem;
     font-weight: 600;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .point-actions {
@@ -462,6 +513,7 @@ button:not(.control-btn):disabled {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
+    font-family: 'Microgramma', sans-serif;
 }
 
 .modal-content {
@@ -486,6 +538,7 @@ button:not(.control-btn):disabled {
     position: absolute;
     top: 15px;
     right: 20px;
+    font-family: 'Microgramma', sans-serif;
 }
 
 .close:hover {
@@ -509,17 +562,25 @@ button:not(.control-btn):disabled {
 .model-info h2 {
     font-size: 1.5rem;
     margin-bottom: 10px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .model-info p {
     font-size: 0.9rem;
     opacity: 0.9;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
 }
 
 .collect-btn {
     background: linear-gradient(45deg, #4CAF50, #45a049);
     font-size: 1.1rem;
     padding: 18px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 /* Превью изображения */
@@ -547,16 +608,22 @@ button:not(.control-btn):disabled {
 .success-message h2 {
     color: #4CAF50;
     margin-bottom: 15px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
 }
 
 .error-message h2 {
     color: #f44336;
     margin-bottom: 15px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
 }
 
 .success-message p, .error-message p {
     margin-bottom: 10px;
     color: #666;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
 }
 
 /* QR код */
@@ -637,11 +704,16 @@ button:not(.control-btn):disabled {
     margin: 0 0 10px 0;
     color: #333;
     font-size: 1.1rem;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
 }
 
 .status {
     margin: 10px 0;
     font-weight: 600;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .status.available {
@@ -662,6 +734,8 @@ button:not(.control-btn):disabled {
 
 .collector-info p {
     margin: 5px 0;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.3px;
 }
 
 .details-btn {
@@ -675,6 +749,9 @@ button:not(.control-btn):disabled {
     margin-top: 10px;
     width: 100%;
     transition: all 0.3s;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .details-btn:hover {
@@ -709,11 +786,15 @@ button:not(.control-btn):disabled {
 .admin-popup h3 {
     margin: 0 0 10px 0;
     color: #333;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 1px;
 }
 
 .admin-popup p {
     margin: 5px 0;
     font-size: 0.9rem;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.3px;
 }
 
 .admin-btn {
@@ -726,6 +807,9 @@ button:not(.control-btn):disabled {
     font-size: 0.8rem;
     margin: 5px 5px 0 0;
     min-width: 80px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .admin-btn:hover {
@@ -753,6 +837,8 @@ button:not(.control-btn):disabled {
     min-width: 250px;
     max-width: 350px;
     animation: slideIn 0.3s ease-out;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
 }
 
 .notification.error {
@@ -787,6 +873,7 @@ button:not(.control-btn):disabled {
     margin: 0;
     width: auto;
     margin-left: 10px;
+    font-family: 'Microgramma', sans-serif;
 }
 
 @keyframes slideIn {
@@ -836,6 +923,8 @@ button:not(.control-btn):disabled {
     font-weight: 600;
     font-size: 1rem;
     margin-bottom: 4px;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
 }
 
 .telegram-username {
@@ -850,6 +939,8 @@ button:not(.control-btn):disabled {
     padding: 4px 8px;
     border-radius: 15px;
     background: rgba(255,255,255,0.1);
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.3px;
 }
 
 .telegram-username:hover {
@@ -873,17 +964,121 @@ button:not(.control-btn):disabled {
     margin: 0 0 8px 0;
     color: #333;
     font-size: 0.95rem;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .collector-detail {
     margin: 4px 0;
     font-size: 0.9rem;
     color: #666;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.3px;
 }
 
 .popup-collector-name {
     font-weight: 600;
     color: #333;
+    font-family: 'Microgramma', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ ЗАГРУЗОЧНОГО ЭКРАНА === */
+.loading-screen {
+    font-family: 'Press Start 2P', 'Microgramma', monospace !important;
+}
+
+.loading-screen .logo-title {
+    font-family: 'Press Start 2P', 'Microgramma', monospace !important;
+}
+
+.loading-screen .logo-subtitle {
+    font-family: 'Press Start 2P', 'Microgramma', monospace !important;
+}
+
+.loading-screen .loading-status {
+    font-family: 'Press Start 2P', 'Microgramma', monospace !important;
+}
+
+.loading-screen .progress-text {
+    font-family: 'Press Start 2P', 'Microgramma', monospace !important;
+}
+
+/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ LEADERBOARD === */
+.leaderboard-title {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
+}
+
+.leaderboard-subtitle {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 1px !important;
+}
+
+.stat-card .stat-number {
+    font-family: 'Microgramma', monospace !important;
+    letter-spacing: 1px !important;
+}
+
+.stat-card .stat-label {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.user-name {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 1px !important;
+}
+
+.user-name-compact {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 0.5px !important;
+}
+
+.collection-count, .collection-count-compact {
+    font-family: 'Microgramma', monospace !important;
+    letter-spacing: 1px !important;
+}
+
+.collection-label, .collection-label-compact {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.last-collection {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 0.3px !important;
+}
+
+.rank {
+    font-family: 'Microgramma', monospace !important;
+    letter-spacing: 1px !important;
+}
+
+.back-btn {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+}
+
+/* === СТИЛИ ДЛЯ АВТОРИЗАЦИИ В COLLECT.HTML === */
+.auth-title {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 1px !important;
+}
+
+.auth-description {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 0.3px !important;
+}
+
+.telegram-login-info {
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 0.5px !important;
 }
 
 /* Компактные popup на мобильных */
@@ -891,6 +1086,7 @@ button:not(.control-btn):disabled {
     .leaflet-popup-content-wrapper {
         max-width: 240px !important;
         font-size: 0.9rem !important;
+        font-family: 'Microgramma', sans-serif !important;
     }
     
     .leaflet-popup-content {
@@ -901,6 +1097,7 @@ button:not(.control-btn):disabled {
     .popup-content h3 {
         font-size: 1rem !important;
         margin: 0 0 8px 0 !important;
+        font-family: 'Microgramma', sans-serif !important;
     }
     
     .telegram-user-info {
@@ -1107,8 +1304,12 @@ button:not(.control-btn):disabled {
         padding: 14px;
     }
 }
+
 .leaderboard-btn {
     background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
     border: 2px solid rgba(0, 136, 204, 0.3) !important;
     box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+    font-family: 'Microgramma', sans-serif !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
 }
