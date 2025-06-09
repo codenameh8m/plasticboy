@@ -1,13 +1,13 @@
-# render.yaml - Конфигурация для автодеплоя PlasticBoy на Render.com
+# render.yaml - ИСПРАВЛЕННАЯ конфигурация для PlasticBoy
 
 services:
-  # Основное веб-приложение
+  # Основное веб-приложение (карта, админка, API)
   - type: web
     name: plasticboy-web
     env: node
     repo: https://github.com/your-username/plasticboy.git
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: npm run render:web
     plan: free
     region: oregon
     branch: main
@@ -20,13 +20,13 @@ services:
         value: 10000
       - fromGroup: plasticboy-env
 
-  # Telegram бот (Background Worker)
+  # Telegram бот (Worker сервис)
   - type: worker
     name: plasticboy-bot
     env: node
     repo: https://github.com/your-username/plasticboy.git
     buildCommand: npm install
-    startCommand: npm run bot
+    startCommand: npm run render:bot
     plan: free
     region: oregon
     branch: main
@@ -42,17 +42,36 @@ services:
 envVarGroups:
   - name: plasticboy-env
     envVars:
+      # MongoDB конфигурация
       - key: MONGODB_URI
         value: mongodb+srv://plasticboy:Urod1488@cluster0.ts0h5a6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      
+      # Админ панель
       - key: ADMIN_PASSWORD
         value: Urod1488
+      
+      # Telegram бот конфигурация
       - key: TELEGRAM_BOT_TOKEN
         value: 7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY
       - key: TELEGRAM_BOT_USERNAME
         value: PlasticBoyBot
 
-# Примечания:
-# 1. Замените your-username на ваш GitHub username
-# 2. Обновите переменные окружения через Render Dashboard
-# 3. WEB_APP_URL будет автоматически установлен как RENDER_EXTERNAL_URL
-# 4. Для продакшена используйте план Starter ($7/месяц) для лучшей производительности
+# ВАЖНЫЕ ПРИМЕЧАНИЯ:
+# 
+# 1. WEBHOOK SETUP:
+#    После деплоя web-сервиса, bot-сервис автоматически настроит webhook
+#    используя RENDER_EXTERNAL_URL веб-сервиса
+#
+# 2. ПРОВЕРКА ПОСЛЕ ДЕПЛОЯ:
+#    - Откройте https://your-app-name.onrender.com/health
+#    - Проверьте логи bot-сервиса в Render Dashboard
+#    - Отправьте /start боту @PlasticBoyBot
+#
+# 3. TROUBLESHOOTING:
+#    - Если бот не отвечает, перезапустите bot-сервис
+#    - Проверьте Environment Variables в настройках
+#    - Убедитесь что оба сервиса запущены
+#
+# 4. UPGRADE TO PAID PLAN:
+#    Для стабильной работы в продакшене рекомендуется 
+#    план Starter ($7/месяц) для избежания sleep mode
