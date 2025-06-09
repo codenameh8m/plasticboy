@@ -5,6 +5,7 @@ const path = require('path');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const cors = require('cors');
+const axios = require('axios'); // Добавлено для Telegram API
 require('dotenv').config();
 
 const app = express();
@@ -24,6 +25,169 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024 // 50MB
   }
 });
+
+// === TELEGRAM BOT INTEGRATION ===
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+// Функция для отправки сообщений в Telegram
+async function sendTelegramMessage(chatId, message, options = {}) {
+  if (!BOT_TOKEN) return;
+  
+  try {
+    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'Markdown',
+      ...options
+    });
+    console.log(`📱 Telegram сообщение отправлено в чат ${chatId}`);
+  } catch (error) {
+    console.error('❌ Ошибка отправки Telegram сообщения:', error.response?.data || error.message);
+  }
+}
+
+// Функция обработки Telegram команд
+async function handleTelegramUpdate(update) {
+  try {
+    console.log('📥 Получено обновление Telegram:', JSON.stringify(update, null, 2));
+    
+    if (update.message) {
+      const message = update.message;
+      const chatId = message.chat.id;
+      const text = message.text;
+      const user = message.from;
+      
+      console.log(`💬 Сообщение от ${user.first_name} (${user.id}): ${text}`);
+      
+      // Обработка команд
+      if (text && text.startsWith('/')) {
+        const command = text.split(' ')[0].substring(1);
+        
+        switch (command) {
+          case 'start':
+            const welcomeMessage = `🎯 *PlasticBoy - Almaty Edition*\n\nПривет, ${user.first_name}! 👋\n\nДобро пожаловать в игру по сбору 3D моделей в Алматы!\n\n🎮 *Как играть:*\n• Найди QR-коды моделей по городу\n• Отсканируй их и собери коллекцию\n• Соревнуйся с другими игроками\n\nУдачной охоты! 🎯`;
+            
+            await sendTelegramMessage(chatId, welcomeMessage, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🗺️ Открыть карту', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [
+                    { text: '🏆 Рейтинг', callback_data: 'leaderboard' },
+                    { text: '📊 Статистика', callback_data: 'stats' }
+                  ]
+                ]
+              }
+            });
+            break;
+            
+          case 'help':
+            const helpMessage = `❓ *Помощь PlasticBoy*\n\n🎯 *Цель игры:* Собери как можно больше 3D моделей!\n\n📱 *Команды:*\n/start - Главное меню\n/help - Эта помощь\n/stats - Статистика\n\nУдачи! 🚀`;
+            await sendTelegramMessage(chatId, helpMessage);
+            break;
+            
+          case 'stats':
+            try {
+              const totalPoints = await ModelPoint.countDocuments();
+              const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
+              const availablePoints = totalPoints - collectedPoints;
+              
+              const statsMessage = `📊 *Статистика PlasticBoy*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*\n\n🎯 Присоединяйся к игре!`;
+              await sendTelegramMessage(chatId, statsMessage);
+            } catch (error) {
+              await sendTelegramMessage(chatId, '❌ Ошибка получения статистики');
+            }
+            break;
+            
+          default:
+            await sendTelegramMessage(chatId, `Неизвестная команда: ${command}\n\nИспользуйте /help для списка команд.`);
+        }
+      } else if (text) {
+        // Обычное сообщение
+        await sendTelegramMessage(chatId, `Получил ваше сообщение: "${text}"\n\nИспользуйте /help для списка команд.`);
+      }
+    }
+    
+    // Обработка callback кнопок
+    if (update.callback_query) {
+      const callbackQuery = update.callback_query;
+      const chatId = callbackQuery.message.chat.id;
+      const data = callbackQuery.data;
+      const messageId = callbackQuery.message.message_id;
+      
+      console.log(`🔘 Callback: ${data} от ${callbackQuery.from.first_name}`);
+      
+      // Подтверждаем callback
+      try {
+        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          callback_query_id: callbackQuery.id
+        });
+      } catch (error) {
+        console.error('❌ Ошибка answerCallbackQuery:', error);
+      }
+      
+      // Обрабатываем callback
+      switch (data) {
+        case 'leaderboard':
+          await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+            chat_id: chatId,
+            message_id: messageId,
+            text: '🏆 *Рейтинг коллекторов*\n\nОткройте веб-версию для просмотра полного рейтинга.',
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🏆 Открыть рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
+              ]
+            }
+          });
+          break;
+          
+        case 'stats':
+          try {
+            const totalPoints = await ModelPoint.countDocuments();
+            const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
+            const availablePoints = totalPoints - collectedPoints;
+            
+            await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+              chat_id: chatId,
+              message_id: messageId,
+              text: `📊 *Статистика игры*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*`,
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🗺️ К карте', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+                ]
+              }
+            });
+          } catch (error) {
+            console.error('❌ Ошибка получения статистики для callback:', error);
+          }
+          break;
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Ошибка обработки Telegram обновления:', error);
+  }
+}
+
+// === WEBHOOK МАРШРУТ ДЛЯ TELEGRAM ===
+if (BOT_TOKEN) {
+  app.post(`/${BOT_TOKEN}`, async (req, res) => {
+    console.log('📥 Webhook получен от Telegram');
+    
+    try {
+      await handleTelegramUpdate(req.body);
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('❌ Ошибка обработки webhook:', error);
+      res.status(500).send('Error');
+    }
+  });
+  
+  console.log(`🔗 Telegram webhook маршрут настроен: /${BOT_TOKEN}`);
+} else {
+  console.log('⚠️ TELEGRAM_BOT_TOKEN не найден, webhook не настроен');
+}
 
 // Подключение к MongoDB
 const connectDB = async () => {
@@ -129,7 +293,8 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       database: dbState,
       totalPoints,
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
+      telegramWebhook: BOT_TOKEN ? 'configured' : 'not configured'
     });
   } catch (error) {
     res.status(500).json({
@@ -535,7 +700,7 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
         $group: {
           _id: null,
           totalCollections: { $sum: 1 },
-          uniqueUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+id' }
         }
       },
       {
@@ -785,6 +950,13 @@ const startServer = async () => {
       console.log(`🏆 Рейтинг: http://localhost:${PORT}/leaderboard.html`);
       console.log(`🔐 Админ пароль: ${process.env.ADMIN_PASSWORD ? 'установлен' : 'НЕ УСТАНОВЛЕН!'}`);
       console.log(`📱 Telegram бот: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'НЕ НАСТРОЕН'}`);
+      
+      if (BOT_TOKEN) {
+        console.log(`🔗 Telegram webhook: /${BOT_TOKEN}`);
+        console.log(`📱 Telegram интеграция: АКТИВНА`);
+      } else {
+        console.log(`📱 Telegram интеграция: НЕ НАСТРОЕНА`);
+      }
     });
   } catch (error) {
     console.error('❌ Ошибка запуска сервера:', error);
