@@ -10,6 +10,9 @@
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
     
+    <!-- Preload кастомного шрифта для быстрой загрузки -->
+    <link rel="preload" href="./fonts/microgrammanormal.woff2" as="font" type="font/woff2" crossorigin>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -29,7 +32,7 @@
             align-items: center;
             z-index: 10000;
             transition: opacity 0.6s ease-out;
-            font-family: 'Press Start 2P', monospace;
+            font-family: 'Press Start 2P', 'Microgramma', monospace;
             color: #00ff00;
             overflow: hidden;
             animation: crtFlicker 0.15s infinite alternate;
@@ -440,6 +443,9 @@
             display: flex;
             position: relative;
             overflow: hidden;
+            font-family: 'Microgramma', sans-serif !important;
+            letter-spacing: 1px !important;
+            text-transform: uppercase !important;
         }
 
         .leaderboard-btn::before {
