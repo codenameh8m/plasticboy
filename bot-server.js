@@ -1,244 +1,474 @@
-// bot-server.js - Отладочная версия с улучшенным логированием
+// bot-server.js - ИСПРАВЛЕННАЯ ВЕРСИЯ для Render.com
 
 const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
+const express = require('express');
 require('dotenv').config();
 
 console.log('🚀 =================================================');
-console.log('🤖 PlasticBoy Telegram Bot - ОТЛАДОЧНАЯ ВЕРСИЯ');
+console.log('🤖 PlasticBoy Telegram Bot - ИСПРАВЛЕННАЯ ВЕРСИЯ');
 console.log('🚀 =================================================');
 
-// Конфигурация
+// ПРОВЕРКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const WEB_APP_URL = process.env.WEB_APP_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+const WEB_APP_URL = process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000';
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME;
+const PORT = process.env.PORT || 10000;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-console.log('🔍 Проверка переменных окружения:');
-console.log(`   TELEGRAM_BOT_TOKEN: ${BOT_TOKEN ? '✅ установлен' : '❌ НЕ УСТАНОВЛЕН'}`);
-console.log(`   TELEGRAM_BOT_USERNAME: ${BOT_USERNAME ? `✅ ${BOT_USERNAME}` : '❌ НЕ УСТАНОВЛЕН'}`);
+console.log('🔍 Проверка конфигурации:');
+console.log(`   TELEGRAM_BOT_TOKEN: ${BOT_TOKEN ? '✅ есть' : '❌ НЕТ'}`);
+console.log(`   TELEGRAM_BOT_USERNAME: ${BOT_USERNAME ? `✅ ${BOT_USERNAME}` : '❌ НЕТ'}`);
 console.log(`   WEB_APP_URL: ${WEB_APP_URL}`);
+console.log(`   PORT: ${PORT}`);
 console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'не установлен'}`);
-console.log(`   RENDER_EXTERNAL_URL: ${process.env.RENDER_EXTERNAL_URL || 'не установлен'}`);
+console.log(`   IS_PRODUCTION: ${IS_PRODUCTION}`);
 
-// Проверка обязательных переменных
+// ПРОВЕРКА ОБЯЗАТЕЛЬНЫХ ПЕРЕМЕННЫХ
 if (!BOT_TOKEN) {
-    console.error('❌ TELEGRAM_BOT_TOKEN не найден в переменных окружения!');
-    console.log('📝 Добавьте в Render Dashboard Environment Variables:');
-    console.log('   TELEGRAM_BOT_TOKEN=ваш_токен_от_botfather');
-    console.log('   TELEGRAM_BOT_USERNAME=имя_бота_без_@');
+    console.error('❌ TELEGRAM_BOT_TOKEN не найден!');
+    console.error('🔧 Добавьте переменную в Render Dashboard Environment Variables');
     process.exit(1);
 }
 
-console.log('\n🤖 Создаем бота...');
+if (!BOT_USERNAME) {
+    console.error('❌ TELEGRAM_BOT_USERNAME не найден!');
+    console.error('🔧 Добавьте переменную в Render Dashboard Environment Variables');
+    process.exit(1);
+}
 
-// Создаем бота с отладкой
-const bot = new TelegramBot(BOT_TOKEN, { 
-    polling: {
-        interval: 1000,
-        autoStart: true
-    }
-});
+// СОЗДАНИЕ БОТА С ПРАВИЛЬНЫМИ НАСТРОЙКАМИ
+let bot;
 
-console.log('✅ Бот создан, запускаем polling...');
-
-// === ПРОСТЫЕ ОБРАБОТЧИКИ ДЛЯ ОТЛАДКИ ===
-
-bot.on('polling_error', (error) => {
-    console.error('❌ ОШИБКА POLLING:', error.code, error.message);
-    if (error.response) {
-        console.error('   Response:', error.response.statusCode, error.response.body);
-    }
-});
-
-bot.on('error', (error) => {
-    console.error('❌ ОШИБКА БОТА:', error);
-});
-
-// Простая команда /start для отладки
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    const userName = msg.from.first_name;
+if (IS_PRODUCTION) {
+    console.log('🌐 PRODUCTION MODE - Используем webhook');
     
-    console.log(`👋 ПОЛУЧЕН /START от ${userName} (ID: ${msg.from.id}, Chat: ${chatId})`);
-    
-    const message = `🎯 Привет, ${userName}! 
-
-Бот работает! 🚀
-
-Это отладочная версия PlasticBoy бота.
-
-🔍 Информация:
-• Bot ID: @${BOT_USERNAME}
-• Chat ID: ${chatId}
-• Время: ${new Date().toLocaleString()}
-
-🎮 Основные команды:
-/help - помощь
-/test - тест бота
-/info - информация о боте`;
-
-    bot.sendMessage(chatId, message)
-        .then(() => {
-            console.log(`✅ Сообщение отправлено пользователю ${userName}`);
-        })
-        .catch((error) => {
-            console.error(`❌ Ошибка отправки сообщения:`, error);
-        });
-});
-
-// Команда /test
-bot.onText(/\/test/, (msg) => {
-    const chatId = msg.chat.id;
-    console.log(`🧪 ТЕСТ команда от ${msg.from.first_name}`);
-    
-    bot.sendMessage(chatId, '✅ Тест успешен! Бот работает правильно.')
-        .then(() => console.log('✅ Тест сообщение отправлено'))
-        .catch(error => console.error('❌ Ошибка тест сообщения:', error));
-});
-
-// Команда /info
-bot.onText(/\/info/, (msg) => {
-    const chatId = msg.chat.id;
-    console.log(`ℹ️ INFO команда от ${msg.from.first_name}`);
-    
-    const info = `📊 Информация о боте:
-
-🤖 Username: @${BOT_USERNAME}
-🌐 Web App: ${WEB_APP_URL}
-⏰ Uptime: ${Math.floor(process.uptime())} секунд
-💾 Memory: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB
-🖥️ Platform: ${process.platform}
-📍 Environment: ${process.env.NODE_ENV || 'development'}`;
-
-    bot.sendMessage(chatId, info)
-        .then(() => console.log('✅ Info сообщение отправлено'))
-        .catch(error => console.error('❌ Ошибка info сообщения:', error));
-});
-
-// Команда /help
-bot.onText(/\/help/, (msg) => {
-    const chatId = msg.chat.id;
-    console.log(`❓ HELP команда от ${msg.from.first_name}`);
-    
-    const help = `❓ Помощь PlasticBoy Bot
-
-🚀 Доступные команды:
-/start - Запуск бота
-/test - Проверка работы
-/info - Информация о боте
-/help - Эта помощь
-
-🎯 Игра PlasticBoy - сбор 3D моделей в Алматы!
-Найди QR-коды и собирай коллекцию.
-
-🌐 Web версия: ${WEB_APP_URL}`;
-
-    bot.sendMessage(chatId, help)
-        .then(() => console.log('✅ Help сообщение отправлено'))
-        .catch(error => console.error('❌ Ошибка help сообщения:', error));
-});
-
-// Обработка всех сообщений для отладки
-bot.on('message', (msg) => {
-    console.log(`📨 СООБЩЕНИЕ получено:`, {
-        from: msg.from.first_name,
-        user_id: msg.from.id,
-        chat_id: msg.chat.id,
-        text: msg.text || msg.caption || '[не текст]',
-        type: msg.chat.type,
-        date: new Date(msg.date * 1000).toLocaleString()
+    // В продакшене НЕ используем polling
+    bot = new TelegramBot(BOT_TOKEN, { 
+        polling: false,
+        webHook: false // Важно отключить автоматический webhook
     });
-});
-
-// === HEALTH CHECK ДЛЯ RENDER ===
-
-const express = require('express');
-const healthApp = express();
-const HEALTH_PORT = process.env.PORT || 10000;
-
-healthApp.get('/', (req, res) => {
-    res.json({
-        status: 'OK',
-        service: 'PlasticBoy Telegram Bot (DEBUG)',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        botStatus: 'running',
-        config: {
-            botUsername: BOT_USERNAME,
-            webAppUrl: WEB_APP_URL,
-            nodeEnv: process.env.NODE_ENV
+    
+    console.log('✅ Бот создан для production (без polling)');
+} else {
+    console.log('🏠 DEVELOPMENT MODE - Используем polling');
+    
+    // В разработке используем polling
+    bot = new TelegramBot(BOT_TOKEN, { 
+        polling: {
+            interval: 2000,
+            autoStart: true,
+            params: {
+                timeout: 10
+            }
         }
     });
+    
+    console.log('✅ Бот создан для development (с polling)');
+}
+
+// EXPRESS СЕРВЕР ДЛЯ WEBHOOK И HEALTH CHECK
+const app = express();
+app.use(express.json());
+
+// HEALTH CHECK ENDPOINT
+app.get('/', (req, res) => {
+    res.json({
+        status: 'OK',
+        service: 'PlasticBoy Telegram Bot',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(process.uptime()),
+        memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB',
+        bot: BOT_USERNAME,
+        mode: IS_PRODUCTION ? 'webhook' : 'polling',
+        webAppUrl: WEB_APP_URL
+    });
 });
 
-healthApp.get('/health', (req, res) => {
+app.get('/health', (req, res) => {
     res.json({
         status: 'healthy',
         bot: BOT_USERNAME,
-        webApp: WEB_APP_URL,
         timestamp: new Date().toISOString()
     });
 });
 
-healthApp.listen(HEALTH_PORT, () => {
-    console.log(`💚 Health server запущен на порту ${HEALTH_PORT}`);
-    console.log(`📊 Health check: http://localhost:${HEALTH_PORT}/health`);
+// WEBHOOK ENDPOINT (только для production)
+if (IS_PRODUCTION) {
+    const webhookPath = `/${BOT_TOKEN}`;
+    
+    app.post(webhookPath, (req, res) => {
+        console.log('📥 Webhook получен:', req.body);
+        bot.processUpdate(req.body);
+        res.sendStatus(200);
+    });
+    
+    console.log(`🔗 Webhook path настроен: ${webhookPath}`);
+}
+
+// ===== ОБРАБОТЧИКИ КОМАНД БОТА =====
+
+// Команда /start
+bot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
+    const firstName = msg.from.first_name;
+    const userId = msg.from.id;
+    
+    console.log(`👋 /start от ${firstName} (ID: ${userId}, Chat: ${chatId})`);
+    
+    const welcomeMessage = `
+🎯 *PlasticBoy - Almaty Edition*
+
+Привет, ${firstName}! 👋
+
+Добро пожаловать в игру по сбору 3D моделей в Алматы!
+
+🎮 *Как играть:*
+• Найди QR-коды моделей по городу
+• Отсканируй их и собери коллекцию
+• Соревнуйся с другими игроками
+
+🚀 *Доступные команды:*
+/map - Открыть карту с моделями
+/leaderboard - Рейтинг коллекторов
+/stats - Статистика игры
+/help - Помощь
+
+Удачной охоты! 🎯
+    `;
+    
+    const options = {
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: '🗺️ Открыть карту', web_app: { url: WEB_APP_URL } }
+                ],
+                [
+                    { text: '🏆 Рейтинг', callback_data: 'leaderboard' },
+                    { text: '📊 Статистика', callback_data: 'stats' }
+                ],
+                [
+                    { text: '❓ Помощь', callback_data: 'help' }
+                ]
+            ]
+        }
+    };
+    
+    try {
+        await bot.sendMessage(chatId, welcomeMessage, options);
+        console.log(`✅ Приветствие отправлено ${firstName}`);
+    } catch (error) {
+        console.error(`❌ Ошибка отправки приветствия:`, error);
+    }
 });
 
-// === ПРОВЕРКА СОЕДИНЕНИЯ ===
+// Команда /help
+bot.onText(/\/help/, async (msg) => {
+    const chatId = msg.chat.id;
+    console.log(`❓ /help от ${msg.from.first_name}`);
+    
+    const helpMessage = `
+❓ *Помощь PlasticBoy*
 
-console.log('\n📡 Проверяем соединение с Telegram...');
+🎯 *Цель игры:*
+Собери как можно больше 3D моделей, разбросанных по Алматы!
 
-bot.getMe()
-    .then(botInfo => {
+📱 *Как играть:*
+1. Используй /map для просмотра карты
+2. Найди QR-код модели в реальном мире
+3. Отсканируй его или перейди по ссылке
+4. Заполни информацию о себе
+5. Сделай селфи с места находки
+6. Получи очки и место в рейтинге!
+
+🏆 *Авторизация через Telegram:*
+• Быстрый вход без ввода данных
+• Автоматическое заполнение профиля
+• Участие в рейтинге игроков
+• Сохранение твоих достижений
+
+🗺️ *Команды бота:*
+/start - Главное меню
+/map - Карта с моделями
+/leaderboard - Рейтинг игроков
+/stats - Статистика игры
+/help - Эта помощь
+
+🎮 *Советы:*
+• Чаще проверяй карту - появляются новые модели
+• Авторизуйся через Telegram для участия в рейтинге
+• Делись находками с друзьями!
+
+Удачи в коллекционировании! 🚀
+    `;
+    
+    const options = {
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: '🗺️ Начать игру', web_app: { url: WEB_APP_URL } }]
+            ]
+        }
+    };
+    
+    try {
+        await bot.sendMessage(chatId, helpMessage, options);
+        console.log(`✅ Помощь отправлена ${msg.from.first_name}`);
+    } catch (error) {
+        console.error(`❌ Ошибка отправки помощи:`, error);
+    }
+});
+
+// Команда /map
+bot.onText(/\/map/, async (msg) => {
+    const chatId = msg.chat.id;
+    console.log(`🗺️ /map от ${msg.from.first_name}`);
+    
+    const mapMessage = `
+🗺️ *Карта PlasticBoy*
+
+Здесь ты можешь увидеть все доступные модели в Алматы!
+
+🟢 Зеленые точки - доступны для сбора
+🔴 Красные точки - уже собраны
+
+Нажми кнопку ниже, чтобы открыть интерактивную карту:
+    `;
+    
+    const options = {
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: '🗺️ Открыть карту', web_app: { url: WEB_APP_URL } }],
+                [{ text: '🔄 Обновить', callback_data: 'refresh_map' }]
+            ]
+        }
+    };
+    
+    try {
+        await bot.sendMessage(chatId, mapMessage, options);
+        console.log(`✅ Карта отправлена ${msg.from.first_name}`);
+    } catch (error) {
+        console.error(`❌ Ошибка отправки карты:`, error);
+    }
+});
+
+// Обработка callback кнопок
+bot.on('callback_query', async (callbackQuery) => {
+    const chatId = callbackQuery.message.chat.id;
+    const data = callbackQuery.data;
+    const messageId = callbackQuery.message.message_id;
+    
+    console.log(`🔘 Callback: ${data} от ${callbackQuery.from.first_name}`);
+    
+    // Подтверждаем callback
+    try {
+        await bot.answerCallbackQuery(callbackQuery.id);
+    } catch (error) {
+        console.error('❌ Ошибка answerCallbackQuery:', error);
+    }
+    
+    // Обрабатываем разные типы callback'ов
+    try {
+        switch (data) {
+            case 'leaderboard':
+                await bot.editMessageText(
+                    `🏆 *Рейтинг коллекторов*\n\nОткройте веб-версию для просмотра полного рейтинга.`,
+                    {
+                        chat_id: chatId,
+                        message_id: messageId,
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: '🏆 Открыть рейтинг', url: `${WEB_APP_URL}/leaderboard.html` }],
+                                [{ text: '🔙 Назад в меню', callback_data: 'back_to_menu' }]
+                            ]
+                        }
+                    }
+                );
+                break;
+                
+            case 'stats':
+                await bot.editMessageText(
+                    `📊 *Статистика игры*\n\nОткройте веб-версию для просмотра подробной статистики.`,
+                    {
+                        chat_id: chatId,
+                        message_id: messageId,
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: '📊 Открыть статистику', web_app: { url: WEB_APP_URL } }],
+                                [{ text: '🔙 Назад в меню', callback_data: 'back_to_menu' }]
+                            ]
+                        }
+                    }
+                );
+                break;
+                
+            case 'help':
+                await bot.editMessageText(
+                    `❓ *Помощь*\n\nИспользуйте /help для подробной информации.`,
+                    {
+                        chat_id: chatId,
+                        message_id: messageId,
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: '🔙 Назад в меню', callback_data: 'back_to_menu' }]
+                            ]
+                        }
+                    }
+                );
+                break;
+                
+            case 'refresh_map':
+                await bot.editMessageText(
+                    `🔄 *Карта обновлена!*\n\nНажмите кнопку ниже для просмотра актуальной карты:`,
+                    {
+                        chat_id: chatId,
+                        message_id: messageId,
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: '🗺️ Открыть карту', web_app: { url: WEB_APP_URL } }]
+                            ]
+                        }
+                    }
+                );
+                break;
+                
+            case 'back_to_menu':
+                const welcomeMessage = `
+🎯 *PlasticBoy - Almaty Edition*
+
+Главное меню бота. Выберите действие:
+                `;
+                
+                await bot.editMessageText(welcomeMessage, {
+                    chat_id: chatId,
+                    message_id: messageId,
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '🗺️ Открыть карту', web_app: { url: WEB_APP_URL } }],
+                            [
+                                { text: '🏆 Рейтинг', callback_data: 'leaderboard' },
+                                { text: '📊 Статистика', callback_data: 'stats' }
+                            ]
+                        ]
+                    }
+                });
+                break;
+        }
+    } catch (error) {
+        console.error(`❌ Ошибка обработки callback ${data}:`, error);
+    }
+});
+
+// Обработка всех сообщений для отладки
+bot.on('message', (msg) => {
+    if (!msg.text || msg.text.startsWith('/')) return; // Пропускаем команды
+    
+    console.log(`📨 Сообщение от ${msg.from.first_name}: ${msg.text}`);
+    
+    // Простой ответ на сообщения
+    bot.sendMessage(msg.chat.id, `Получил ваше сообщение: "${msg.text}"\n\nИспользуйте /help для списка команд.`);
+});
+
+// ОБРАБОТКА ОШИБОК
+bot.on('polling_error', (error) => {
+    console.error('❌ POLLING ERROR:', error);
+});
+
+bot.on('webhook_error', (error) => {
+    console.error('❌ WEBHOOK ERROR:', error);
+});
+
+bot.on('error', (error) => {
+    console.error('❌ BOT ERROR:', error);
+});
+
+// ЗАПУСК СЕРВЕРА И БОТА
+async function startBot() {
+    try {
+        // Сначала запускаем HTTP сервер
+        const server = app.listen(PORT, () => {
+            console.log(`🌐 HTTP сервер запущен на порту ${PORT}`);
+            console.log(`📊 Health check: http://localhost:${PORT}/health`);
+        });
+        
+        // Получаем информацию о боте
+        const botInfo = await bot.getMe();
         console.log('✅ УСПЕШНОЕ ПОДКЛЮЧЕНИЕ К TELEGRAM!');
         console.log(`📱 Bot Username: @${botInfo.username}`);
         console.log(`📝 Bot Name: ${botInfo.first_name}`);
         console.log(`🆔 Bot ID: ${botInfo.id}`);
-        console.log(`🔧 Can Join Groups: ${botInfo.can_join_groups}`);
-        console.log(`📢 Can Read Messages: ${botInfo.can_read_all_group_messages}`);
-        console.log(`🔗 Supports Inline: ${botInfo.supports_inline_queries}`);
         
-        console.log('\n🚀 БОТ ГОТОВ К РАБОТЕ!');
-        console.log(`💬 Отправьте /start боту @${botInfo.username} для проверки`);
-        console.log(`🔗 Прямая ссылка: https://t.me/${botInfo.username}`);
-    })
-    .catch(error => {
-        console.error('❌ ОШИБКА ПОДКЛЮЧЕНИЯ К TELEGRAM:', error);
-        console.error('   Code:', error.code);
-        console.error('   Message:', error.message);
-        if (error.response) {
-            console.error('   Status:', error.response.statusCode);
-            console.error('   Body:', error.response.body);
+        if (IS_PRODUCTION) {
+            // В production настраиваем webhook
+            const webhookUrl = `${WEB_APP_URL}/${BOT_TOKEN}`;
+            console.log(`🔗 Настраиваем webhook: ${webhookUrl}`);
+            
+            try {
+                // Сначала удаляем старый webhook
+                await bot.deleteWebHook();
+                console.log('🗑️ Старый webhook удален');
+                
+                // Устанавливаем новый webhook
+                await bot.setWebHook(webhookUrl);
+                console.log('✅ Webhook установлен успешно');
+                
+                // Проверяем webhook
+                const webhookInfo = await bot.getWebHookInfo();
+                console.log('📋 Webhook info:', {
+                    url: webhookInfo.url,
+                    has_custom_certificate: webhookInfo.has_custom_certificate,
+                    pending_update_count: webhookInfo.pending_update_count
+                });
+                
+            } catch (webhookError) {
+                console.error('❌ Ошибка настройки webhook:', webhookError);
+                // Не останавливаем процесс, webhook может заработать позже
+            }
         }
         
-        console.log('\n🔧 ВОЗМОЖНЫЕ РЕШЕНИЯ:');
-        console.log('1. Проверьте токен бота в переменных окружения');
-        console.log('2. Убедитесь что бот не заблокирован');
-        console.log('3. Проверьте подключение к интернету');
+        console.log('\n🎉 БОТ ГОТОВ К РАБОТЕ!');
+        console.log(`💬 Отправьте /start боту @${botInfo.username} для тестирования`);
+        console.log(`🔗 Прямая ссылка: https://t.me/${botInfo.username}`);
         
+        // Graceful shutdown
+        const gracefulShutdown = (signal) => {
+            console.log(`\n📛 Получен сигнал ${signal}, завершаем...`);
+            
+            if (server) {
+                server.close(() => {
+                    console.log('✅ HTTP сервер остановлен');
+                });
+            }
+            
+            if (bot && !IS_PRODUCTION) {
+                bot.stopPolling()
+                    .then(() => {
+                        console.log('✅ Polling остановлен');
+                        process.exit(0);
+                    })
+                    .catch((error) => {
+                        console.error('❌ Ошибка при остановке polling:', error);
+                        process.exit(1);
+                    });
+            } else {
+                process.exit(0);
+            }
+        };
+        
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+        
+    } catch (error) {
+        console.error('❌ КРИТИЧЕСКАЯ ОШИБКА запуска бота:', error);
         process.exit(1);
-    });
+    }
+}
 
-// === GRACEFUL SHUTDOWN ===
-
-const gracefulShutdown = (signal) => {
-    console.log(`\n📛 Получен сигнал ${signal}, завершаем бота...`);
-    
-    bot.stopPolling()
-        .then(() => {
-            console.log('✅ Polling остановлен');
-            process.exit(0);
-        })
-        .catch((error) => {
-            console.error('❌ Ошибка при остановке polling:', error);
-            process.exit(1);
-        });
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-console.log('\n⏰ Бот запущен, ожидаем сообщения...');
-console.log('📝 Все действия будут логироваться в консоль');
+// ЗАПУСК
+startBot();
