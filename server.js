@@ -5,7 +5,7 @@ const path = require('path');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const cors = require('cors');
-const axios = require('axios'); // Добавлено для Telegram API
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -485,7 +485,7 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   }
 });
 
-// АДМИНСКИЕ МАРШРУТЫ
+// ============== АДМИНСКИЕ МАРШРУТЫ ==============
 
 // Получить все точки для админа
 app.get('/api/admin/points', async (req, res) => {
@@ -598,7 +598,7 @@ app.delete('/api/admin/points/:id', async (req, res) => {
   }
 });
 
-// TELEGRAM МАРШРУТЫ
+// ============== TELEGRAM МАРШРУТЫ ==============
 
 // Получить рейтинг Telegram пользователей
 app.get('/api/telegram/leaderboard', async (req, res) => {
@@ -689,7 +689,7 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
   }
 });
 
-// СТАТИЧЕСКИЕ ФАЙЛЫ
+// ============== СТАТИЧЕСКИЕ ФАЙЛЫ ==============
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -720,4 +720,49 @@ app.use((req, res) => {
 // Обработка ошибок
 app.use((error, req, res, next) => {
   console.error('❌ Серверная ошибка:', error);
-  res.status(500).json({
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+});
+
+// Запуск сервера
+const startServer = async () => {
+  try {
+    await connectDB();
+    
+    app.listen(PORT, () => {
+      console.log('🚀 PlasticBoy Server запущен');
+      console.log(`📍 URL: http://localhost:${PORT}`);
+      console.log(`🛡️ Админ панель: http://localhost:${PORT}/admin.html`);
+      console.log(`🏆 Рейтинг: http://localhost:${PORT}/leaderboard.html`);
+      console.log(`🔐 Админ пароль: ${process.env.ADMIN_PASSWORD ? 'установлен' : 'НЕ УСТАНОВЛЕН!'}`);
+      console.log(`📱 Telegram бот: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'НЕ НАСТРОЕН'}`);
+      
+      if (BOT_TOKEN) {
+        console.log(`🔗 Telegram webhook: /${BOT_TOKEN}`);
+        console.log(`📱 Telegram интеграция: АКТИВНА`);
+      } else {
+        console.log(`📱 Telegram интеграция: НЕ НАСТРОЕНА`);
+      }
+    });
+  } catch (error) {
+    console.error('❌ Ошибка запуска сервера:', error);
+    process.exit(1);
+  }
+};
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('📛 SIGTERM получен, завершаем сервер...');
+  mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('📛 SIGINT получен, завершаем сервер...');
+  mongoose.connection.close();
+  process.exit(0);
+});
+
+startServer();
