@@ -1,6 +1,6 @@
 {
   "name": "plasticboy",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "3D Model Collection App for Almaty with Telegram Bot - FIXED VERSION",
   "main": "server.js",
   "scripts": {
@@ -9,7 +9,8 @@
     
     "bot": "node bot-server.js",
     "bot:dev": "nodemon bot-server.js",
-    "bot:setup": "node bot/setup-bot.js",
+    "bot:setup": "node setup-telegram-bot.js",
+    "bot:diagnose": "node diagnose-bot.js",
     
     "dev:all": "concurrently \"npm run dev\" \"npm run bot:dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
