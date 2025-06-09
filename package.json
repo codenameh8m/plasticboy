@@ -1,11 +1,12 @@
 {
   "name": "plasticboy",
-  "version": "2.3.0",
-  "description": "3D Model Collection App for Almaty with Telegram Bot - Render.com Deploy",
+  "version": "2.4.0",
+  "description": "3D Model Collection App for Almaty with Telegram Bot - FIXED VERSION",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    
     "bot": "node bot-server.js",
     "bot:dev": "nodemon bot-server.js",
     "bot:setup": "node bot/setup-bot.js",
@@ -13,8 +14,8 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run bot:dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     
-    "render:web": "npm start",
-    "render:bot": "npm run bot",
+    "render:web": "node server.js",
+    "render:bot": "node bot-server.js",
     
     "postinstall": "echo 'Dependencies installed for Render.com deploy'"
   },
@@ -27,7 +28,7 @@
     "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
     
-    "node-telegram-bot-api": "^0.65.1",
+    "node-telegram-bot-api": "^0.66.0",
     "axios": "^1.6.0"
   },
   "devDependencies": {
@@ -50,7 +51,8 @@
     "collection",
     "gamification",
     "render",
-    "autodeploy"
+    "webhook",
+    "polling"
   ],
   "author": "PlasticBoy Team",
   "license": "MIT",
@@ -58,10 +60,6 @@
     "type": "git",
     "url": "https://github.com/your-username/plasticboy.git"
   },
-  "bugs": {
-    "url": "https://github.com/your-username/plasticboy/issues"
-  },
-  "homepage": "https://github.com/your-username/plasticboy#readme",
   "render": {
     "services": [
       {
@@ -69,14 +67,28 @@
         "type": "web",
         "env": "node",
         "buildCommand": "npm install",
-        "startCommand": "npm run render:web"
+        "startCommand": "npm run render:web",
+        "plan": "free",
+        "envVars": [
+          {
+            "key": "NODE_ENV",
+            "value": "production"
+          }
+        ]
       },
       {
         "name": "plasticboy-bot", 
         "type": "worker",
         "env": "node",
         "buildCommand": "npm install",
-        "startCommand": "npm run render:bot"
+        "startCommand": "npm run render:bot",
+        "plan": "free",
+        "envVars": [
+          {
+            "key": "NODE_ENV",
+            "value": "production"
+          }
+        ]
       }
     ]
   }
