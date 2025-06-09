@@ -17,7 +17,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
 
-// Настройка multer для загрузки файлов
+// Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
@@ -29,7 +29,7 @@ const upload = multer({
 // === TELEGRAM BOT INTEGRATION ===
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
-// Функция для отправки сообщений в Telegram
+// Function to send messages to Telegram
 async function sendTelegramMessage(chatId, message, options = {}) {
   if (!BOT_TOKEN) return;
   
@@ -40,16 +40,16 @@ async function sendTelegramMessage(chatId, message, options = {}) {
       parse_mode: 'Markdown',
       ...options
     });
-    console.log(`📱 Telegram сообщение отправлено в чат ${chatId}`);
+    console.log(`📱 Telegram message sent to chat ${chatId}`);
   } catch (error) {
-    console.error('❌ Ошибка отправки Telegram сообщения:', error.response?.data || error.message);
+    console.error('❌ Telegram message sending error:', error.response?.data || error.message);
   }
 }
 
-// Функция обработки Telegram команд
+// Function to handle Telegram commands
 async function handleTelegramUpdate(update) {
   try {
-    console.log('📥 Получено обновление Telegram:', JSON.stringify(update, null, 2));
+    console.log('📥 Received Telegram update:', JSON.stringify(update, null, 2));
     
     if (update.message) {
       const message = update.message;
@@ -57,23 +57,23 @@ async function handleTelegramUpdate(update) {
       const text = message.text;
       const user = message.from;
       
-      console.log(`💬 Сообщение от ${user.first_name} (${user.id}): ${text}`);
+      console.log(`💬 Message from ${user.first_name} (${user.id}): ${text}`);
       
-      // Обработка команд
+      // Handle commands
       if (text && text.startsWith('/')) {
         const command = text.split(' ')[0].substring(1);
         
         switch (command) {
           case 'start':
-            const welcomeMessage = `🎯 *PlasticBoy - Almaty Edition*\n\nПривет, ${user.first_name}! 👋\n\nДобро пожаловать в игру по сбору 3D моделей в Алматы!\n\n🎮 *Как играть:*\n• Найди QR-коды моделей по городу\n• Отсканируй их и собери коллекцию\n• Соревнуйся с другими игроками\n\nУдачной охоты! 🎯`;
+            const welcomeMessage = `🎯 *PlasticBoy - Almaty Edition*\n\nHello, ${user.first_name}! 👋\n\nWelcome to the 3D model collection game in Almaty!\n\n🎮 *How to play:*\n• Find QR codes of models around the city\n• Scan them and collect your collection\n• Compete with other players\n\nHappy hunting! 🎯`;
             
             await sendTelegramMessage(chatId, welcomeMessage, {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🗺️ Открыть карту', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [{ text: '🗺️ Open Map', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
                   [
-                    { text: '🏆 Рейтинг', callback_data: 'leaderboard' },
-                    { text: '📊 Статистика', callback_data: 'stats' }
+                    { text: '🏆 Leaderboard', callback_data: 'leaderboard' },
+                    { text: '📊 Statistics', callback_data: 'stats' }
                   ]
                 ]
               }
@@ -81,31 +81,31 @@ async function handleTelegramUpdate(update) {
             break;
             
           case 'help':
-            const helpMessage = `❓ *Помощь PlasticBoy*\n\n🎯 *Цель игры:* Собери как можно больше 3D моделей!\n\n📱 *Команды:*\n/start - Главное меню\n/map - Открыть карту\n/leaderboard - Рейтинг игроков\n/stats - Статистика игры\n/help - Эта помощь\n\nУдачи! 🚀`;
+            const helpMessage = `❓ *PlasticBoy Help*\n\n🎯 *Game goal:* Collect as many 3D models as possible!\n\n📱 *Commands:*\n/start - Main menu\n/map - Open map\n/leaderboard - Player rankings\n/stats - Game statistics\n/help - This help\n\nGood luck! 🚀`;
             await sendTelegramMessage(chatId, helpMessage);
             break;
             
           case 'map':
-            const mapMessage = `🗺️ *Карта PlasticBoy*\n\nОткройте интерактивную карту для поиска 3D моделей в Алматы!\n\n🎯 На карте вы увидите:\n• 🟢 Доступные модели\n• 🔴 Уже собранные модели\n• 📍 Ваше местоположение`;
+            const mapMessage = `🗺️ *PlasticBoy Map*\n\nOpen the interactive map to find 3D models in Almaty!\n\n🎯 On the map you will see:\n• 🟢 Available models\n• 🔴 Already collected models\n• 📍 Your location`;
             
             await sendTelegramMessage(chatId, mapMessage, {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🗺️ Открыть карту', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
-                  [{ text: '📊 Статистика', callback_data: 'stats' }]
+                  [{ text: '🗺️ Open Map', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [{ text: '📊 Statistics', callback_data: 'stats' }]
                 ]
               }
             });
             break;
             
           case 'leaderboard':
-            const leaderboardMessage = `🏆 *Рейтинг коллекторов*\n\nПосмотрите топ игроков PlasticBoy!\n\n⭐ В рейтинге участвуют только пользователи, авторизованные через Telegram\n\n🥇🥈🥉 Кто соберет больше всех моделей?`;
+            const leaderboardMessage = `🏆 *Collectors Leaderboard*\n\nCheck out the top PlasticBoy players!\n\n⭐ Only users authorized via Telegram participate in the rankings\n\n🥇🥈🥉 Who will collect the most models?`;
             
             await sendTelegramMessage(chatId, leaderboardMessage, {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🏆 Открыть рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }],
-                  [{ text: '🗺️ К карте', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+                  [{ text: '🏆 Open Leaderboard', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }],
+                  [{ text: '🗺️ To Map', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
                 ]
               }
             });
@@ -117,7 +117,7 @@ async function handleTelegramUpdate(update) {
               const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
               const availablePoints = totalPoints - collectedPoints;
               
-              // Получаем статистику Telegram пользователей
+              // Get Telegram users statistics
               const telegramStats = await ModelPoint.aggregate([
                 {
                   $match: {
@@ -138,77 +138,77 @@ async function handleTelegramUpdate(update) {
               const telegramUsers = tgStats.uniqueTelegramUsers.length;
               const telegramCollections = tgStats.telegramCollections;
               
-              const statsMessage = `📊 *Статистика PlasticBoy*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*\n\n📱 *Telegram игроки:*\n👥 Участников: *${telegramUsers}*\n🎯 Собрано ими: *${telegramCollections}*\n\n🎮 Присоединяйся к игре!`;
+              const statsMessage = `📊 *PlasticBoy Statistics*\n\n📦 Total models: *${totalPoints}*\n🟢 Available: *${availablePoints}*\n🔴 Collected: *${collectedPoints}*\n\n📱 *Telegram players:*\n👥 Participants: *${telegramUsers}*\n🎯 Collected by them: *${telegramCollections}*\n\n🎮 Join the game!`;
               
               await sendTelegramMessage(chatId, statsMessage, {
                 reply_markup: {
                   inline_keyboard: [
-                    [{ text: '🗺️ Играть', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
-                    [{ text: '🏆 Рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
+                    [{ text: '🗺️ Play', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                    [{ text: '🏆 Leaderboard', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
                   ]
                 }
               });
             } catch (error) {
-              await sendTelegramMessage(chatId, '❌ Ошибка получения статистики');
+              await sendTelegramMessage(chatId, '❌ Statistics retrieval error');
             }
             break;
             
           default:
-            const unknownMessage = `❓ Неизвестная команда: /${command}\n\n📱 *Доступные команды:*\n/start - Главное меню\n/map - Открыть карту\n/leaderboard - Рейтинг игроков\n/stats - Статистика игры\n/help - Помощь\n\n🎯 Используйте команды для навигации!`;
+            const unknownMessage = `❓ Unknown command: /${command}\n\n📱 *Available commands:*\n/start - Main menu\n/map - Open map\n/leaderboard - Player rankings\n/stats - Game statistics\n/help - Help\n\n🎯 Use commands for navigation!`;
             await sendTelegramMessage(chatId, unknownMessage, {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🗺️ Открыть карту', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [{ text: '🗺️ Open Map', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
                   [
-                    { text: '🏆 Рейтинг', callback_data: 'leaderboard' },
-                    { text: '📊 Статистика', callback_data: 'stats' }
+                    { text: '🏆 Leaderboard', callback_data: 'leaderboard' },
+                    { text: '📊 Statistics', callback_data: 'stats' }
                   ]
                 ]
               }
             });
         }
       } else if (text) {
-        // Обычное сообщение
-        await sendTelegramMessage(chatId, `Получил ваше сообщение: "${text}"\n\nИспользуйте /help для списка команд.`, {
+        // Regular message
+        await sendTelegramMessage(chatId, `Got your message: "${text}"\n\nUse /help for command list.`, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🗺️ Играть', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+              [{ text: '🗺️ Play', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
             ]
           }
         });
       }
     }
     
-    // Обработка callback кнопок
+    // Handle callback buttons
     if (update.callback_query) {
       const callbackQuery = update.callback_query;
       const chatId = callbackQuery.message.chat.id;
       const data = callbackQuery.data;
       const messageId = callbackQuery.message.message_id;
       
-      console.log(`🔘 Callback: ${data} от ${callbackQuery.from.first_name}`);
+      console.log(`🔘 Callback: ${data} from ${callbackQuery.from.first_name}`);
       
-      // Подтверждаем callback
+      // Confirm callback
       try {
         await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
           callback_query_id: callbackQuery.id
         });
       } catch (error) {
-        console.error('❌ Ошибка answerCallbackQuery:', error);
+        console.error('❌ answerCallbackQuery error:', error);
       }
       
-      // Обрабатываем callback
+      // Handle callback
       switch (data) {
         case 'leaderboard':
           await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
             chat_id: chatId,
             message_id: messageId,
-            text: '🏆 *Рейтинг коллекторов*\n\nОткройте веб-версию для просмотра полного рейтинга игроков!',
+            text: '🏆 *Collectors Leaderboard*\n\nOpen the web version to view the full player rankings!',
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '🏆 Открыть рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }],
-                [{ text: '🗺️ К карте', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
+                [{ text: '🏆 Open Leaderboard', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }],
+                [{ text: '🗺️ To Map', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }]
               ]
             }
           });
@@ -220,7 +220,7 @@ async function handleTelegramUpdate(update) {
             const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
             const availablePoints = totalPoints - collectedPoints;
             
-            // Получаем статистику Telegram пользователей
+            // Get Telegram users statistics
             const telegramStats = await ModelPoint.aggregate([
               {
                 $match: {
@@ -244,61 +244,61 @@ async function handleTelegramUpdate(update) {
             await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
               chat_id: chatId,
               message_id: messageId,
-              text: `📊 *Статистика игры*\n\n📦 Всего моделей: *${totalPoints}*\n🟢 Доступно: *${availablePoints}*\n🔴 Собрано: *${collectedPoints}*\n\n📱 *Telegram игроки:*\n👥 Участников: *${telegramUsers}*\n🎯 Собрано ими: *${telegramCollections}*`,
+              text: `📊 *Game Statistics*\n\n📦 Total models: *${totalPoints}*\n🟢 Available: *${availablePoints}*\n🔴 Collected: *${collectedPoints}*\n\n📱 *Telegram players:*\n👥 Participants: *${telegramUsers}*\n🎯 Collected by them: *${telegramCollections}*`,
               parse_mode: 'Markdown',
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🗺️ Играть', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
-                  [{ text: '🏆 Рейтинг', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
+                  [{ text: '🗺️ Play', web_app: { url: process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000' } }],
+                  [{ text: '🏆 Leaderboard', url: `${process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || 'http://localhost:3000'}/leaderboard.html` }]
                 ]
               }
             });
           } catch (error) {
-            console.error('❌ Ошибка получения статистики для callback:', error);
+            console.error('❌ Statistics retrieval error for callback:', error);
           }
           break;
       }
     }
     
   } catch (error) {
-    console.error('❌ Ошибка обработки Telegram обновления:', error);
+    console.error('❌ Telegram update handling error:', error);
   }
 }
 
-// === WEBHOOK МАРШРУТ ДЛЯ TELEGRAM ===
+// === WEBHOOK ROUTE FOR TELEGRAM ===
 if (BOT_TOKEN) {
   app.post(`/${BOT_TOKEN}`, async (req, res) => {
-    console.log('📥 Webhook получен от Telegram');
+    console.log('📥 Webhook received from Telegram');
     
     try {
       await handleTelegramUpdate(req.body);
       res.status(200).send('OK');
     } catch (error) {
-      console.error('❌ Ошибка обработки webhook:', error);
+      console.error('❌ Webhook handling error:', error);
       res.status(500).send('Error');
     }
   });
   
-  console.log(`🔗 Telegram webhook маршрут настроен: /${BOT_TOKEN}`);
+  console.log(`🔗 Telegram webhook route configured: /${BOT_TOKEN}`);
 } else {
-  console.log('⚠️ TELEGRAM_BOT_TOKEN не найден, webhook не настроен');
+  console.log('⚠️ TELEGRAM_BOT_TOKEN not found, webhook not configured');
 }
 
-// Подключение к MongoDB
+// Connect to MongoDB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('✅ MongoDB подключена');
+    console.log('✅ MongoDB connected');
   } catch (error) {
-    console.error('❌ Ошибка подключения к MongoDB:', error);
+    console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   }
 };
 
-// Модель точки сбора
+// Collection point model
 const modelPointSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, index: true },
   name: { type: String, required: true },
@@ -329,7 +329,7 @@ const modelPointSchema = new mongoose.Schema({
   }
 });
 
-// Индексы для оптимизации
+// Indexes for optimization
 modelPointSchema.index({ id: 1, qrSecret: 1 });
 modelPointSchema.index({ status: 1, scheduledTime: 1 });
 modelPointSchema.index({ collectedAt: 1 });
@@ -337,14 +337,14 @@ modelPointSchema.index({ 'collectorInfo.telegramData.id': 1 });
 
 const ModelPoint = mongoose.model('ModelPoint', modelPointSchema);
 
-// Логирование действий пользователей
+// Log user actions
 function logUserAction(action, data, req) {
   const timestamp = new Date().toISOString();
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
   console.log(`📝 [${timestamp}] ${action} - IP: ${ip} - Data:`, JSON.stringify(data));
 }
 
-// Функция проверки админского пароля
+// Check admin password function
 function checkAdminPassword(req) {
   let password = null;
   
@@ -361,7 +361,7 @@ function checkAdminPassword(req) {
   }
   
   const isValid = password && password === process.env.ADMIN_PASSWORD;
-  console.log('🔐 Проверка админского пароля:', isValid ? 'УСПЕХ' : 'ОШИБКА');
+  console.log('🔐 Admin password check:', isValid ? 'SUCCESS' : 'ERROR');
   
   return isValid;
 }
@@ -389,7 +389,7 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Получить все публичные точки
+// Get all public points
 app.get('/api/points', async (req, res) => {
   try {
     const now = new Date();
@@ -402,16 +402,16 @@ app.get('/api/points', async (req, res) => {
     .exec();
     
     logUserAction('POINTS_LOADED', { count: points.length }, req);
-    console.log(`📍 Загружено ${points.length} публичных точек`);
+    console.log(`📍 Loaded ${points.length} public points`);
     
     res.json(points);
   } catch (error) {
-    console.error('❌ Ошибка загрузки точек:', error);
+    console.error('❌ Points loading error:', error);
     res.status(500).json({ error: 'Failed to load points' });
   }
 });
 
-// Получить информацию о точке для сбора
+// Get point information for collection
 app.get('/api/collect/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -458,18 +458,18 @@ app.get('/api/collect/:id', async (req, res) => {
       scheduledTime: point.scheduledTime
     });
   } catch (error) {
-    console.error('❌ Ошибка получения информации о точке:', error);
+    console.error('❌ Point info retrieval error:', error);
     res.status(500).json({ error: 'Failed to get point info' });
   }
 });
 
-// Собрать модель
+// Collect model
 app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
   try {
     const { id } = req.params;
     const { secret, name, signature, authMethod, telegramData } = req.body;
     
-    console.log('📦 Начинаем сбор модели:', { id, authMethod });
+    console.log('📦 Starting model collection:', { id, authMethod });
     
     if (!secret || !name) {
       return res.status(400).json({ error: 'Secret and name are required' });
@@ -525,13 +525,13 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
             hash: parsedTelegramData.hash || ''
           };
           
-          console.log('✅ Telegram данные обработаны для пользователя:', parsedTelegramData.first_name);
+          console.log('✅ Telegram data processed for user:', parsedTelegramData.first_name);
         } else {
-          console.warn('⚠️ Неполные Telegram данные, используем ручной режим');
+          console.warn('⚠️ Incomplete Telegram data, using manual mode');
           collectorInfo.authMethod = 'manual';
         }
       } catch (error) {
-        console.error('❌ Ошибка парсинга Telegram данных:', error);
+        console.error('❌ Telegram data parsing error:', error);
         collectorInfo.authMethod = 'manual';
       }
     }
@@ -540,9 +540,9 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       try {
         const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
         collectorInfo.selfie = base64Image;
-        console.log('📸 Селфи обработано, размер:', req.file.size);
+        console.log('📸 Selfie processed, size:', req.file.size);
       } catch (error) {
-        console.error('❌ Ошибка обработки селфи:', error);
+        console.error('❌ Selfie processing error:', error);
       }
     }
     
@@ -562,7 +562,7 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     };
     
     logUserAction('COLLECT_SUCCESS', logData, req);
-    console.log(`🎯 Модель собрана: ${point.name} пользователем ${collectorInfo.name}`);
+    console.log(`🎯 Model collected: ${point.name} by user ${collectorInfo.name}`);
     
     res.json({
       success: true,
@@ -575,14 +575,14 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Ошибка сбора модели:', error);
+    console.error('❌ Model collection error:', error);
     res.status(500).json({ error: 'Failed to collect point' });
   }
 });
 
-// ============== АДМИНСКИЕ МАРШРУТЫ ==============
+// ============== ADMIN ROUTES ==============
 
-// Получить все точки для админа
+// Get all points for admin
 app.get('/api/admin/points', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -593,16 +593,16 @@ app.get('/api/admin/points', async (req, res) => {
     const points = await ModelPoint.find({}).lean().exec();
     
     logUserAction('ADMIN_POINTS_LOADED', { count: points.length }, req);
-    console.log(`🛡️ Админ загрузил ${points.length} точек`);
+    console.log(`🛡️ Admin loaded ${points.length} points`);
     
     res.json(points);
   } catch (error) {
-    console.error('❌ Ошибка загрузки точек для админа:', error);
+    console.error('❌ Admin points loading error:', error);
     res.status(500).json({ error: 'Failed to load points' });
   }
 });
 
-// Создать новую точку (админ)
+// Create new point (admin)
 app.post('/api/admin/points', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -657,15 +657,15 @@ app.post('/api/admin/points', async (req, res) => {
       scheduledTime: scheduledTime.toISOString()
     }, req);
     
-    console.log(`✅ Создана новая точка: ${name} (ID: ${pointId})`);
+    console.log(`✅ New point created: ${name} (ID: ${pointId})`);
     res.json(newPoint);
   } catch (error) {
-    console.error('❌ Ошибка создания точки:', error);
+    console.error('❌ Point creation error:', error);
     res.status(500).json({ error: 'Failed to create point' });
   }
 });
 
-// Удалить точку (админ)
+// Delete point (admin)
 app.delete('/api/admin/points/:id', async (req, res) => {
   try {
     if (!checkAdminPassword(req)) {
@@ -685,20 +685,20 @@ app.delete('/api/admin/points/:id', async (req, res) => {
       pointName: deletedPoint.name 
     }, req);
     
-    console.log(`🗑️ Точка удалена: ${deletedPoint.name} (ID: ${id})`);
+    console.log(`🗑️ Point deleted: ${deletedPoint.name} (ID: ${id})`);
     res.json({ success: true, message: 'Point deleted successfully' });
   } catch (error) {
-    console.error('❌ Ошибка удаления точки:', error);
+    console.error('❌ Point deletion error:', error);
     res.status(500).json({ error: 'Failed to delete point' });
   }
 });
 
-// ============== TELEGRAM МАРШРУТЫ ==============
+// ============== TELEGRAM ROUTES ==============
 
-// Получить рейтинг Telegram пользователей
+// Get Telegram users leaderboard
 app.get('/api/telegram/leaderboard', async (req, res) => {
   try {
-    console.log('🏆 Загружаем рейтинг Telegram пользователей...');
+    console.log('🏆 Loading Telegram users leaderboard...');
     
     const leaderboard = await ModelPoint.aggregate([
       {
@@ -775,16 +775,16 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
       ...statsResult 
     }, req);
     
-    console.log(`🏆 Рейтинг загружен: ${leaderboard.length} пользователей, ${statsResult.totalCollections} сборов`);
+    console.log(`🏆 Leaderboard loaded: ${leaderboard.length} users, ${statsResult.totalCollections} collections`);
     
     res.json(response);
   } catch (error) {
-    console.error('❌ Ошибка загрузки рейтинга:', error);
+    console.error('❌ Leaderboard loading error:', error);
     res.status(500).json({ error: 'Failed to load leaderboard' });
   }
 });
 
-// ============== СТАТИЧЕСКИЕ ФАЙЛЫ ==============
+// ============== STATIC FILES ==============
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -806,56 +806,56 @@ app.get('/leaderboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'leaderboard.html'));
 });
 
-// Обработка 404
+// Handle 404
 app.use((req, res) => {
-  console.log('❌ 404 - Страница не найдена:', req.url);
+  console.log('❌ 404 - Page not found:', req.url);
   res.status(404).json({ error: 'Page not found' });
 });
 
-// Обработка ошибок
+// Error handling
 app.use((error, req, res, next) => {
-  console.error('❌ Серверная ошибка:', error);
+  console.error('❌ Server error:', error);
   res.status(500).json({ 
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? error.message : undefined
   });
 });
 
-// Запуск сервера
+// Start server
 const startServer = async () => {
   try {
     await connectDB();
     
     app.listen(PORT, () => {
-      console.log('🚀 PlasticBoy Server запущен');
+      console.log('🚀 PlasticBoy Server started');
       console.log(`📍 URL: http://localhost:${PORT}`);
-      console.log(`🛡️ Админ панель: http://localhost:${PORT}/admin.html`);
-      console.log(`🏆 Рейтинг: http://localhost:${PORT}/leaderboard.html`);
-      console.log(`🔐 Админ пароль: ${process.env.ADMIN_PASSWORD ? 'установлен' : 'НЕ УСТАНОВЛЕН!'}`);
-      console.log(`📱 Telegram бот: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'НЕ НАСТРОЕН'}`);
+      console.log(`🛡️ Admin panel: http://localhost:${PORT}/admin.html`);
+      console.log(`🏆 Leaderboard: http://localhost:${PORT}/leaderboard.html`);
+      console.log(`🔐 Admin password: ${process.env.ADMIN_PASSWORD ? 'set' : 'NOT SET!'}`);
+      console.log(`📱 Telegram bot: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'NOT CONFIGURED'}`);
       
       if (BOT_TOKEN) {
         console.log(`🔗 Telegram webhook: /${BOT_TOKEN}`);
-        console.log(`📱 Telegram интеграция: АКТИВНА`);
+        console.log(`📱 Telegram integration: ACTIVE`);
       } else {
-        console.log(`📱 Telegram интеграция: НЕ НАСТРОЕНА`);
+        console.log(`📱 Telegram integration: NOT CONFIGURED`);
       }
     });
   } catch (error) {
-    console.error('❌ Ошибка запуска сервера:', error);
+    console.error('❌ Server startup error:', error);
     process.exit(1);
   }
 };
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('📛 SIGTERM получен, завершаем сервер...');
+  console.log('📛 SIGTERM received, shutting down server...');
   mongoose.connection.close();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('📛 SIGINT получен, завершаем сервер...');
+  console.log('📛 SIGINT received, shutting down server...');
   mongoose.connection.close();
   process.exit(0);
 });
