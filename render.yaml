@@ -1,0 +1,58 @@
+# render.yaml - Конфигурация для автодеплоя PlasticBoy на Render.com
+
+services:
+  # Основное веб-приложение
+  - type: web
+    name: plasticboy-web
+    env: node
+    repo: https://github.com/your-username/plasticboy.git
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromGroup: plasticboy-env
+
+  # Telegram бот (Background Worker)
+  - type: worker
+    name: plasticboy-bot
+    env: node
+    repo: https://github.com/your-username/plasticboy.git
+    buildCommand: npm install
+    startCommand: npm run bot
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromGroup: plasticboy-env
+
+# Группы переменных окружения
+envVarGroups:
+  - name: plasticboy-env
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb+srv://plasticboy:Urod1488@cluster0.ts0h5a6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - key: ADMIN_PASSWORD
+        value: Urod1488
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY
+      - key: TELEGRAM_BOT_USERNAME
+        value: PlasticBoyBot
+
+# Примечания:
+# 1. Замените your-username на ваш GitHub username
+# 2. Обновите переменные окружения через Render Dashboard
+# 3. WEB_APP_URL будет автоматически установлен как RENDER_EXTERNAL_URL
+# 4. Для продакшена используйте план Starter ($7/месяц) для лучшей производительности
