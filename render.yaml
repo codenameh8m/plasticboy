@@ -1,0 +1,79 @@
+# render.yaml - Финальная конфигурация для PlasticBoy v2.0
+# Только один Web сервис - всё в одном процессе
+
+services:
+  # Основное веб-приложение (карта + админка + API + Telegram webhook)
+  - type: web
+    name: plasticboy-web
+    env: node
+    repo: https://github.com/codenameh8m/plasticboy.git  # ЗАМЕНИТЕ на ваш репозиторий
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromGroup: plasticboy-env
+
+# Группы переменных окружения
+envVarGroups:
+  - name: plasticboy-env
+    envVars:
+      # MongoDB конфигурация
+      - key: MONGODB_URI
+        value: mongodb+srv://plasticboy:Urod1488@cluster0.ts0h5a6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      
+      # Админ панель
+      - key: ADMIN_PASSWORD
+        value: Urod1488
+      
+      # Telegram бот конфигурация
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY
+      
+      - key: TELEGRAM_BOT_USERNAME
+        value: PlasticBoyBot
+
+# =============================================================================
+# ИНСТРУКЦИИ ПО ДЕПЛОЮ:
+# 
+# 1. ОБЯЗАТЕЛЬНО замените repo URL на ваш GitHub репозиторий
+# 2. Сохраните этот файл как render.yaml в корне проекта
+# 3. Сделайте commit и push в GitHub
+# 4. В Render Dashboard создайте новый Web Service из GitHub
+# 5. Render автоматически прочитает этот файл
+# 
+# ПОСЛЕ ДЕПЛОЯ:
+# 
+# 1. Получите URL вашего приложения (например: https://plasticboy-web.onrender.com)
+# 2. Настройте Telegram webhook ОДИН РАЗ:
+#    
+#    Откройте в браузере (замените YOUR_APP_URL):
+#    https://api.telegram.org/bot7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY/setWebhook?url=YOUR_APP_URL/7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY
+#    
+#    Пример:
+#    https://api.telegram.org/bot7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY/setWebhook?url=https://plasticboy-web.onrender.com/7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY
+#
+# 3. Проверьте работу:
+#    - Health check: https://your-app-url.onrender.com/health
+#    - Telegram бот: отправьте /start @PlasticBoyBot
+#    - Веб-приложение: откройте главную страницу
+#    - Админ панель: https://your-app-url.onrender.com/admin.html
+#    - Рейтинг: https://your-app-url.onrender.com/leaderboard.html
+#
+# TROUBLESHOOTING:
+#
+# - Если бот не отвечает: проверьте webhook
+#   https://api.telegram.org/bot7623080305:AAHnOVwzUfL8N8O2zr-_vEDDOa-PVKQrmeY/getWebhookInfo
+#
+# - Если MongoDB не подключается: проверьте MONGODB_URI в Environment Variables
+#
+# - Если приложение не запускается: проверьте логи в Render Dashboard
+#
+# =============================================================================
