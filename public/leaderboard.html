@@ -165,6 +165,278 @@
             font-size: 1rem;
         }
 
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .leaderboard-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(248, 249, 250, 0.8));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .leaderboard-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 136, 204, 0.2);
+            border-color: rgba(0, 136, 204, 0.3);
+        }
+
+        .leaderboard-item:hover::before {
+            opacity: 1;
+        }
+
+        .leaderboard-item.first {
+            background: linear-gradient(135deg, #fff8e1, #ffecb3);
+            border: 3px solid #ffc107;
+            box-shadow: 0 8px 30px rgba(255, 193, 7, 0.4);
+        }
+
+        .leaderboard-item.first::before {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 235, 59, 0.1));
+        }
+
+        .leaderboard-item.second {
+            background: linear-gradient(135deg, #f3f3f3, #e8e8e8);
+            border: 3px solid #9e9e9e;
+            box-shadow: 0 8px 30px rgba(158, 158, 158, 0.3);
+        }
+
+        .leaderboard-item.third {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border: 3px solid #ff9800;
+            box-shadow: 0 8px 30px rgba(255, 152, 0, 0.3);
+        }
+
+        .rank {
+            font-size: 2rem;
+            font-weight: 800;
+            width: 80px;
+            text-align: center;
+            margin-right: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .rank.first { 
+            color: #ffc107; 
+            text-shadow: 0 2px 8px rgba(255, 193, 7, 0.5);
+        }
+        .rank.second { 
+            color: #9e9e9e; 
+            text-shadow: 0 2px 8px rgba(158, 158, 158, 0.5);
+        }
+        .rank.third { 
+            color: #ff9800; 
+            text-shadow: 0 2px 8px rgba(255, 152, 0, 0.5);
+        }
+        .rank.other { 
+            color: #0088cc;
+            font-size: 1.8rem;
+        }
+
+        .rank .medal {
+            font-size: 2.8rem;
+            display: block;
+            animation: medalFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes medalFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-3px) rotate(5deg); }
+        }
+
+        .user-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .user-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .user-avatar.no-photo {
+            background: linear-gradient(45deg, #0088cc, #00a0ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-username {
+            color: #0088cc;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            padding: 4px 10px;
+            border-radius: 15px;
+            background: rgba(0, 136, 204, 0.1);
+            font-weight: 600;
+        }
+
+        .user-username:hover {
+            color: #006699;
+            background: rgba(0, 136, 204, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+        }
+
+        .user-meta {
+            font-size: 0.9rem;
+            color: #777;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .collection-stats {
+            text-align: center;
+            min-width: 140px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .collection-count {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #0088cc, #00a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0, 136, 204, 0.3);
+        }
+
+        .collection-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .last-collection {
+            font-size: 0.85rem;
+            color: #999;
+            background: rgba(0, 136, 204, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        /* Compact styles for positions 4-10 */
+        .leaderboard-item.compact {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .leaderboard-item.compact:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.1);
+            border-color: rgba(0, 136, 204, 0.2);
+        }
+
+        .leaderboard-item.compact .rank {
+            font-size: 1.4rem;
+            width: 50px;
+            margin-right: 20px;
+            color: #6c757d;
+        }
+
+        .user-info-compact {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-name-compact {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .collection-stats-compact {
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .collection-count-compact {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #0088cc, #00a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .collection-label-compact {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
         .loading-state {
             text-align: center;
             padding: 80px 20px;
@@ -275,7 +547,239 @@
             transform: translateY(-1px);
         }
 
-        /* Leaderboard items styles would continue here with English text updates... */
+        /* Mobile adaptation */
+        @media (max-width: 768px) {
+            .leaderboard-container {
+                padding: 15px;
+            }
+
+            .leaderboard-header {
+                padding: 30px 20px;
+            }
+
+            .leaderboard-title {
+                font-size: 2rem;
+            }
+
+            .leaderboard-subtitle {
+                font-size: 1rem;
+            }
+
+            .trophy-icon {
+                font-size: 3rem;
+            }
+
+            .leaderboard-stats {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                padding: 20px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-card .stat-number {
+                font-size: 2rem;
+            }
+
+            .leaderboard {
+                padding: 20px;
+            }
+
+            /* KEEP HORIZONTAL LAYOUT ON MOBILE */
+            .leaderboard-item {
+                padding: 18px;
+                /* Keep flex-direction: row */
+                gap: 15px;
+            }
+
+            .rank {
+                font-size: 1.6rem;
+                width: 60px;
+                margin-right: 15px;
+            }
+
+            .rank .medal {
+                font-size: 2.2rem;
+            }
+
+            .user-info {
+                /* Keep flex-direction: row */
+                gap: 12px;
+            }
+
+            .user-avatar {
+                width: 55px;
+                height: 55px;
+            }
+
+            .user-name {
+                font-size: 1.1rem;
+            }
+
+            .user-username {
+                font-size: 0.85rem;
+                padding: 3px 8px;
+            }
+
+            .user-meta {
+                font-size: 0.8rem;
+            }
+
+            .collection-stats {
+                min-width: 100px;
+            }
+
+            .collection-count {
+                font-size: 2.2rem;
+            }
+
+            .collection-label {
+                font-size: 0.8rem;
+            }
+
+            .last-collection {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+
+            /* Adapt compact elements on mobile */
+            .leaderboard-item.compact {
+                padding: 12px 18px;
+            }
+
+            .leaderboard-item.compact .rank {
+                font-size: 1.2rem;
+                width: 40px;
+                margin-right: 15px;
+            }
+
+            .user-name-compact {
+                font-size: 1rem;
+            }
+
+            .collection-stats-compact {
+                min-width: 70px;
+            }
+
+            .collection-count-compact {
+                font-size: 1.5rem;
+            }
+
+            .collection-label-compact {
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .leaderboard-title {
+                font-size: 1.7rem;
+            }
+
+            .trophy-icon {
+                font-size: 2.5rem;
+            }
+
+            .leaderboard-item {
+                padding: 15px;
+                gap: 12px;
+            }
+
+            .rank {
+                font-size: 1.4rem;
+                width: 50px;
+                margin-right: 12px;
+            }
+
+            .rank .medal {
+                font-size: 2rem;
+            }
+
+            .user-info {
+                gap: 10px;
+            }
+
+            .user-avatar {
+                width: 50px;
+                height: 50px;
+            }
+
+            .user-name {
+                font-size: 1rem;
+            }
+
+            .user-username {
+                font-size: 0.8rem;
+                padding: 2px 6px;
+            }
+
+            .user-meta {
+                font-size: 0.75rem;
+            }
+
+            .meta-item {
+                gap: 3px;
+            }
+
+            .collection-stats {
+                min-width: 85px;
+            }
+
+            .collection-count {
+                font-size: 1.9rem;
+            }
+
+            .collection-label {
+                font-size: 0.75rem;
+            }
+
+            .last-collection {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+
+            .stat-card .stat-number {
+                font-size: 1.8rem;
+            }
+
+            .back-btn {
+                padding: 15px 25px;
+                font-size: 1rem;
+            }
+
+            /* Adapt compact elements for small screens */
+            .leaderboard-item.compact {
+                padding: 10px 15px;
+            }
+
+            .leaderboard-item.compact .rank {
+                font-size: 1.1rem;
+                width: 35px;
+                margin-right: 12px;
+            }
+
+            .user-name-compact {
+                font-size: 0.9rem;
+            }
+
+            .collection-stats-compact {
+                min-width: 60px;
+            }
+
+            .collection-count-compact {
+                font-size: 1.3rem;
+            }
+
+            .collection-label-compact {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Hide auto-refresh */
+        .auto-refresh-indicator {
+            display: none;
+        }
     </style>
 </head>
 <body>
