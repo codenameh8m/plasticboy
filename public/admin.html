@@ -109,24 +109,37 @@
         // Almaty coordinates
         const ALMATY_CENTER = [43.2220, 76.8512];
 
-        // Initialize when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOM ready, starting admin panel');
-            initializeAdminPanel();
-        });
+            setupEventListeners();
+        }
 
-        // Main initialization function
-        function initializeAdminPanel() {
-            // Check saved password
+        // Initialize when DOM is ready - FAST START
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM ready, fast admin panel start');
+            
+            // Check saved password immediately
             const savedPassword = sessionStorage.getItem('adminPassword');
             if (savedPassword) {
-                console.log('🔑 Found saved password, attempting auto-login');
+                console.log('🔑 Found saved password, auto-login');
                 currentPassword = savedPassword;
-                validatePasswordAndShowPanel(savedPassword);
+                
+                // Show panel immediately, validate in background
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                
+                // Quick validation in background
+                checkPassword(savedPassword)
+                    .then(isValid => {
+                        if (isValid) {
+                            initAdminMapWithRetry().then(() => loadAdminPoints());
+                        } else {
+                            logout();
+                        }
+                    })
+                    .catch(() => logout());
             }
             
             setupEventListeners();
-        }
+        });
 
         // Setup all event listeners
         function setupEventListeners() {
@@ -198,7 +211,7 @@
             });
         }
 
-        // Login function
+        // Login function - FAST VERSION
         function adminLogin() {
             const password = document.getElementById('adminPassword').value;
             const loginBtn = document.getElementById('loginBtn');
@@ -213,8 +226,36 @@
             loginBtn.textContent = 'Checking...';
             hideLoginError();
             
-            console.log('🔐 Attempting admin login...');
-            validatePasswordAndShowPanel(password);
+            console.log('🔐 Fast admin login attempt...');
+            
+            // Quick validation without wrapper
+            checkPassword(password)
+                .then(isValid => {
+                    if (isValid) {
+                        currentPassword = password;
+                        sessionStorage.setItem('adminPassword', password);
+                        showAdminPanel();
+                    } else {
+                        showLoginError('Invalid administrator password');
+                        sessionStorage.removeItem('adminPassword');
+                        currentPassword = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Login error:', error);
+                    if (error.message.includes('timeout')) {
+                        showLoginError('Server timeout. Try again.');
+                    } else {
+                        showLoginError('Connection error: ' + error.message);
+                    }
+                    sessionStorage.removeItem('adminPassword');
+                    currentPassword = '';
+                })
+                .finally(() => {
+                    // Restore login button
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login';
+                });
         }
 
         // Validate password and show panel
