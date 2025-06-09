@@ -272,81 +272,6 @@
                 50% { opacity: 0.2; }
                 100% { transform: scale(2); opacity: 0; }
             }
-
-            /* Styles for Telegram data in popup */
-            .telegram-user-info {
-                background: linear-gradient(135deg, #0088cc, #00a0ff);
-                color: white;
-                padding: 12px;
-                border-radius: 10px;
-                margin: 10px 0;
-                text-align: center;
-                box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
-            }
-
-            .telegram-avatar {
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                border: 2px solid white;
-                margin: 0 auto 8px;
-                display: block;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            }
-
-            .telegram-name {
-                font-weight: 600;
-                font-size: 1rem;
-                margin-bottom: 4px;
-            }
-
-            .telegram-username {
-                font-size: 0.85rem;
-                opacity: 0.9;
-                text-decoration: none;
-                color: white;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                transition: all 0.3s;
-                padding: 4px 8px;
-                border-radius: 15px;
-                background: rgba(255,255,255,0.1);
-            }
-
-            .telegram-username:hover {
-                background: rgba(255,255,255,0.2);
-                transform: translateY(-1px);
-            }
-
-            .telegram-icon {
-                font-size: 0.8rem;
-            }
-
-            .collector-info-enhanced {
-                background: #f8f9fa;
-                padding: 12px;
-                border-radius: 10px;
-                margin: 10px 0;
-                border-left: 4px solid #4CAF50;
-            }
-
-            .collector-info-enhanced h4 {
-                margin: 0 0 8px 0;
-                color: #333;
-                font-size: 0.95rem;
-            }
-
-            .collector-detail {
-                margin: 4px 0;
-                font-size: 0.9rem;
-                color: #666;
-            }
-
-            .popup-collector-name {
-                font-weight: 600;
-                color: #333;
-            }
         `;
         document.head.appendChild(style);
     }
@@ -488,17 +413,19 @@
         }
     }
     
-    // Create popup content with Telegram support
+    // Create popup content with enhanced Telegram support and FIXED centering
     function createPopupContent(point, isAvailable) {
-        let popupContent = '<div style="min-width: 200px;">';
-        popupContent += `<h3 style="margin: 0 0 10px 0;">${point.name}</h3>`;
-        popupContent += `<p style="font-weight: 600; color: ${isAvailable ? '#4CAF50' : '#f44336'};">`;
+        let popupContent = '<div class="popup-content">';
+        popupContent += `<h3>${point.name}</h3>`;
+        
+        // Центрированный статус с улучшенным стилем
+        popupContent += `<div class="status ${isAvailable ? 'available' : 'collected'}">`;
         popupContent += isAvailable ? '🟢 Available for collection' : '🔴 Already collected';
-        popupContent += '</p>';
+        popupContent += '</div>';
         
         if (!isAvailable && point.collectorInfo) {
             popupContent += '<div class="collector-info-enhanced">';
-            popupContent += '<h4>Collector information:</h4>';
+            popupContent += '<h4>Collector information</h4>';
             
             // If user is authorized via Telegram
             if (point.collectorInfo.authMethod === 'telegram' && point.collectorInfo.telegramData) {
@@ -533,37 +460,35 @@
                 
                 popupContent += '</div>';
                 
-                // Additional information
+                // Additional information with better formatting
                 if (point.collectorInfo.signature) {
                     popupContent += `<div class="collector-detail">
-                                      <strong>Message:</strong> ${point.collectorInfo.signature}
+                                      <strong>Message:</strong><br>${point.collectorInfo.signature}
                                     </div>`;
                 }
             } else {
                 // Regular collector (manual input)
                 popupContent += `<div class="collector-detail">
+                                  <strong>Collector:</strong><br>
                                   <span class="popup-collector-name">${point.collectorInfo.name}</span>
                                 </div>`;
                 
                 if (point.collectorInfo.signature) {
                     popupContent += `<div class="collector-detail">
-                                      <strong>Message:</strong> ${point.collectorInfo.signature}
+                                      <strong>Message:</strong><br>${point.collectorInfo.signature}
                                     </div>`;
                 }
             }
             
             popupContent += `<div class="collector-detail">
-                              <strong>Collection time:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}
+                              <strong>Collection time:</strong><br>${new Date(point.collectedAt).toLocaleString('en-US')}
                             </div>`;
             
-            // Add selfie if available
+            // Add selfie if available with improved centering
             if (point.collectorInfo.selfie) {
-                popupContent += '<div style="margin: 10px 0; text-align: center;">';
                 popupContent += `<img src="${point.collectorInfo.selfie}" 
-                                  style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
                                   onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" 
                                   title="Click to enlarge">`;
-                popupContent += '</div>';
             }
             
             popupContent += '</div>';
@@ -649,7 +574,7 @@
         }
     }
     
-    // Global functions
+    // FIXED Global function - getCurrentLocation WITHOUT popup
     window.getCurrentLocation = function() {
         const btn = document.querySelector('.location-btn');
         if (!navigator.geolocation || !map) {
@@ -671,7 +596,7 @@
                     map.removeLayer(window.userMarker);
                 }
                 
-                // Create new marker
+                // Create new marker WITHOUT popup
                 const userIcon = L.divIcon({
                     className: 'user-marker',
                     html: '<div class="user-dot"></div>',
@@ -679,10 +604,10 @@
                     iconAnchor: [11, 11]
                 });
                 
-                window.userMarker = L.marker([lat, lng], { icon: userIcon })
-                    .addTo(map)
-                    .bindPopup('<div style="text-align: center;"><strong>📍 Your location</strong></div>');
+                // Создаем маркер БЕЗ popup
+                window.userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
                 
+                // Просто центрируем карту на пользователе БЕЗ popup
                 map.flyTo([lat, lng], 16);
                 console.log('✅ Location found');
                 
