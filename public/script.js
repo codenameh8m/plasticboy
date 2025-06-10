@@ -279,9 +279,11 @@
                 color: white;
                 padding: 12px;
                 border-radius: 10px;
-                margin: 10px 0;
+                margin: 10px auto;
                 text-align: center;
                 box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+                max-width: 100%;
+                width: fit-content;
             }
 
             .telegram-avatar {
@@ -289,7 +291,7 @@
                 height: 50px;
                 border-radius: 50%;
                 border: 2px solid white;
-                margin: 0 auto 8px;
+                margin: 0 auto 8px auto;
                 display: block;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             }
@@ -312,6 +314,7 @@
                 padding: 4px 8px;
                 border-radius: 15px;
                 background: rgba(255,255,255,0.1);
+                margin: 0 auto;
             }
 
             .telegram-username:hover {
@@ -327,25 +330,74 @@
                 background: #f8f9fa;
                 padding: 12px;
                 border-radius: 10px;
-                margin: 10px 0;
+                margin: 10px auto;
                 border-left: 4px solid #4CAF50;
+                text-align: center;
+                max-width: 100%;
             }
 
             .collector-info-enhanced h4 {
                 margin: 0 0 8px 0;
                 color: #333;
                 font-size: 0.95rem;
+                text-align: center;
             }
 
             .collector-detail {
                 margin: 4px 0;
                 font-size: 0.9rem;
                 color: #666;
+                text-align: center;
             }
 
             .popup-collector-name {
                 font-weight: 600;
                 color: #333;
+            }
+
+            /* Центрированный контент в popup */
+            .popup-content {
+                text-align: center !important;
+                min-width: 200px;
+                padding: 5px;
+            }
+
+            .popup-content h3 {
+                text-align: center !important;
+                margin: 0 0 10px 0;
+                color: #333;
+                font-size: 1.1rem;
+            }
+
+            .status {
+                text-align: center !important;
+                margin: 10px 0;
+                font-weight: 500;
+                display: block;
+                width: 100%;
+            }
+
+            .status.available {
+                color: #4CAF50;
+            }
+
+            .status.collected {
+                color: #f44336;
+            }
+
+            .collector-info {
+                background: #f8f9fa;
+                padding: 10px;
+                border-radius: 8px;
+                margin: 10px auto;
+                font-size: 0.9rem;
+                text-align: center;
+                max-width: 100%;
+            }
+
+            .collector-info p {
+                margin: 5px 0;
+                text-align: center;
             }
         `;
         document.head.appendChild(style);
@@ -488,11 +540,13 @@
         }
     }
     
-    // Create popup content with Telegram support
+    // Create popup content with Telegram support and centered layout
     function createPopupContent(point, isAvailable) {
-        let popupContent = '<div style="min-width: 200px;">';
-        popupContent += `<h3 style="margin: 0 0 10px 0;">${point.name}</h3>`;
-        popupContent += `<p style="font-weight: 600; color: ${isAvailable ? '#4CAF50' : '#f44336'};">`;
+        let popupContent = '<div class="popup-content">';
+        popupContent += `<h3>${point.name}</h3>`;
+        
+        // Centered status
+        popupContent += `<p class="status ${isAvailable ? 'available' : 'collected'}">`;
         popupContent += isAvailable ? '🟢 Available for collection' : '🔴 Already collected';
         popupContent += '</p>';
         
@@ -560,7 +614,7 @@
             if (point.collectorInfo.selfie) {
                 popupContent += '<div style="margin: 10px 0; text-align: center;">';
                 popupContent += `<img src="${point.collectorInfo.selfie}" 
-                                  style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+                                  style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 5px auto; display: block;" 
                                   onclick="showFullImage('${point.collectorInfo.selfie}', '${point.name}')" 
                                   title="Click to enlarge">`;
                 popupContent += '</div>';
@@ -671,7 +725,7 @@
                     map.removeLayer(window.userMarker);
                 }
                 
-                // Create new marker
+                // Create new marker WITHOUT popup
                 const userIcon = L.divIcon({
                     className: 'user-marker',
                     html: '<div class="user-dot"></div>',
@@ -679,9 +733,10 @@
                     iconAnchor: [11, 11]
                 });
                 
+                // Create marker without popup
                 window.userMarker = L.marker([lat, lng], { icon: userIcon })
-                    .addTo(map)
-                    .bindPopup('<div style="text-align: center;"><strong>📍 Your location</strong></div>');
+                    .addTo(map);
+                    // NO .bindPopup() - user location marker will have no popup
                 
                 map.flyTo([lat, lng], 16);
                 console.log('✅ Location found');
