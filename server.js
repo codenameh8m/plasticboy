@@ -459,9 +459,7 @@ const connectDB = async () => {
             useUnifiedTopology: true,
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
-            bufferMaxEntries: 0,
-            bufferCommands: false
+            socketTimeoutMS: 45000
         });
         console.log('✅ MongoDB connected');
     } catch (error) {
