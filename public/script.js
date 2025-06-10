@@ -538,6 +538,7 @@
                 html += `<div class="selfie-container-fast">
                           <img data-src="${point.collectorInfo.selfie}" 
                                class="selfie-fast lazy-load" 
+                               style="max-width: 150px; max-height: 120px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 5px auto; display: block;"
                                onclick="showFullImageFast('${point.collectorInfo.selfie}', '${escapeHtml(point.name)}')"
                                alt="Selfie" title="Click to enlarge">
                         </div>`;
@@ -568,14 +569,31 @@
                         img.src = img.dataset.src;
                         img.classList.remove('lazy-load');
                         observer.unobserve(img);
+                        
+                        // Добавляем обработчик загрузки для стилизации
+                        img.onload = function() {
+                            this.style.opacity = '1';
+                            this.style.transition = 'opacity 0.3s ease';
+                        };
+                        
+                        img.onerror = function() {
+                            this.style.display = 'none';
+                            console.warn('Failed to load image:', this.dataset.src);
+                        };
                     }
                 }
             });
-        }, { threshold: 0.1 });
+        }, { 
+            threshold: 0.1,
+            rootMargin: '50px' // Загружаем изображения за 50px до появления
+        });
         
         // Наблюдаем за новыми изображениями
         const checkForImages = () => {
             document.querySelectorAll('img.lazy-load').forEach(img => {
+                // Устанавливаем начальные стили
+                img.style.opacity = '0';
+                img.style.transition = 'opacity 0.3s ease';
                 observer.observe(img);
             });
         };
@@ -584,6 +602,8 @@
         map?.on('popupopen', () => {
             setTimeout(checkForImages, 100);
         });
+        
+        return observer;
     }
     
     // БЫСТРОЕ ОБНОВЛЕНИЕ СТАТИСТИКИ
@@ -710,11 +730,15 @@
                 max-width: 90%; max-height: 90%; background: white;
                 border-radius: 12px; overflow: hidden; cursor: default;
                 animation: scaleInFast 0.2s ease-out;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             " onclick="event.stopPropagation()">
-                <div style="padding: 15px; background: #f8f9fa; text-align: center; font-weight: 600;">
-                    ${escapeHtml(title)}
+                <div style="padding: 15px; background: #f8f9fa; text-align: center; font-weight: 600; border-bottom: 1px solid #dee2e6;">
+                    Selfie from ${escapeHtml(title)}
                 </div>
-                <img src="${imageSrc}" style="max-width: 100%; max-height: 70vh; display: block;">
+                <img src="${imageSrc}" style="max-width: 100%; max-height: 80vh; display: block; margin: 0 auto;">
+                <div style="padding: 10px; text-align: center; background: #f8f9fa; color: #6c757d; font-size: 0.9rem;">
+                    Click anywhere to close
+                </div>
             </div>
         `;
         
@@ -723,18 +747,42 @@
             const style = document.createElement('style');
             style.id = 'modal-animations';
             style.textContent = `
-                @keyframes fadeInFast { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes scaleInFast { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                @keyframes fadeInFast { 
+                    from { opacity: 0; } 
+                    to { opacity: 1; } 
+                }
+                @keyframes scaleInFast { 
+                    from { transform: scale(0.8); opacity: 0; } 
+                    to { transform: scale(1); opacity: 1; } 
+                }
+                @keyframes fadeOutFast { 
+                    from { opacity: 1; } 
+                    to { opacity: 0; } 
+                }
+                @keyframes scaleOutFast { 
+                    from { transform: scale(1); opacity: 1; } 
+                    to { transform: scale(0.8); opacity: 0; } 
+                }
             `;
             document.head.appendChild(style);
         }
         
         modal.onclick = () => {
-            modal.style.animation = 'fadeInFast 0.2s ease-out reverse';
+            modal.style.animation = 'fadeOutFast 0.2s ease-out';
+            modal.querySelector('div').style.animation = 'scaleOutFast 0.2s ease-out';
             setTimeout(() => modal.remove(), 200);
         };
         
         document.body.appendChild(modal);
+        
+        // Добавляем обработчик Escape
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal.click();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
     };
     
     // ОПТИМИЗИРОВАННЫЙ ОБРАБОТЧИК РАЗМЕРА ОКНА
