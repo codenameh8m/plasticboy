@@ -1,4 +1,4 @@
-// Admin panel variables
+// Admin panel variables - OPTIMIZED VERSION
 let adminMap;
 let adminMarkers = [];
 let isAddMode = false;
@@ -9,25 +9,71 @@ let currentQRCode = '';
 // Almaty coordinates
 const ALMATY_CENTER = [43.2220, 76.8512];
 
-// Admin panel initialization
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🛡️ Admin panel - initialization');
+// БЫСТРЫЙ КЭШ ДЛЯ АДМИНКИ
+class AdminCache {
+    constructor() {
+        this.cache = new Map();
+        this.ttl = 60 * 1000; // 1 минута для админки
+    }
     
-    // Check saved password
+    set(key, data) {
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+    }
+    
+    get(key) {
+        const item = this.cache.get(key);
+        if (!item) return null;
+        
+        if (Date.now() - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            return null;
+        }
+        
+        return item.data;
+    }
+    
+    clear() {
+        this.cache.clear();
+    }
+}
+
+const adminCache = new AdminCache();
+
+// ДЕБАУНС ДЛЯ АДМИНСКИХ ОПЕРАЦИЙ
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// БЫСТРАЯ ИНИЦИАЛИЗАЦИЯ АДМИНКИ
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🛡️ Admin panel - optimized initialization');
+    
+    // Проверяем сохраненный пароль
     const savedPassword = sessionStorage.getItem('adminPassword');
     if (savedPassword) {
         currentPassword = savedPassword;
         showAdminPanel();
     }
     
-    // Initialize admin buttons
+    // Инициализируем элементы управления
     initAdminControlButtons();
     
-    // Add event handlers
+    // Добавляем обработчики событий
     setupEventListeners();
 });
 
-// Initialize admin control buttons
+// Инициализация кнопок управления
 function initAdminControlButtons() {
     const checkAdminPanel = setInterval(() => {
         const adminPanel = document.getElementById('adminPanel');
@@ -49,9 +95,9 @@ function initAdminControlButtons() {
     }, 100);
 }
 
-// Setup event listeners
+// Настройка обработчиков событий
 function setupEventListeners() {
-    // Enter handler in password field
+    // Enter в поле пароля
     const passwordInput = document.getElementById('adminPassword');
     if (passwordInput) {
         passwordInput.addEventListener('keypress', function(e) {
@@ -61,13 +107,13 @@ function setupEventListeners() {
         });
     }
 
-    // Add point form handler
+    // Форма добавления точки
     const form = document.getElementById('addPointForm');
     if (form) {
         form.addEventListener('submit', handleAddPointSubmit);
     }
 
-    // Close modal windows when clicking outside
+    // Закрытие модальных окон при клике вне
     window.addEventListener('click', function(event) {
         const addModal = document.getElementById('addPointModal');
         const qrModal = document.getElementById('qrModal');
@@ -81,25 +127,20 @@ function setupEventListeners() {
         }
     });
 
-    // Handle window resize for admin map
-    window.addEventListener('resize', function() {
+    // Ресайз карты
+    window.addEventListener('resize', debounce(function() {
         if (adminMap) {
-            clearTimeout(window.adminResizeTimeout);
-            window.adminResizeTimeout = setTimeout(() => {
-                adminMap.invalidateSize();
-            }, 150);
+            adminMap.invalidateSize();
         }
-    });
+    }, 150));
 
-    // Enhanced key handling for admin
+    // Горячие клавиши
     document.addEventListener('keydown', function(event) {
-        // Close modal windows with Escape
         if (event.key === 'Escape') {
             closeAddModal();
             closeQrModal();
         }
         
-        // Get location with Ctrl+L
         if (event.ctrlKey && event.key === 'l') {
             const adminPanel = document.getElementById('adminPanel');
             if (adminPanel && adminPanel.style.display !== 'none') {
@@ -108,7 +149,6 @@ function setupEventListeners() {
             }
         }
         
-        // Toggle add mode with Ctrl+A
         if (event.ctrlKey && event.key === 'a') {
             const adminPanel = document.getElementById('adminPanel');
             if (adminPanel && adminPanel.style.display !== 'none') {
@@ -119,34 +159,31 @@ function setupEventListeners() {
     });
 }
 
-// МАКСИМАЛЬНО БЫСТРАЯ проверка пароля - только валидация без загрузки данных
-async function lightningFastPasswordCheck(password) {
+// МОЛНИЕНОСНАЯ проверка пароля - ТОЛЬКО статус
+async function lightningPasswordCheck(password) {
     try {
-        console.log('⚡ Lightning fast password validation...');
+        console.log('⚡ Lightning password validation...');
         
-        // Создаем минимальный HEAD запрос - только статус без данных
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды таймаут
+        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 секунды
         
         const response = await fetch('/api/admin/points', {
-            method: 'HEAD', // HEAD запрос - никаких данных, только статус
-            headers: {
-                'Authorization': password
-            },
+            method: 'HEAD',
+            headers: { 'Authorization': password },
             signal: controller.signal
         });
         
         clearTimeout(timeoutId);
-        console.log('📡 Password check response:', response.status, 'in', performance.now());
+        console.log('📡 Password check:', response.status, 'in', Math.round(performance.now()), 'ms');
         
         return response.status === 200;
         
     } catch (error) {
         if (error.name === 'AbortError') {
             console.error('❌ Password check timeout');
-            return false;
+        } else {
+            console.error('❌ Password check error:', error);
         }
-        console.error('❌ Lightning password check error:', error);
         return false;
     }
 }
@@ -157,14 +194,14 @@ async function adminLogin() {
     const password = passwordInput.value;
     
     if (!password) {
-        showNotification('Enter password', 'error');
+        showNotificationFast('Enter password', 'error');
         passwordInput.focus();
         return;
     }
     
-    console.log('⚡ Starting LIGHTNING FAST admin login...');
+    console.log('⚡ Starting LIGHTNING admin login...');
     
-    // Показываем мгновенную обратную связь
+    // Мгновенная обратная связь
     passwordInput.disabled = true;
     passwordInput.style.opacity = '0.7';
     passwordInput.placeholder = '⚡ Checking...';
@@ -172,16 +209,15 @@ async function adminLogin() {
     const startTime = performance.now();
     
     try {
-        // МГНОВЕННАЯ проверка пароля
-        const isValid = await lightningFastPasswordCheck(password);
+        // МОЛНИЕНОСНАЯ проверка
+        const isValid = await lightningPasswordCheck(password);
         
         const checkTime = performance.now() - startTime;
-        console.log(`🔥 Password check completed in ${checkTime.toFixed(2)}ms`);
+        console.log(`🔥 Password check: ${checkTime.toFixed(2)}ms`);
         
         if (!isValid) {
-            showNotification('Invalid administrator password', 'error');
+            showNotificationFast('Invalid administrator password', 'error');
             
-            // Восстанавливаем поле ввода
             passwordInput.disabled = false;
             passwordInput.style.opacity = '';
             passwordInput.placeholder = 'Administrator password';
@@ -190,20 +226,18 @@ async function adminLogin() {
             return;
         }
         
-        // Пароль верный - МГНОВЕННО сохраняем и показываем панель
+        // Сохраняем и показываем панель
         currentPassword = password;
         sessionStorage.setItem('adminPassword', password);
         
-        console.log(`✅ Password correct! Total time: ${(performance.now() - startTime).toFixed(2)}ms`);
+        console.log(`✅ Password correct! Total: ${(performance.now() - startTime).toFixed(2)}ms`);
         
-        // МГНОВЕННЫЙ переход к админ панели
         showAdminPanelInstantly();
         
     } catch (error) {
         console.error('❌ Admin login error:', error);
-        showNotification('Connection error', 'error');
+        showNotificationFast('Connection error', 'error');
         
-        // Восстанавливаем поле ввода
         passwordInput.disabled = false;
         passwordInput.style.opacity = '';
         passwordInput.placeholder = 'Administrator password';
@@ -214,46 +248,40 @@ async function adminLogin() {
 function showAdminPanelInstantly() {
     console.log('🚀 Showing admin panel INSTANTLY...');
     
-    // МГНОВЕННО скрываем форму логина и показываем панель
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'block';
     
-    // Показываем успешное уведомление
-    showNotification('✅ Admin access granted!', 'success');
+    showNotificationFast('✅ Admin access granted!', 'success');
     
-    // Запускаем инициализацию в фоне БЕЗ ожидания
+    // Запускаем инициализацию в фоне
     setTimeout(() => {
         initializeAdminPanelBackground();
-    }, 100); // Небольшая задержка для плавности UI
+    }, 50); // Минимальная задержка
 }
 
-// Фоновая инициализация админ панели
+// Фоновая инициализация
 async function initializeAdminPanelBackground() {
     try {
-        console.log('🔄 Background initialization started...');
+        console.log('🔄 Background initialization...');
         
-        // Показываем статус загрузки
-        showNotification('Loading admin components...', 'info');
+        showNotificationFast('Loading admin components...', 'info');
         
-        // 1. Инициализируем карту в фоне
-        console.log('🗺️ Initializing map in background...');
+        // Инициализируем карту
         await initAdminMapBackground();
         
-        // 2. Загружаем точки в фоне
-        console.log('📍 Loading points in background...');
+        // Загружаем точки
         await loadAdminPointsBackground();
         
-        // Все готово!
-        showNotification('✅ Admin panel fully loaded!', 'success');
+        showNotificationFast('✅ Admin panel ready!', 'success');
         console.log('🎉 Admin panel fully ready!');
         
     } catch (error) {
         console.error('❌ Background initialization error:', error);
-        showNotification('⚠️ Some components failed to load', 'warning');
+        showNotificationFast('⚠️ Some components failed to load', 'warning');
     }
 }
 
-// Фоновая инициализация карты
+// Быстрая инициализация карты
 function initAdminMapBackground() {
     return new Promise((resolve) => {
         try {
@@ -262,164 +290,196 @@ function initAdminMapBackground() {
                 adminMap = null;
             }
             
-            console.log('🗺️ Quick background map initialization');
+            console.log('🗺️ Quick admin map initialization');
             
-            // Проверяем доступность Leaflet
             if (typeof L === 'undefined') {
-                console.warn('⚠️ Leaflet not loaded yet, will retry...');
+                console.warn('⚠️ Leaflet not loaded, retrying...');
                 setTimeout(() => initAdminMapBackground().then(resolve), 500);
                 return;
             }
             
             const mapElement = document.getElementById('adminMap');
             if (!mapElement) {
-                console.warn('⚠️ Map element not found');
+                console.warn('⚠️ Admin map element not found');
                 resolve();
                 return;
             }
             
-            adminMap = L.map('adminMap').setView(ALMATY_CENTER, 13);
+            adminMap = L.map('adminMap', {
+                center: ALMATY_CENTER,
+                zoom: 13,
+                preferCanvas: true,
+                renderer: L.canvas()
+            });
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
+                attribution: '© OpenStreetMap',
+                maxZoom: 18,
+                updateWhenIdle: true,
+                keepBuffer: 2
             }).addTo(adminMap);
             
-            // Добавляем обработчик кликов
+            // Обработчик кликов
             adminMap.on('click', function(e) {
                 if (isAddMode) {
                     openAddPointModal(e.latlng);
                 }
             });
             
-            // Быстрая готовность карты
             setTimeout(() => {
                 if (adminMap) {
                     adminMap.invalidateSize();
-                    console.log('✅ Background map ready');
+                    console.log('✅ Admin map ready');
                     resolve();
                 }
-            }, 50); // Очень быстро
+            }, 50);
             
         } catch (error) {
-            console.error('❌ Background map initialization error:', error);
-            resolve(); // Не блокируем на ошибке
+            console.error('❌ Admin map error:', error);
+            resolve();
         }
     });
 }
 
-// Фоновая загрузка точек
+// Быстрая загрузка точек
 async function loadAdminPointsBackground() {
     try {
-        console.log('🔄 Loading points in background...');
+        console.log('🔄 Loading admin points...');
         
-        const response = await fetch('/api/admin/points', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': currentPassword
-            }
-        });
-        
-        console.log('📡 Background points response:', response.status);
-        
-        if (!response.ok) {
-            if (response.status === 401) {
-                showNotification('Session expired', 'error');
-                sessionStorage.removeItem('adminPassword');
-                setTimeout(() => location.reload(), 2000);
-                return;
-            }
-            throw new Error(`Server error: ${response.status}`);
+        // Проверяем кэш
+        const cached = adminCache.get('admin_points');
+        if (cached) {
+            allPoints = cached;
+            updateAdminMap();
+            updateAdminStats();
+            updatePointsList();
+            console.log('📦 Loaded from cache:', allPoints.length, 'points');
+            
+            // Обновляем в фоне
+            setTimeout(() => fetchAdminPointsFromServer(), 1000);
+            return;
         }
         
-        allPoints = await response.json();
-        console.log('✅ Background loaded points:', allPoints.length);
-        
-        // Обновляем UI
-        updateAdminMap();
-        updateAdminStats();
-        updatePointsList();
+        await fetchAdminPointsFromServer();
         
     } catch (error) {
-        console.error('❌ Background points loading error:', error);
-        showNotification(`Data loading error: ${error.message}`, 'error');
+        console.error('❌ Admin points fetch error:', error);
+        showNotificationFast(`Data loading error: ${error.message}`, 'error');
     }
 }
 
-// Остальные функции остаются теми же
+// ОПТИМИЗИРОВАННОЕ обновление админ карты
 function updateAdminMap() {
     if (!adminMap || !allPoints) {
-        console.warn('⚠️ Map or points not ready for update');
+        console.warn('⚠️ Admin map or points not ready');
         return;
     }
     
-    // Clear existing markers
+    console.log('🗺️ Updating admin map with', allPoints.length, 'points');
+    
+    // Быстрая очистка маркеров
     adminMarkers.forEach(marker => {
         if (adminMap.hasLayer(marker)) {
             adminMap.removeLayer(marker);
         }
     });
-    adminMarkers = [];
+    adminMarkers.length = 0;
     
-    allPoints.forEach(point => {
-        try {
-            const now = new Date();
-            const isScheduled = new Date(point.scheduledTime) > now;
-            const isCollected = point.status === 'collected';
-            
-            let iconColor = '#4CAF50'; // green for available
-            if (isCollected) iconColor = '#f44336'; // red for collected
-            else if (isScheduled) iconColor = '#ff9800'; // orange for scheduled
-            
-            const icon = L.divIcon({
-                className: 'admin-marker',
-                html: `<div class="admin-marker-dot" style="background: ${iconColor};">
-                         ${isScheduled ? '⏱️' : (isCollected ? '✅' : '📦')}
-                       </div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-            
-            const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
-                .addTo(adminMap);
-            
-            let popupContent = `
-                <div class="admin-popup">
-                    <h3>${point.name}</h3>
-                    <p><strong>ID:</strong> ${point.id}</p>
-                    <p><strong>Status:</strong> ${getStatusText(point, isScheduled)}</p>
-                    <p><strong>Created:</strong> ${new Date(point.createdAt).toLocaleString('en-US')}</p>
-            `;
-            
-            if (isScheduled) {
-                popupContent += `<p><strong>Will appear:</strong> ${new Date(point.scheduledTime).toLocaleString('en-US')}</p>`;
+    // Добавляем маркеры пакетами для лучшей производительности
+    const batchSize = 5;
+    let processed = 0;
+    
+    const processBatch = () => {
+        const batch = allPoints.slice(processed, processed + batchSize);
+        
+        batch.forEach(point => {
+            try {
+                addAdminMarker(point);
+            } catch (error) {
+                console.warn('⚠️ Admin marker error:', error, point.id);
             }
-            
-            if (point.status === 'collected') {
-                popupContent += `
-                    <p><strong>Collected:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}</p>
-                    <p><strong>Collector:</strong> ${point.collectorInfo.name}</p>
-                `;
-            }
-            
-            popupContent += `
-                    <div style="margin-top: 12px;">
-                        <button onclick="showQRCode('${point.id}')" class="admin-btn">Show QR</button>
-                        <button onclick="deletePoint('${point.id}')" class="admin-btn delete-btn">Delete</button>
-                    </div>
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent);
-            adminMarkers.push(marker);
-        } catch (error) {
-            console.error('❌ Marker addition error:', error, point);
+        });
+        
+        processed += batchSize;
+        
+        if (processed < allPoints.length) {
+            requestAnimationFrame(processBatch);
+        } else {
+            console.log('✅ Admin map updated with', adminMarkers.length, 'markers');
         }
+    };
+    
+    processBatch();
+    addAdminMarkerStyles();
+}
+
+// Быстрое добавление админского маркера
+function addAdminMarker(point) {
+    const now = new Date();
+    const isScheduled = new Date(point.scheduledTime) > now;
+    const isCollected = point.status === 'collected';
+    
+    let iconColor = '#4CAF50'; // green for available
+    if (isCollected) iconColor = '#f44336'; // red for collected
+    else if (isScheduled) iconColor = '#ff9800'; // orange for scheduled
+    
+    const icon = L.divIcon({
+        className: 'admin-marker',
+        html: `<div class="admin-marker-dot" style="background: ${iconColor};">
+                 ${isScheduled ? '⏱️' : (isCollected ? '✅' : '📦')}
+               </div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
     
-    addAdminMarkerStyles();
+    const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon })
+        .addTo(adminMap);
+    
+    // Создаем popup с оптимизацией
+    const popupContent = createAdminPopupContent(point, isScheduled, isCollected);
+    marker.bindPopup(popupContent);
+    
+    adminMarkers.push(marker);
+}
+
+// Создание popup контента для админа
+function createAdminPopupContent(point, isScheduled, isCollected) {
+    let popupContent = `
+        <div class="admin-popup">
+            <h3>${escapeHtml(point.name)}</h3>
+            <p><strong>ID:</strong> ${point.id}</p>
+            <p><strong>Status:</strong> ${getStatusText(point, isScheduled)}</p>
+            <p><strong>Created:</strong> ${new Date(point.createdAt).toLocaleString('en-US')}</p>
+    `;
+    
+    if (isScheduled) {
+        popupContent += `<p><strong>Will appear:</strong> ${new Date(point.scheduledTime).toLocaleString('en-US')}</p>`;
+    }
+    
+    if (point.status === 'collected') {
+        popupContent += `
+            <p><strong>Collected:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}</p>
+            <p><strong>Collector:</strong> ${escapeHtml(point.collectorInfo.name)}</p>
+        `;
+    }
+    
+    popupContent += `
+            <div style="margin-top: 12px;">
+                <button onclick="showQRCode('${point.id}')" class="admin-btn">Show QR</button>
+                <button onclick="deletePoint('${point.id}')" class="admin-btn delete-btn">Delete</button>
+            </div>
+        </div>
+    `;
+    
+    return popupContent;
+}
+
+// Быстрое экранирование HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function getStatusText(point, isScheduled) {
@@ -428,49 +488,26 @@ function getStatusText(point, isScheduled) {
     return '🟢 Available';
 }
 
+// БЫСТРОЕ обновление статистики
 function updateAdminStats() {
     const now = new Date();
     const total = allPoints.length;
     const scheduled = allPoints.filter(p => new Date(p.scheduledTime) > now && p.status !== 'collected').length;
     const active = allPoints.filter(p => new Date(p.scheduledTime) <= now && p.status === 'available').length;
     
-    // Animated update
-    animateAdminNumber(document.getElementById('totalPoints'), total);
-    animateAdminNumber(document.getElementById('activePoints'), active);
-    animateAdminNumber(document.getElementById('scheduledPoints'), scheduled);
-}
-
-function animateAdminNumber(element, targetValue) {
-    if (!element) return;
-    
-    const currentValue = parseInt(element.textContent) || 0;
-    if (currentValue === targetValue) return;
-    
-    const duration = 600;
-    const steps = 20;
-    const stepValue = (targetValue - currentValue) / steps;
-    const stepDuration = duration / steps;
-    
-    let current = currentValue;
-    let step = 0;
-    
-    element.style.transform = 'scale(1.1)';
-    element.style.transition = 'transform 0.3s ease';
-    
-    const timer = setInterval(() => {
-        step++;
-        current += stepValue;
+    // Быстрое обновление без анимации для админки
+    requestAnimationFrame(() => {
+        const totalEl = document.getElementById('totalPoints');
+        const activeEl = document.getElementById('activePoints');
+        const scheduledEl = document.getElementById('scheduledPoints');
         
-        if (step >= steps) {
-            element.textContent = targetValue;
-            element.style.transform = 'scale(1)';
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.round(current);
-        }
-    }, stepDuration);
+        if (totalEl) totalEl.textContent = total;
+        if (activeEl) activeEl.textContent = active;
+        if (scheduledEl) scheduledEl.textContent = scheduled;
+    });
 }
 
+// ОПТИМИЗИРОВАННОЕ обновление списка точек
 function updatePointsList() {
     const container = document.getElementById('pointsList');
     
@@ -484,9 +521,11 @@ function updatePointsList() {
         return;
     }
     
+    // Сортируем точки один раз
     const sortedPoints = [...allPoints].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-    container.innerHTML = sortedPoints.map(point => {
+    // Создаем HTML одним блоком для лучшей производительности
+    const htmlParts = sortedPoints.map(point => {
         const now = new Date();
         const isScheduled = new Date(point.scheduledTime) > now;
         const statusClass = point.status === 'collected' ? 'collected' : (isScheduled ? 'scheduled' : 'available');
@@ -494,7 +533,7 @@ function updatePointsList() {
         return `
             <div class="point-item ${statusClass}">
                 <div class="point-header">
-                    <h4>${point.name}</h4>
+                    <h4>${escapeHtml(point.name)}</h4>
                     <span class="point-status">${getStatusText(point, isScheduled)}</span>
                 </div>
                 <p><strong>ID:</strong> ${point.id}</p>
@@ -503,7 +542,7 @@ function updatePointsList() {
                 ${isScheduled ? `<p><strong>Will appear:</strong> ${new Date(point.scheduledTime).toLocaleString('en-US')}</p>` : ''}
                 ${point.status === 'collected' ? `
                     <p><strong>Collected:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}</p>
-                    <p><strong>Collector:</strong> ${point.collectorInfo.name}</p>
+                    <p><strong>Collector:</strong> ${escapeHtml(point.collectorInfo.name)}</p>
                 ` : ''}
                 <div class="point-actions">
                     <button onclick="showQRCode('${point.id}')" class="admin-btn">QR code</button>
@@ -511,9 +550,12 @@ function updatePointsList() {
                 </div>
             </div>
         `;
-    }).join('');
+    });
+    
+    container.innerHTML = htmlParts.join('');
 }
 
+// Переключение режима добавления
 function toggleAddMode() {
     isAddMode = !isAddMode;
     const btn = document.getElementById('addModeBtn');
@@ -529,7 +571,7 @@ function toggleAddMode() {
         if (adminMap) {
             adminMap.getContainer().style.cursor = 'crosshair';
         }
-        showNotification('Click on map to add point', 'info');
+        showNotificationFast('Click on map to add point', 'info');
     } else {
         btn.textContent = 'Add mode: OFF';
         btn.classList.remove('active');
@@ -539,6 +581,7 @@ function toggleAddMode() {
     }
 }
 
+// Открытие модального окна добавления точки
 function openAddPointModal(latlng) {
     window.tempCoordinates = latlng;
     const modal = document.getElementById('addPointModal');
@@ -550,6 +593,7 @@ function openAddPointModal(latlng) {
     }
 }
 
+// Закрытие модального окна добавления
 function closeAddModal() {
     const modal = document.getElementById('addPointModal');
     const form = document.getElementById('addPointForm');
@@ -562,6 +606,7 @@ function closeAddModal() {
     }
 }
 
+// ОПТИМИЗИРОВАННАЯ обработка добавления точки
 async function handleAddPointSubmit(e) {
     e.preventDefault();
     
@@ -569,12 +614,12 @@ async function handleAddPointSubmit(e) {
     const delayMinutes = document.getElementById('delayMinutes').value;
     
     if (!window.tempCoordinates) {
-        showNotification('Coordinates error', 'error');
+        showNotificationFast('Coordinates error', 'error');
         return;
     }
     
     if (!name || !name.trim()) {
-        showNotification('Enter model name', 'error');
+        showNotificationFast('Enter model name', 'error');
         return;
     }
     
@@ -613,17 +658,19 @@ async function handleAddPointSubmit(e) {
         const responseData = await response.json();
         
         closeAddModal();
-        showNotification('Point successfully created!', 'success');
+        showNotificationFast('Point successfully created!', 'success');
         
         if (responseData.qrCode) {
             showQRCodeForNewPoint(responseData);
         }
         
+        // Очищаем кэш и перезагружаем
+        adminCache.clear();
         await loadAdminPointsBackground();
         
     } catch (error) {
         console.error('❌ Point creation error:', error);
-        showNotification('Point creation error: ' + error.message, 'error');
+        showNotificationFast('Point creation error: ' + error.message, 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalHTML;
@@ -631,14 +678,15 @@ async function handleAddPointSubmit(e) {
     }
 }
 
+// Показ QR кода для новой точки
 function showQRCodeForNewPoint(point) {
     currentQRCode = point.qrCode;
     
     const qrDisplay = document.getElementById('qrCodeDisplay');
     if (qrDisplay) {
         qrDisplay.innerHTML = `
-            <img src="${point.qrCode}" alt="QR code for ${point.name}" style="max-width: 280px; border-radius: 12px;">
-            <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
+            <img src="${point.qrCode}" alt="QR code for ${escapeHtml(point.name)}" style="max-width: 280px; border-radius: 12px;">
+            <p style="font-weight: 600; margin-top: 15px;"><strong>${escapeHtml(point.name)}</strong></p>
             <p style="color: #666;">ID: ${point.id}</p>
         `;
     }
@@ -649,10 +697,11 @@ function showQRCodeForNewPoint(point) {
     }
 }
 
+// Показ QR кода существующей точки
 function showQRCode(pointId) {
     const point = allPoints.find(p => p.id === pointId);
     if (!point) {
-        showNotification('Point not found', 'error');
+        showNotificationFast('Point not found', 'error');
         return;
     }
     
@@ -661,8 +710,8 @@ function showQRCode(pointId) {
     const qrDisplay = document.getElementById('qrCodeDisplay');
     if (qrDisplay) {
         qrDisplay.innerHTML = `
-            <img src="${point.qrCode}" alt="QR code for ${point.name}" style="max-width: 280px; border-radius: 12px;">
-            <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
+            <img src="${point.qrCode}" alt="QR code for ${escapeHtml(point.name)}" style="max-width: 280px; border-radius: 12px;">
+            <p style="font-weight: 600; margin-top: 15px;"><strong>${escapeHtml(point.name)}</strong></p>
             <p style="color: #666;">ID: ${pointId}</p>
         `;
     }
@@ -673,6 +722,7 @@ function showQRCode(pointId) {
     }
 }
 
+// Закрытие QR модального окна
 function closeQrModal() {
     const modal = document.getElementById('qrModal');
     if (modal) {
@@ -680,6 +730,7 @@ function closeQrModal() {
     }
 }
 
+// Скачивание QR кода
 function downloadQR() {
     if (!currentQRCode) return;
     
@@ -689,6 +740,7 @@ function downloadQR() {
     link.click();
 }
 
+// ОПТИМИЗИРОВАННОЕ удаление точки
 async function deletePoint(pointId) {
     if (!confirm('Are you sure you want to delete this point?')) {
         return;
@@ -699,7 +751,6 @@ async function deletePoint(pointId) {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
                 'Authorization': currentPassword
             }
         });
@@ -709,25 +760,29 @@ async function deletePoint(pointId) {
             throw new Error(errorData.error || 'Failed to delete point');
         }
         
-        showNotification('Point deleted', 'success');
+        showNotificationFast('Point deleted', 'success');
+        
+        // Очищаем кэш и перезагружаем
+        adminCache.clear();
         await loadAdminPointsBackground();
         
     } catch (error) {
         console.error('❌ Point deletion error:', error);
-        showNotification('Point deletion error: ' + error.message, 'error');
+        showNotificationFast('Point deletion error: ' + error.message, 'error');
     }
 }
 
-function getAdminLocation() {
+// БЫСТРОЕ определение местоположения админа
+const getAdminLocation = debounce(function() {
     const locationBtn = document.querySelector('.location-btn');
     
     if (!navigator.geolocation) {
-        showNotification('Geolocation not supported', 'error');
+        showNotificationFast('Geolocation not supported', 'error');
         return;
     }
     
     if (!adminMap) {
-        showNotification('Map not ready', 'error');
+        showNotificationFast('Map not ready', 'error');
         return;
     }
     
@@ -745,23 +800,13 @@ function getAdminLocation() {
                 className: 'admin-user-location-marker',
                 html: `<div style="
                     background: linear-gradient(45deg, #667eea, #764ba2);
-                    width: 26px; 
-                    height: 26px; 
-                    border-radius: 50%; 
-                    border: 3px solid white; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                    position: relative;
-                    transition: all 0.3s ease;
+                    width: 26px; height: 26px; border-radius: 50%; 
+                    border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    position: relative; transition: all 0.3s ease;
                 ">
                     <div style="
-                        position: absolute;
-                        top: -6px;
-                        left: -6px;
-                        right: -6px;
-                        bottom: -6px;
-                        border-radius: 50%;
-                        border: 2px solid #667eea;
-                        opacity: 0.3;
+                        position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
+                        border-radius: 50%; border: 2px solid #667eea; opacity: 0.3;
                         animation: adminUserPulse 2s infinite;
                     "></div>
                 </div>`,
@@ -787,11 +832,10 @@ function getAdminLocation() {
                 `);
             
             adminMap.flyTo([lat, lng], 16, {
-                duration: 1.5,
-                easeLinearity: 0.5
+                duration: 1.0
             });
             
-            showNotification('Location determined', 'success');
+            showNotificationFast('Location determined', 'success');
             
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
@@ -799,7 +843,7 @@ function getAdminLocation() {
         },
         function(error) {
             console.error('Geolocation error:', error);
-            showNotification('Could not determine location', 'error');
+            showNotificationFast('Could not determine location', 'error');
             
             locationBtn.innerHTML = originalText;
             locationBtn.disabled = false;
@@ -807,278 +851,113 @@ function getAdminLocation() {
         },
         {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000
+            timeout: 8000,
+            maximumAge: 120000
         }
     );
-}
+}, 1000);
 
+// Добавление стилей для пульса пользователя
 function addAdminUserPulseStyles() {
     if (!document.getElementById('admin-user-pulse-styles')) {
         const style = document.createElement('style');
         style.id = 'admin-user-pulse-styles';
         style.textContent = `
             @keyframes adminUserPulse {
-                0% {
-                    transform: scale(1);
-                    opacity: 0.7;
-                }
-                50% {
-                    opacity: 0.2;
-                }
-                100% {
-                    transform: scale(2.2);
-                    opacity: 0;
-                }
-            }
-            
-            .admin-user-location-marker:hover > div {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+                0% { transform: scale(1); opacity: 0.7; }
+                50% { opacity: 0.2; }
+                100% { transform: scale(2.2); opacity: 0; }
             }
         `;
         document.head.appendChild(style);
     }
 }
 
+// Добавление стилей для админских маркеров
 function addAdminMarkerStyles() {
     if (!document.getElementById('admin-marker-styles')) {
         const style = document.createElement('style');
         style.id = 'admin-marker-styles';
         style.textContent = `
-            .admin-marker {
-                background: none !important;
-                border: none !important;
-            }
-            
+            .admin-marker { background: none !important; border: none !important; }
             .admin-marker-dot {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid white;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-                font-size: 16px;
-                color: white;
-                font-weight: bold;
-                transition: all 0.3s ease;
-                cursor: pointer;
+                width: 32px; height: 32px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+                font-size: 16px; color: white; font-weight: bold;
+                transition: all 0.3s ease; cursor: pointer;
             }
-            
             .admin-marker-dot:hover {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+                transform: scale(1.1); box-shadow: 0 6px 20px rgba(0,0,0,0.35);
             }
-            
-            .admin-popup {
-                min-width: 220px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            }
-            
-            .admin-popup h3 {
-                margin: 0 0 12px 0;
-                color: #333;
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            
-            .admin-popup p {
-                margin: 6px 0;
-                font-size: 0.9rem;
-            }
-            
+            .admin-popup { min-width: 220px; }
+            .admin-popup h3 { margin: 0 0 12px 0; color: #333; font-size: 1.1rem; font-weight: 600; }
+            .admin-popup p { margin: 6px 0; font-size: 0.9rem; }
             .admin-btn {
-                background: linear-gradient(45deg, #667eea, #764ba2);
-                color: white;
-                border: none;
-                padding: 8px 14px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 0.85rem;
-                margin: 6px 6px 0 0;
-                min-width: 90px;
-                transition: all 0.3s;
-                font-weight: 500;
+                background: linear-gradient(45deg, #667eea, #764ba2); color: white;
+                border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+                font-size: 0.85rem; margin: 6px 6px 0 0; min-width: 90px;
+                transition: all 0.3s; font-weight: 500;
             }
-            
             .admin-btn:hover {
                 background: linear-gradient(45deg, #5a67d8, #6b46c1);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
             }
-            
-            .delete-btn {
-                background: linear-gradient(45deg, #f44336, #e53935) !important;
-            }
-            
+            .delete-btn { background: linear-gradient(45deg, #f44336, #e53935) !important; }
             .delete-btn:hover {
                 background: linear-gradient(45deg, #d32f2f, #c62828) !important;
                 box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
-            }
-            
-            .point-item {
-                border-radius: 12px;
-                padding: 16px;
-                margin-bottom: 16px;
-                background: white;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                transition: all 0.3s ease;
-            }
-            
-            .point-item:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-            }
-            
-            .point-item.available {
-                border-left: 4px solid #4CAF50;
-            }
-            
-            .point-item.collected {
-                border-left: 4px solid #f44336;
-            }
-            
-            .point-item.scheduled {
-                border-left: 4px solid #ff9800;
-            }
-            
-            .point-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-            
-            .point-header h4 {
-                margin: 0;
-                color: #333;
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            
-            .point-status {
-                font-size: 0.9rem;
-                font-weight: 600;
-                padding: 4px 8px;
-                border-radius: 12px;
-                background: rgba(255,255,255,0.8);
-            }
-            
-            .point-actions {
-                margin-top: 12px;
-                padding-top: 12px;
-                border-top: 1px solid #eee;
             }
         `;
         document.head.appendChild(style);
     }
 }
 
-// УЛЬТРА БЫСТРАЯ система уведомлений
-function showNotification(message, type = 'info') {
+// БЫСТРАЯ система уведомлений
+function showNotificationFast(message, type = 'info') {
     console.log(`🔔 ${type.toUpperCase()}: ${message}`);
     
-    // Удаляем предыдущие уведомления того же типа
-    const existingNotifications = document.querySelectorAll(`.notification.${type}`);
-    existingNotifications.forEach(notification => notification.remove());
+    // Удаляем старые уведомления того же типа
+    document.querySelectorAll(`.notification-fast.${type}`).forEach(n => n.remove());
     
     const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
+    notification.className = `notification-fast ${type}`;
     notification.innerHTML = `
-        <div class="notification-content">
+        <div class="notification-content-fast">
             <span>${getNotificationIcon(type)} ${message}</span>
             <button onclick="this.parentElement.parentElement.remove()">×</button>
         </div>
     `;
     
     // Добавляем стили если их нет
-    if (!document.getElementById('notification-styles')) {
+    if (!document.getElementById('notification-styles-fast')) {
         const style = document.createElement('style');
-        style.id = 'notification-styles';
+        style.id = 'notification-styles-fast';
         style.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 2000;
-                background: rgba(255, 255, 255, 0.98);
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-                backdrop-filter: blur(10px);
-                padding: 16px;
-                min-width: 280px;
-                max-width: 400px;
-                animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                border: 1px solid rgba(255,255,255,0.2);
-                font-weight: 500;
-                transform: translateX(100%);
+            .notification-fast {
+                position: fixed; top: 20px; right: 20px; z-index: 2000;
+                background: rgba(255, 255, 255, 0.98); border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.15); backdrop-filter: blur(10px);
+                padding: 16px; min-width: 280px; max-width: 400px;
+                animation: slideInFast 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                border: 1px solid rgba(255,255,255,0.2); font-weight: 500;
             }
-            
-            .notification.error {
-                border-left: 4px solid #f44336;
-                background: linear-gradient(135deg, rgba(244, 67, 54, 0.05), rgba(255, 255, 255, 0.98));
+            .notification-fast.error { border-left: 4px solid #f44336; }
+            .notification-fast.success { border-left: 4px solid #4CAF50; }
+            .notification-fast.info { border-left: 4px solid #2196F3; }
+            .notification-fast.warning { border-left: 4px solid #ff9800; }
+            .notification-content-fast {
+                display: flex; justify-content: space-between; align-items: center;
             }
-            
-            .notification.success {
-                border-left: 4px solid #4CAF50;
-                background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification.info {
-                border-left: 4px solid #2196F3;
-                background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification.warning {
-                border-left: 4px solid #ff9800;
-                background: linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(255, 255, 255, 0.98));
-            }
-            
-            .notification-content {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .notification-content button {
-                background: none;
-                border: none;
-                font-size: 1.3rem;
-                cursor: pointer;
-                color: #999;
-                padding: 0;
-                margin: 0;
-                width: auto;
-                margin-left: 12px;
+            .notification-content-fast button {
+                background: none; border: none; font-size: 1.3rem; cursor: pointer;
+                color: #999; padding: 0; margin: 0; width: auto; margin-left: 12px;
                 transition: color 0.3s;
             }
-            
-            .notification-content button:hover {
-                color: #666;
-            }
-            
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            
-            @keyframes slideOut {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
+            .notification-content-fast button:hover { color: #666; }
+            @keyframes slideInFast {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
             }
         `;
         document.head.appendChild(style);
@@ -1086,44 +965,22 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // Мгновенная анимация появления
-    requestAnimationFrame(() => {
-        notification.style.transform = 'translateX(0)';
-        notification.style.opacity = '1';
-    });
-    
     // Автоматическое скрытие
-    const hideTimeout = type === 'error' ? 7000 : (type === 'success' ? 3000 : 5000);
+    const hideTimeout = type === 'error' ? 5000 : (type === 'success' ? 2000 : 3000);
     setTimeout(() => {
         if (notification.parentElement) {
-            notification.style.animation = 'slideOut 0.3s ease';
+            notification.style.animation = 'slideInFast 0.3s ease reverse';
             setTimeout(() => notification.remove(), 300);
         }
     }, hideTimeout);
 }
 
 function getNotificationIcon(type) {
-    const icons = {
-        error: '❌',
-        success: '✅',
-        info: 'ℹ️',
-        warning: '⚠️'
-    };
+    const icons = { error: '❌', success: '✅', info: 'ℹ️', warning: '⚠️' };
     return icons[type] || icons.info;
 }
 
-// Debug function
-function debugAdminState() {
-    console.log('🔍 Admin panel state debug:', {
-        currentPassword: currentPassword ? 'set' : 'not set',
-        isAddMode: isAddMode,
-        allPointsCount: allPoints.length,
-        adminMapReady: !!adminMap,
-        tempCoordinates: window.tempCoordinates
-    });
-}
-
-// Export functions for global use
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ для использования в HTML
 window.adminLogin = adminLogin;
 window.toggleAddMode = toggleAddMode;
 window.getAdminLocation = getAdminLocation;
@@ -1132,4 +989,40 @@ window.deletePoint = deletePoint;
 window.closeAddModal = closeAddModal;
 window.closeQrModal = closeQrModal;
 window.downloadQR = downloadQR;
-window.debugAdminState = debugAdminState;
+}
+
+// Загрузка с сервера
+async function fetchAdminPointsFromServer() {
+    try {
+        const response = await fetch('/api/admin/points', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': currentPassword
+            }
+        });
+        
+        console.log('📡 Admin points response:', response.status);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                showNotificationFast('Session expired', 'error');
+                sessionStorage.removeItem('adminPassword');
+                setTimeout(() => location.reload(), 2000);
+                return;
+            }
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        allPoints = await response.json();
+        console.log('✅ Loaded admin points:', allPoints.length);
+        
+        // Кэшируем
+        adminCache.set('admin_points', allPoints);
+        
+        // Обновляем UI
+        updateAdminMap();
+        updateAdminStats();
+        updatePointsList();
+        
+    } catch
