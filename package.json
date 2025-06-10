@@ -1,25 +1,35 @@
 {
   "name": "plasticboy",
   "version": "2.5.0",
-  "description": "3D Model Collection App for Almaty with Telegram Bot - FIXED VERSION",
+  "description": "3D Model Collection Game for Almaty with Fixed Telegram Bot (English UI)",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    
-    "bot": "node bot-server.js",
-    "bot:dev": "nodemon bot-server.js",
-    "bot:setup": "node setup-telegram-bot.js",
-    "bot:diagnose": "node diagnose-bot.js",
-    "bot:fix": "node fix-webhook.js",
-    
-    "dev:all": "concurrently \"npm run dev\" \"npm run bot:dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     
-    "render:web": "node server.js",
-    "render:bot": "node bot-server.js",
+    "bot:diagnose": "node diagnose-bot.js",
+    "bot:fix": "node fix-webhook.js",
+    "bot:test": "echo \"Send /start to @PlasticBoyBot in Telegram to test\"",
     
-    "postinstall": "echo 'Dependencies installed for Render.com deploy'"
+    "setup": "npm install && echo \"✅ Dependencies installed\"",
+    "setup:webhook": "node -e \"const axios = require('axios'); const url = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'; axios.get(url + '/setup-webhook').then(r => console.log('✅ Webhook setup:', r.data.success ? 'SUCCESS' : 'FAILED')).catch(e => console.error('❌ Webhook error:', e.message))\"",
+    
+    "health": "node -e \"const axios = require('axios'); const url = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'; axios.get(url + '/health').then(r => console.log('Health:', r.data)).catch(e => console.error('Health check failed:', e.message))\"",
+    
+    "logs": "echo \"📋 Check logs at: ${RENDER_EXTERNAL_URL:-http://localhost:3000}/health\"",
+    
+    "deploy:render": "echo \"🚀 Push to GitHub to auto-deploy on Render.com\"",
+    "deploy:check": "npm run health && npm run setup:webhook",
+    
+    "render:web": "node server.js",
+    "render:setup": "npm install",
+    
+    "postinstall": "echo \"📦 PlasticBoy v2.5 dependencies installed successfully!\""
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -29,17 +39,10 @@
     "qrcode": "^1.5.3",
     "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
-    
-    "node-telegram-bot-api": "^0.66.0",
     "axios": "^1.6.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "concurrently": "^8.2.2"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "nodemon": "^3.0.1"
   },
   "keywords": [
     "nodejs",
@@ -54,7 +57,8 @@
     "gamification",
     "render",
     "webhook",
-    "polling"
+    "english",
+    "fixed"
   ],
   "author": "PlasticBoy Team",
   "license": "MIT",
@@ -62,28 +66,18 @@
     "type": "git",
     "url": "https://github.com/your-username/plasticboy.git"
   },
+  "bugs": {
+    "url": "https://github.com/your-username/plasticboy/issues"
+  },
+  "homepage": "https://github.com/your-username/plasticboy#readme",
   "render": {
     "services": [
       {
         "name": "plasticboy-web",
         "type": "web",
         "env": "node",
-        "buildCommand": "npm install",
+        "buildCommand": "npm run render:setup",
         "startCommand": "npm run render:web",
-        "plan": "free",
-        "envVars": [
-          {
-            "key": "NODE_ENV",
-            "value": "production"
-          }
-        ]
-      },
-      {
-        "name": "plasticboy-bot", 
-        "type": "worker",
-        "env": "node",
-        "buildCommand": "npm install",
-        "startCommand": "npm run render:bot",
         "plan": "free",
         "envVars": [
           {
@@ -93,5 +87,12 @@
         ]
       }
     ]
+  },
+  "config": {
+    "app_name": "PlasticBoy v2.5",
+    "app_description": "3D Model Collection Game with Fixed Telegram Bot",
+    "telegram_bot": "@PlasticBoyBot",
+    "admin_panel": "/admin.html",
+    "leaderboard": "/leaderboard.html"
   }
 }
