@@ -122,13 +122,13 @@ app.head('/api/admin/points', (req, res) => {
   res.status(ultraFastPasswordCheck(req) ? 200 : 401).end();
 });
 
-// ОПТИМИЗИРОВАННАЯ СХЕМА MONGODB
+// ОПТИМИЗИРОВАННАЯ СХЕМА MONGODB - ИСПРАВЛЕННАЯ
 const modelPointSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, index: true },
   name: { type: String, required: true, index: 'text' },
   coordinates: {
-    lat: { type: Number, required: true, index: '2dsphere' },
-    lng: { type: Number, required: true, index: '2dsphere' }
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
   },
   qrCode: { type: String, required: true },
   qrSecret: { type: String, required: true, index: true },
@@ -158,11 +158,12 @@ const modelPointSchema = new mongoose.Schema({
   strict: true
 });
 
-// СОСТАВНЫЕ ИНДЕКСЫ для ускорения запросов
+// СОСТАВНЫЕ ИНДЕКСЫ для ускорения запросов (БЕЗ геопространственного)
 modelPointSchema.index({ status: 1, scheduledTime: 1 });
 modelPointSchema.index({ id: 1, qrSecret: 1 });
 modelPointSchema.index({ 'collectorInfo.telegramData.id': 1, collectedAt: -1 });
 modelPointSchema.index({ 'collectorInfo.authMethod': 1, status: 1 });
+modelPointSchema.index({ 'coordinates.lat': 1, 'coordinates.lng': 1 }); // Обычный составной индекс вместо 2dsphere
 
 const ModelPoint = mongoose.model('ModelPoint', modelPointSchema);
 
@@ -1262,8 +1263,14 @@ const startServer = async () => {
   try {
     await connectDB();
     
-    // Создание индексов при старте
-    await ModelPoint.createIndexes();
+    // Создание индексов при старте - ТОЛЬКО ЕСЛИ НЕ СУЩЕСТВУЮТ
+    try {
+      await ModelPoint.createIndexes();
+      console.log('✅ Database indexes ready');
+    } catch (indexError) {
+      console.warn('⚠️ Index creation warning:', indexError.message);
+      // Продолжаем работу даже если индексы не создались
+    }
     
     app.listen(PORT, () => {
       console.log('🚀 PlasticBoy Server started (OPTIMIZED)');
