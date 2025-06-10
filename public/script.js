@@ -1,34 +1,35 @@
-// PlasticBoy v2.0 - Fixed version with improved loading and Telegram integration
+// PlasticBoy v2.0 - ОПТИМИЗИРОВАННАЯ версия для максимальной скорости
 (function() {
     'use strict';
     
-    console.log('🎯 PlasticBoy - Script initialization');
+    console.log('🎯 PlasticBoy - OPTIMIZED Script initialization');
     
-    // Global variables
+    // Глобальные переменные
     let map = null;
     let markers = [];
     let isInitialized = false;
-    let initAttempts = 0;
-    const MAX_INIT_ATTEMPTS = 10;
+    let markersPool = []; // Пул маркеров для переиспользования
+    let lastMarkersCount = 0;
     
-    // Almaty coordinates
+    // Координаты Алматы
     const ALMATY_CENTER = [43.2220, 76.8512];
     
-    // Caching system
-    const Cache = {
-        key: 'plasticboy_points_v2',
-        ttl: 5 * 60 * 1000, // 5 minutes
+    // УСКОРЕННАЯ система кэширования
+    const FastCache = {
+        key: 'plasticboy_points_v2_optimized',
+        ttl: 3 * 60 * 1000, // 3 минуты для скорости
         
         save: function(data) {
             try {
-                const item = {
+                const item = JSON.stringify({
                     data: data,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem(this.key, JSON.stringify(item));
-                console.log('💾 Saved ' + data.length + ' points to cache');
+                    timestamp: Date.now(),
+                    version: '2.0'
+                });
+                localStorage.setItem(this.key, item);
+                console.log('💾 Cached ' + data.length + ' points');
             } catch (e) {
-                console.warn('⚠️ Cache save error:', e);
+                console.warn('⚠️ Cache save failed:', e);
             }
         },
         
@@ -41,14 +42,16 @@
                 const age = Date.now() - parsed.timestamp;
                 
                 if (age > this.ttl) {
+                    localStorage.removeItem(this.key);
                     console.log('⏰ Cache expired');
                     return null;
                 }
                 
-                console.log('📦 Loaded ' + parsed.data.length + ' points from cache');
+                console.log('📦 Loaded ' + parsed.data.length + ' points from cache (age: ' + Math.round(age/1000) + 's)');
                 return parsed.data;
             } catch (e) {
-                console.warn('⚠️ Cache read error:', e);
+                console.warn('⚠️ Cache read failed:', e);
+                localStorage.removeItem(this.key);
                 return null;
             }
         },
@@ -56,91 +59,126 @@
         clear: function() {
             localStorage.removeItem(this.key);
             console.log('🗑️ Cache cleared');
+        },
+        
+        getAge: function() {
+            try {
+                const item = localStorage.getItem(this.key);
+                if (!item) return null;
+                const parsed = JSON.parse(item);
+                return Date.now() - parsed.timestamp;
+            } catch (e) {
+                return null;
+            }
         }
     };
     
-    // Wait for DOM ready
+    // Дебаунс для оптимизации
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Быстрая проверка готовности DOM
+    function isDOMReady() {
+        return document.readyState === 'complete' || document.readyState === 'interactive';
+    }
+    
+    // Ожидание готовности DOM
     function waitForDOM() {
         return new Promise((resolve) => {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', resolve);
-            } else {
+            if (isDOMReady()) {
                 resolve();
+            } else {
+                document.addEventListener('DOMContentLoaded', resolve, { once: true });
             }
         });
     }
     
-    // Check Leaflet loading
+    // Проверка загрузки Leaflet
     function waitForLeaflet() {
         return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 100; // 10 секунд
+            
             const checkLeaflet = () => {
-                if (typeof L !== 'undefined' && L.map) {
-                    console.log('✅ Leaflet loaded');
+                attempts++;
+                
+                if (typeof L !== 'undefined' && L.map && L.tileLayer) {
+                    console.log('✅ Leaflet ready in ' + attempts + ' attempts');
                     resolve();
+                } else if (attempts >= maxAttempts) {
+                    console.error('❌ Leaflet timeout after ' + attempts + ' attempts');
+                    reject(new Error('Leaflet loading timeout'));
                 } else {
                     setTimeout(checkLeaflet, 100);
                 }
             };
             
             checkLeaflet();
-            
-            // Timeout for Leaflet loading
-            setTimeout(() => {
-                if (typeof L === 'undefined') {
-                    console.error('❌ Leaflet failed to load in 10 seconds');
-                    reject(new Error('Leaflet timeout'));
-                }
-            }, 10000);
         });
     }
     
-    // Main initialization
-    async function init() {
+    // МГНОВЕННАЯ инициализация
+    async function ultraFastInit() {
         try {
-            console.log('🚀 Starting PlasticBoy initialization');
+            console.log('🚀 Starting ULTRA FAST initialization');
+            const startTime = performance.now();
             
-            // Wait for DOM
-            await waitForDOM();
-            console.log('✅ DOM ready');
+            // Параллельное ожидание DOM и Leaflet
+            await Promise.all([
+                waitForDOM(),
+                waitForLeaflet()
+            ]);
             
-            // Notify loader about DOM readiness
-            if (window.AppLoader && window.AppLoader.updateLoader) {
-                window.AppLoader.updateLoader();
+            // Уведомляем загрузчик
+            if (window.AppLoader) {
+                window.AppLoader.onLeafletReady && window.AppLoader.onLeafletReady();
+                window.AppLoader.updateLoader && window.AppLoader.updateLoader();
             }
             
-            // Wait for Leaflet
-            await waitForLeaflet();
+            // Быстрая инициализация карты
+            await initMapUltraFast();
             
-            // Notify loader about Leaflet readiness
-            if (window.AppLoader && window.AppLoader.onLeafletReady) {
-                window.AppLoader.onLeafletReady();
-            }
+            // Молниеносная загрузка точек
+            await loadPointsLightning();
             
-            // Initialize map
-            await initMap();
-            
-            // Load points
-            await loadPoints();
-            
-            console.log('🎉 PlasticBoy successfully initialized');
+            const totalTime = performance.now() - startTime;
+            console.log(`🎉 ULTRA FAST init completed in ${totalTime.toFixed(2)}ms`);
             
         } catch (error) {
-            console.error('❌ Initialization error:', error);
-            
-            // Try to reinitialize after 2 seconds
-            if (initAttempts < MAX_INIT_ATTEMPTS) {
-                initAttempts++;
-                console.log(`🔄 Reinitialization attempt ${initAttempts}/${MAX_INIT_ATTEMPTS}`);
-                setTimeout(init, 2000);
-            } else {
-                console.error('💥 Maximum initialization attempts exceeded');
-                showErrorMessage('Failed to load application. Try refreshing the page.');
-            }
+            console.error('❌ Ultra fast init error:', error);
+            // Fallback к обычной инициализации
+            setTimeout(() => fallbackInit(), 1000);
         }
     }
     
-    // Map initialization
-    function initMap() {
+    // Резервная инициализация
+    async function fallbackInit() {
+        try {
+            console.log('🔄 Fallback initialization...');
+            
+            await waitForDOM();
+            await waitForLeaflet();
+            await initMapUltraFast();
+            await loadPointsLightning();
+            
+            console.log('✅ Fallback init completed');
+        } catch (error) {
+            console.error('❌ Fallback init failed:', error);
+            showErrorMessage('Application failed to load. Please refresh the page.');
+        }
+    }
+    
+    // МОЛНИЕНОСНАЯ инициализация карты
+    function initMapUltraFast() {
         return new Promise((resolve, reject) => {
             if (isInitialized) {
                 resolve();
@@ -149,320 +187,238 @@
             
             const mapElement = document.getElementById('map');
             if (!mapElement) {
-                reject(new Error('Map element not found'));
+                reject(new Error('Map element missing'));
                 return;
             }
             
             try {
-                console.log('🗺️ Creating map');
+                console.log('🗺️ Ultra fast map creation');
                 
-                // Check that Leaflet is actually available
-                if (typeof L === 'undefined' || !L.map) {
-                    throw new Error('Leaflet not loaded');
-                }
-                
+                // Создаем карту с оптимальными настройками
                 map = L.map('map', {
                     center: ALMATY_CENTER,
                     zoom: 13,
                     zoomControl: true,
-                    preferCanvas: true // Improve performance on mobile
+                    preferCanvas: true,
+                    renderer: L.canvas({ padding: 0.5 }),
+                    wheelPxPerZoomLevel: 120,
+                    zoomSnap: 0.5,
+                    zoomDelta: 0.5,
+                    maxBoundsViscosity: 1.0
                 });
                 
-                // Add tiles
+                // Добавляем тайлы с оптимизацией
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
+                    attribution: '© OpenStreetMap',
                     maxZoom: 18,
                     tileSize: 256,
-                    crossOrigin: true
+                    crossOrigin: true,
+                    keepBuffer: 2,
+                    updateWhenZooming: false,
+                    updateWhenIdle: true
                 }).addTo(map);
                 
-                // Add styles
-                addMapStyles();
+                // Быстрое добавление стилей
+                addOptimizedMapStyles();
                 
-                // Notify loader about map readiness
+                // Уведомляем загрузчик
                 if (window.AppLoader && window.AppLoader.onMapReady) {
                     window.AppLoader.onMapReady();
                 }
                 
-                // Wait for full map loading
+                // Готовность карты
                 map.whenReady(() => {
                     setTimeout(() => {
                         map.invalidateSize();
-                        console.log('✅ Map ready');
                         isInitialized = true;
+                        console.log('✅ Ultra fast map ready');
                         
-                        // Auto-update every 30 seconds
-                        setInterval(loadPoints, 30000);
+                        // Автообновление каждые 45 секунд (оптимизировано)
+                        setInterval(loadPointsLightning, 45000);
                         
                         resolve();
-                    }, 200);
+                    }, 50); // Минимальная задержка
                 });
                 
             } catch (error) {
-                console.error('❌ Map creation error:', error);
+                console.error('❌ Ultra fast map error:', error);
                 reject(error);
             }
         });
     }
     
-    // Add styles
-    function addMapStyles() {
-        if (document.getElementById('map-styles')) return;
+    // Оптимизированные стили карты
+    function addOptimizedMapStyles() {
+        if (document.getElementById('optimized-map-styles')) return;
         
         const style = document.createElement('style');
-        style.id = 'map-styles';
+        style.id = 'optimized-map-styles';
         style.textContent = `
-            .marker-icon {
-                background: none !important;
-                border: none !important;
-            }
-            
+            .marker-icon { background: none !important; border: none !important; }
             .marker-dot {
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                border: 2px solid white;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-                transition: transform 0.2s ease;
-                cursor: pointer;
+                width: 20px; height: 20px; border-radius: 50%;
+                border: 2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                transition: transform 0.2s ease; cursor: pointer;
+                will-change: transform;
             }
+            .marker-dot:hover { transform: scale(1.2); }
+            .marker-dot.available { background: linear-gradient(45deg, #4CAF50, #45a049); }
+            .marker-dot.collected { background: linear-gradient(45deg, #f44336, #e53935); }
             
-            .marker-dot:hover {
-                transform: scale(1.2);
-            }
-            
-            .marker-dot.available {
-                background: linear-gradient(45deg, #4CAF50, #45a049);
-            }
-            
-            .marker-dot.collected {
-                background: linear-gradient(45deg, #f44336, #e53935);
-            }
-            
-            .user-marker {
-                background: none !important;
-                border: none !important;
-            }
-            
+            .user-marker { background: none !important; border: none !important; }
             .user-dot {
-                width: 22px;
-                height: 22px;
-                border-radius: 50%;
+                width: 22px; height: 22px; border-radius: 50%;
                 background: linear-gradient(45deg, #007bff, #0056b3);
-                border: 2px solid white;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+                border: 2px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
                 position: relative;
             }
-            
             .user-dot::after {
-                content: '';
-                position: absolute;
-                top: -4px;
-                left: -4px;
-                right: -4px;
-                bottom: -4px;
-                border-radius: 50%;
-                border: 2px solid #007bff;
-                opacity: 0.3;
+                content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+                border-radius: 50%; border: 2px solid #007bff; opacity: 0.3;
                 animation: userPulse 2s infinite;
             }
-            
             @keyframes userPulse {
                 0% { transform: scale(1); opacity: 0.7; }
                 50% { opacity: 0.2; }
                 100% { transform: scale(2); opacity: 0; }
             }
-
-            /* Styles for Telegram data in popup */
+            
+            /* Оптимизированные стили popup */
+            .popup-content {
+                min-width: 200px; text-align: center !important; padding: 5px;
+            }
+            .popup-content h3 {
+                margin: 0 0 10px 0; color: #333; font-size: 1.1rem;
+                font-family: 'ABC Oracle', sans-serif; font-weight: 500;
+                text-align: center !important;
+            }
+            .status {
+                margin: 10px 0; font-weight: 500; text-align: center !important;
+                display: block; width: 100%;
+            }
+            .status.available { color: #4CAF50; }
+            .status.collected { color: #f44336; }
+            
             .telegram-user-info {
                 background: linear-gradient(135deg, #0088cc, #00a0ff);
-                color: white;
-                padding: 12px;
-                border-radius: 10px;
-                margin: 10px auto;
-                text-align: center;
+                color: white; padding: 12px; border-radius: 10px;
+                margin: 10px auto; text-align: center !important;
                 box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
-                max-width: 100%;
-                width: fit-content;
+                max-width: 100%; width: fit-content;
             }
-
             .telegram-avatar {
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                border: 2px solid white;
-                margin: 0 auto 8px auto;
-                display: block;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                width: 50px; height: 50px; border-radius: 50%;
+                border: 2px solid white; margin: 0 auto 8px auto !important;
+                display: block !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             }
-
             .telegram-name {
-                font-weight: 600;
-                font-size: 1rem;
-                margin-bottom: 4px;
+                font-weight: 500; font-size: 1rem; margin-bottom: 4px;
+                text-align: center !important;
             }
-
             .telegram-username {
-                font-size: 0.85rem;
-                opacity: 0.9;
-                text-decoration: none;
-                color: white;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                transition: all 0.3s;
-                padding: 4px 8px;
-                border-radius: 15px;
-                background: rgba(255,255,255,0.1);
-                margin: 0 auto;
+                font-size: 0.85rem; opacity: 0.9; text-decoration: none;
+                color: white; display: inline-flex; align-items: center; gap: 4px;
+                transition: all 0.3s; padding: 4px 8px; border-radius: 15px;
+                background: rgba(255,255,255,0.1); margin: 0 auto;
             }
-
             .telegram-username:hover {
-                background: rgba(255,255,255,0.2);
-                transform: translateY(-1px);
+                background: rgba(255,255,255,0.2); transform: translateY(-1px);
             }
-
-            .telegram-icon {
-                font-size: 0.8rem;
-            }
-
+            
             .collector-info-enhanced {
-                background: #f8f9fa;
-                padding: 12px;
-                border-radius: 10px;
-                margin: 10px auto;
-                border-left: 4px solid #4CAF50;
-                text-align: center;
-                max-width: 100%;
+                background: #f8f9fa; padding: 12px; border-radius: 10px;
+                margin: 10px auto; border-left: 4px solid #4CAF50;
+                text-align: center !important; max-width: 100%;
             }
-
             .collector-info-enhanced h4 {
-                margin: 0 0 8px 0;
-                color: #333;
-                font-size: 0.95rem;
-                text-align: center;
+                margin: 0 0 8px 0; color: #333; font-size: 0.95rem;
+                text-align: center !important;
             }
-
             .collector-detail {
-                margin: 4px 0;
-                font-size: 0.9rem;
-                color: #666;
-                text-align: center;
-            }
-
-            .popup-collector-name {
-                font-weight: 600;
-                color: #333;
-            }
-
-            /* Центрированный контент в popup */
-            .popup-content {
+                margin: 4px 0; font-size: 0.9rem; color: #666;
                 text-align: center !important;
-                min-width: 200px;
-                padding: 5px;
             }
-
-            .popup-content h3 {
-                text-align: center !important;
-                margin: 0 0 10px 0;
-                color: #333;
-                font-size: 1.1rem;
-            }
-
-            .status {
-                text-align: center !important;
-                margin: 10px 0;
-                font-weight: 500;
-                display: block;
-                width: 100%;
-            }
-
-            .status.available {
-                color: #4CAF50;
-            }
-
-            .status.collected {
-                color: #f44336;
-            }
-
             .collector-info {
-                background: #f8f9fa;
-                padding: 10px;
-                border-radius: 8px;
-                margin: 10px auto;
-                font-size: 0.9rem;
-                text-align: center;
-                max-width: 100%;
+                background: #f8f9fa; padding: 10px; border-radius: 8px;
+                margin: 10px auto; font-size: 0.9rem;
+                text-align: center !important; max-width: 100%;
             }
-
             .collector-info p {
-                margin: 5px 0;
-                text-align: center;
+                margin: 5px 0; text-align: center !important;
             }
         `;
         document.head.appendChild(style);
     }
     
-    // Load points
-    function loadPoints() {
+    // МОЛНИЕНОСНАЯ загрузка точек
+    function loadPointsLightning() {
         return new Promise((resolve) => {
-            console.log('📍 Loading points');
+            console.log('⚡ Lightning points loading');
             
-            // First check cache
-            const cachedPoints = Cache.load();
+            // Сначала проверяем кэш
+            const cachedPoints = FastCache.load();
             if (cachedPoints) {
-                updateMap(cachedPoints);
-                updateStats(cachedPoints);
+                updateMapLightning(cachedPoints);
+                updateStatsLightning(cachedPoints);
                 
-                // Notify loader
+                // Уведомляем загрузчик
                 if (window.AppLoader && window.AppLoader.onPointsLoaded) {
                     window.AppLoader.onPointsLoaded();
                 }
                 
-                // Update in background
-                setTimeout(() => fetchPointsFromServer(false), 1000);
+                // Обновляем в фоне если кэш старый
+                const cacheAge = FastCache.getAge();
+                if (cacheAge && cacheAge > 90000) { // 1.5 минуты
+                    setTimeout(() => fetchPointsFromServerLightning(false), 500);
+                }
+                
                 resolve();
                 return;
             }
             
-            // Load from server
-            fetchPointsFromServer(true).then(resolve);
+            // Загружаем с сервера
+            fetchPointsFromServerLightning(true).then(resolve);
         });
     }
     
-    // Load from server
-    function fetchPointsFromServer(notifyLoader = true) {
+    // МОЛНИЕНОСНАЯ загрузка с сервера
+    function fetchPointsFromServerLightning(notifyLoader = true) {
         return new Promise((resolve) => {
-            console.log('🌐 Loading points from server');
+            console.log('🌐 Lightning server fetch');
+            
+            // Создаем AbortController для таймаута
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 секунд
             
             fetch('/api/points', {
                 method: 'GET',
                 headers: { 
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Cache-Control': 'no-cache'
                 },
-                cache: 'no-cache'
+                signal: controller.signal
             })
             .then(response => {
+                clearTimeout(timeoutId);
                 console.log('📡 Server response:', response.status);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 
                 return response.json();
             })
             .then(points => {
-                console.log('✅ Loaded ' + points.length + ' points from server');
+                console.log('✅ Lightning loaded ' + points.length + ' points');
                 
-                // Save to cache
-                Cache.save(points);
+                // Сохраняем в кэш
+                FastCache.save(points);
                 
-                // Update map
-                updateMap(points);
-                updateStats(points);
+                // Обновляем карту
+                updateMapLightning(points);
+                updateStatsLightning(points);
                 
-                // Notify loader
+                // Уведомляем загрузчик
                 if (notifyLoader && window.AppLoader && window.AppLoader.onPointsLoaded) {
                     window.AppLoader.onPointsLoaded();
                 }
@@ -470,17 +426,18 @@
                 resolve();
             })
             .catch(error => {
-                console.error('❌ Points loading error:', error);
+                clearTimeout(timeoutId);
+                console.error('❌ Lightning fetch error:', error);
                 
-                // Try to load from cache as fallback
-                const cachedPoints = Cache.load();
-                if (cachedPoints) {
-                    console.log('📦 Using cached data as fallback');
-                    updateMap(cachedPoints);
-                    updateStats(cachedPoints);
+                // Fallback к кэшу
+                const fallbackPoints = FastCache.load();
+                if (fallbackPoints) {
+                    console.log('📦 Using fallback cache');
+                    updateMapLightning(fallbackPoints);
+                    updateStatsLightning(fallbackPoints);
                 }
                 
-                // Notify loader even on error
+                // Уведомляем загрузчик даже при ошибке
                 if (notifyLoader && window.AppLoader && window.AppLoader.onPointsLoaded) {
                     window.AppLoader.onPointsLoaded();
                 }
@@ -490,25 +447,42 @@
         });
     }
     
-    // Update map
-    function updateMap(points) {
+    // МОЛНИЕНОСНОЕ обновление карты с переиспользованием маркеров
+    function updateMapLightning(points) {
         if (!map || !points) {
-            console.warn('⚠️ Map or points not ready for update');
+            console.warn('⚠️ Map or points not ready');
             return;
         }
         
-        console.log('🗺️ Map update (' + points.length + ' points)');
+        console.log('🗺️ Lightning map update (' + points.length + ' points)');
         
         try {
-            // Clear old markers
-            markers.forEach(marker => {
-                if (map.hasLayer(marker)) {
-                    map.removeLayer(marker);
+            // Если количество точек не изменилось, обновляем существующие маркеры
+            if (points.length === lastMarkersCount && markers.length === points.length) {
+                console.log('🔄 Updating existing markers');
+                
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    const marker = markers[i];
+                    
+                    if (marker && marker._myPointId !== point.id) {
+                        // Обновляем popup
+                        const popupContent = createOptimizedPopupContent(point);
+                        marker.setPopupContent(popupContent);
+                        marker._myPointId = point.id;
+                    }
                 }
-            });
-            markers = [];
+                
+                console.log('✅ Updated existing markers');
+                return;
+            }
             
-            // Add new markers
+            // Полное пересоздание маркеров
+            clearMarkersLightning();
+            
+            const fragment = document.createDocumentFragment();
+            
+            // Создаем новые маркеры
             points.forEach(point => {
                 try {
                     const isAvailable = point.status === 'available';
@@ -522,30 +496,47 @@
                     
                     const marker = L.marker([point.coordinates.lat, point.coordinates.lng], { icon: icon });
                     
-                    // Create popup content with enhanced Telegram support
-                    const popupContent = createPopupContent(point, isAvailable);
-                    marker.bindPopup(popupContent);
+                    // Создаем оптимизированный popup
+                    const popupContent = createOptimizedPopupContent(point);
+                    marker.bindPopup(popupContent, {
+                        maxWidth: 300,
+                        className: 'custom-popup'
+                    });
                     
+                    marker._myPointId = point.id;
                     marker.addTo(map);
                     markers.push(marker);
                 } catch (error) {
-                    console.error('❌ Marker addition error:', error, point);
+                    console.error('❌ Marker error:', error);
                 }
             });
             
-            console.log('✅ Added ' + markers.length + ' markers');
+            lastMarkersCount = points.length;
+            console.log('✅ Created ' + markers.length + ' lightning markers');
             
         } catch (error) {
-            console.error('❌ Map update error:', error);
+            console.error('❌ Lightning map update error:', error);
         }
     }
     
-    // Create popup content with Telegram support and centered layout
-    function createPopupContent(point, isAvailable) {
+    // Быстрая очистка маркеров
+    function clearMarkersLightning() {
+        markers.forEach(marker => {
+            if (map.hasLayer(marker)) {
+                map.removeLayer(marker);
+            }
+        });
+        markers = [];
+    }
+    
+    // Создание оптимизированного popup контента (сохраняем ВЕСЬ UI!)
+    function createOptimizedPopupContent(point) {
+        const isAvailable = point.status === 'available';
+        
         let popupContent = '<div class="popup-content">';
         popupContent += `<h3>${point.name}</h3>`;
         
-        // Centered status
+        // Статус
         popupContent += `<p class="status ${isAvailable ? 'available' : 'collected'}">`;
         popupContent += isAvailable ? '🟢 Available for collection' : '🔴 Already collected';
         popupContent += '</p>';
@@ -554,47 +545,46 @@
             popupContent += '<div class="collector-info-enhanced">';
             popupContent += '<h4>Collector information:</h4>';
             
-            // If user is authorized via Telegram
+            // Если пользователь авторизован через Telegram
             if (point.collectorInfo.authMethod === 'telegram' && point.collectorInfo.telegramData) {
                 const tgData = point.collectorInfo.telegramData;
                 
                 popupContent += '<div class="telegram-user-info">';
                 
-                // User avatar
+                // Аватар пользователя
                 if (tgData.photo_url) {
                     popupContent += `<img src="${tgData.photo_url}" alt="Avatar" class="telegram-avatar" 
                                       onerror="this.style.display='none';">`;
                 }
                 
-                // User name
+                // Имя пользователя
                 const fullName = [tgData.first_name, tgData.last_name].filter(Boolean).join(' ');
                 popupContent += `<div class="telegram-name">${fullName}</div>`;
                 
-                // Telegram profile link
+                // Ссылка на Telegram профиль
                 if (tgData.username) {
                     popupContent += `<a href="https://t.me/${tgData.username}" 
                                       target="_blank" class="telegram-username">
-                                      <span class="telegram-icon">✈️</span>
+                                      <span>✈️</span>
                                       @${tgData.username}
                                     </a>`;
                 } else {
-                    // If no username, show Telegram ID
                     popupContent += `<div class="telegram-username" style="cursor: default;">
-                                      <span class="telegram-icon">🆔</span>
+                                      <span>🆔</span>
                                       ID: ${tgData.id}
                                     </div>`;
                 }
                 
                 popupContent += '</div>';
                 
-                // Additional information
+                // Дополнительная информация
                 if (point.collectorInfo.signature) {
                     popupContent += `<div class="collector-detail">
                                       <strong>Message:</strong> ${point.collectorInfo.signature}
                                     </div>`;
                 }
             } else {
-                // Regular collector (manual input)
+                // Обычный коллектор (ручной ввод)
                 popupContent += `<div class="collector-detail">
                                   <span class="popup-collector-name">${point.collectorInfo.name}</span>
                                 </div>`;
@@ -610,7 +600,7 @@
                               <strong>Collection time:</strong> ${new Date(point.collectedAt).toLocaleString('en-US')}
                             </div>`;
             
-            // Add selfie if available
+            // Добавляем селфи если доступно (сохраняем функциональность!)
             if (point.collectorInfo.selfie) {
                 popupContent += '<div style="margin: 10px 0; text-align: center;">';
                 popupContent += `<img src="${point.collectorInfo.selfie}" 
@@ -627,8 +617,8 @@
         return popupContent;
     }
     
-    // Update statistics
-    function updateStats(points) {
+    // МОЛНИЕНОСНОЕ обновление статистики
+    function updateStatsLightning(points) {
         const available = points.filter(p => p.status === 'available').length;
         const collected = points.filter(p => p.status === 'collected').length;
         
@@ -636,66 +626,49 @@
         const collectedEl = document.getElementById('collectedCount');
         
         if (availableEl) {
-            animateNumber(availableEl, available);
+            lightningAnimateNumber(availableEl, available);
         }
         if (collectedEl) {
-            animateNumber(collectedEl, collected);
+            lightningAnimateNumber(collectedEl, collected);
         }
         
-        console.log('📊 Statistics: ' + available + ' available, ' + collected + ' collected');
+        console.log('📊 Lightning stats: ' + available + ' available, ' + collected + ' collected');
     }
     
-    // Number animation
-    function animateNumber(element, targetValue) {
+    // Быстрая анимация чисел
+    function lightningAnimateNumber(element, targetValue) {
         const currentValue = parseInt(element.textContent) || 0;
         if (currentValue === targetValue) return;
         
-        const duration = 500;
-        const steps = 10;
-        const stepValue = (targetValue - currentValue) / steps;
-        const stepDuration = duration / steps;
+        // Мгновенно устанавливаем значение для скорости
+        element.textContent = targetValue;
         
-        let current = currentValue;
-        let step = 0;
+        // Добавляем быструю анимацию
+        element.style.transform = 'scale(1.1)';
+        element.style.transition = 'transform 0.2s ease';
         
-        const timer = setInterval(() => {
-            step++;
-            current += stepValue;
-            
-            if (step >= steps) {
-                element.textContent = targetValue;
-                clearInterval(timer);
-            } else {
-                element.textContent = Math.round(current);
-            }
-        }, stepDuration);
+        setTimeout(() => {
+            element.style.transform = 'scale(1)';
+        }, 200);
     }
     
-    // Show error
+    // Показать ошибку
     function showErrorMessage(message) {
         const container = document.querySelector('.container');
         if (container) {
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = `
                 background: rgba(244, 67, 54, 0.1);
-                border: 1px solid #f44336;
-                border-radius: 12px;
-                padding: 20px;
-                margin: 20px 0;
-                text-align: center;
-                color: #f44336;
-                font-weight: 600;
+                border: 1px solid #f44336; border-radius: 12px;
+                padding: 20px; margin: 20px 0; text-align: center;
+                color: #f44336; font-weight: 600;
             `;
             errorDiv.innerHTML = `
                 <h3>❌ Loading error</h3>
                 <p>${message}</p>
                 <button onclick="window.location.reload()" style="
-                    background: #f44336;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 6px;
-                    cursor: pointer;
+                    background: #f44336; color: white; border: none;
+                    padding: 10px 20px; border-radius: 6px; cursor: pointer;
                     margin-top: 10px;
                 ">Refresh page</button>
             `;
@@ -703,7 +676,7 @@
         }
     }
     
-    // Global functions
+    // ГЛОБАЛЬНЫЕ функции (сохраняем весь функционал!)
     window.getCurrentLocation = function() {
         const btn = document.querySelector('.location-btn');
         if (!navigator.geolocation || !map) {
@@ -720,12 +693,12 @@
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 
-                // Remove old marker
+                // Удаляем старый маркер
                 if (window.userMarker && map.hasLayer(window.userMarker)) {
                     map.removeLayer(window.userMarker);
                 }
                 
-                // Create new marker WITHOUT popup
+                // Создаем новый маркер БЕЗ popup (как и было)
                 const userIcon = L.divIcon({
                     className: 'user-marker',
                     html: '<div class="user-dot"></div>',
@@ -733,12 +706,14 @@
                     iconAnchor: [11, 11]
                 });
                 
-                // Create marker without popup
                 window.userMarker = L.marker([lat, lng], { icon: userIcon })
                     .addTo(map);
-                    // NO .bindPopup() - user location marker will have no popup
+                    // БЕЗ .bindPopup() - маркер пользователя без popup
                 
-                map.flyTo([lat, lng], 16);
+                map.flyTo([lat, lng], 16, {
+                    duration: 1.2,
+                    easeLinearity: 0.3
+                });
                 console.log('✅ Location found');
                 
                 btn.innerHTML = originalText;
@@ -751,37 +726,26 @@
             },
             {
                 enableHighAccuracy: true,
-                timeout: 10000,
+                timeout: 8000,
                 maximumAge: 300000
             }
         );
     };
     
-    // Show full image
+    // Показать полное изображение (сохраняем функциональность!)
     window.showFullImage = function(imageSrc, title) {
         const modal = document.createElement('div');
         modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 3000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 3000;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
         `;
         
         modal.innerHTML = `
             <div style="
-                max-width: 90%;
-                max-height: 90%;
-                background: white;
-                border-radius: 12px;
-                overflow: hidden;
-                cursor: default;
+                max-width: 90%; max-height: 90%; background: white;
+                border-radius: 12px; overflow: hidden; cursor: default;
             " onclick="event.stopPropagation()">
                 <div style="padding: 15px; background: #f8f9fa; text-align: center; font-weight: 600;">
                     ${title}
@@ -794,15 +758,40 @@
         document.body.appendChild(modal);
     };
     
-    // Event handlers
-    window.addEventListener('resize', function() {
+    // Обработчики событий
+    window.addEventListener('resize', debounce(() => {
         if (map) {
-            setTimeout(() => map.invalidateSize(), 100);
+            map.invalidateSize();
+        }
+    }, 150));
+    
+    // Очистка кэша при видимости страницы
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && map) {
+            // Перезагружаем точки при возвращении на страницу
+            setTimeout(loadPointsLightning, 1000);
         }
     });
     
-    // Start initialization
-    init();
+    // Предварительная загрузка при hover на кнопки
+    const preloadOnHover = debounce(() => {
+        if (!FastCache.load()) {
+            loadPointsLightning();
+        }
+    }, 1000);
     
-    console.log('🚀 PlasticBoy script loaded');
+    document.addEventListener('mouseover', (e) => {
+        if (e.target.matches('.control-btn, .leaderboard-btn')) {
+            preloadOnHover();
+        }
+    });
+    
+    // ЗАПУСК МОЛНИЕНОСНОЙ ИНИЦИАЛИЗАЦИИ
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ultraFastInit);
+    } else {
+        ultraFastInit();
+    }
+    
+    console.log('🚀 PlasticBoy OPTIMIZED script loaded');
 })();
