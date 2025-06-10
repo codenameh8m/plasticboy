@@ -1,8 +1,8 @@
-// PlasticBoy v2.0 - ОПТИМИЗИРОВАННАЯ версия для максимальной скорости
+// PlasticBoy v2.0 - ИСПРАВЛЕННАЯ версия для ПК и мобильных
 (function() {
     'use strict';
     
-    console.log('🎯 PlasticBoy - OPTIMIZED Script initialization');
+    console.log('🎯 PlasticBoy - FIXED Script initialization');
     
     // Глобальные переменные
     let map = null;
@@ -144,8 +144,8 @@
                 window.AppLoader.updateLoader && window.AppLoader.updateLoader();
             }
             
-            // Быстрая инициализация карты
-            await initMapUltraFast();
+            // ИСПРАВЛЕННАЯ инициализация карты для ПК
+            await initMapFixed();
             
             // Молниеносная загрузка точек
             await loadPointsLightning();
@@ -167,7 +167,7 @@
             
             await waitForDOM();
             await waitForLeaflet();
-            await initMapUltraFast();
+            await initMapFixed();
             await loadPointsLightning();
             
             console.log('✅ Fallback init completed');
@@ -177,8 +177,8 @@
         }
     }
     
-    // МОЛНИЕНОСНАЯ инициализация карты
-    function initMapUltraFast() {
+    // ИСПРАВЛЕННАЯ инициализация карты для ПК
+    function initMapFixed() {
         return new Promise((resolve, reject) => {
             if (isInitialized) {
                 resolve();
@@ -192,68 +192,197 @@
             }
             
             try {
-                console.log('🗺️ Ultra fast map creation');
+                console.log('🗺️ FIXED map creation for PC');
                 
-                // Создаем карту с оптимальными настройками
-                map = L.map('map', {
-                    center: ALMATY_CENTER,
-                    zoom: 13,
-                    zoomControl: true,
-                    preferCanvas: true,
-                    renderer: L.canvas({ padding: 0.5 }),
-                    wheelPxPerZoomLevel: 120,
-                    zoomSnap: 0.5,
-                    zoomDelta: 0.5,
-                    maxBoundsViscosity: 1.0
-                });
+                // КРИТИЧЕСКИ ВАЖНО: Принудительно устанавливаем размеры контейнера
+                mapElement.style.width = '100%';
+                mapElement.style.height = '500px';
+                mapElement.style.minHeight = '500px';
+                mapElement.style.display = 'block';
+                mapElement.style.position = 'relative';
+                mapElement.style.zIndex = '1';
                 
-                // Добавляем тайлы с оптимизацией
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap',
-                    maxZoom: 18,
-                    tileSize: 256,
-                    crossOrigin: true,
-                    keepBuffer: 2,
-                    updateWhenZooming: false,
-                    updateWhenIdle: true
-                }).addTo(map);
-                
-                // Быстрое добавление стилей
-                addOptimizedMapStyles();
-                
-                // Уведомляем загрузчик
-                if (window.AppLoader && window.AppLoader.onMapReady) {
-                    window.AppLoader.onMapReady();
-                }
-                
-                // Готовность карты
-                map.whenReady(() => {
-                    setTimeout(() => {
-                        map.invalidateSize();
-                        isInitialized = true;
-                        console.log('✅ Ultra fast map ready');
+                // Даем браузеру время на обновление DOM
+                setTimeout(() => {
+                    try {
+                        // Создаем карту с ИСПРАВЛЕННЫМИ настройками для ПК
+                        map = L.map('map', {
+                            center: ALMATY_CENTER,
+                            zoom: 13,
+                            zoomControl: true,
+                            preferCanvas: false, // ИЗМЕНЕНО: SVG рендерер лучше для ПК
+                            attributionControl: true,
+                            scrollWheelZoom: true,
+                            doubleClickZoom: true,
+                            touchZoom: true,
+                            keyboard: true,
+                            dragging: true,
+                            boxZoom: true,
+                            tap: false, // Отключаем tap для ПК
+                            trackResize: true, // ВАЖНО: Автоматическое изменение размера
+                            worldCopyJump: false,
+                            closePopupOnClick: true,
+                            maxBounds: null,
+                            maxBoundsViscosity: 1.0,
+                            inertia: true,
+                            inertiaDeceleration: 3000,
+                            inertiaMaxSpeed: Infinity,
+                            easeLinearity: 0.2,
+                            zoomSnap: 1, // ИЗМЕНЕНО: Целые значения зума для ПК
+                            zoomDelta: 1, // ИЗМЕНЕНО: Шаг зума 1 для ПК
+                            wheelPxPerZoomLevel: 60 // ИЗМЕНЕНО: Более чувствительное колесо мыши
+                        });
                         
-                        // Автообновление каждые 45 секунд (оптимизировано)
-                        setInterval(loadPointsLightning, 45000);
+                        // Добавляем тайлы с оптимизацией для ПК
+                        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors',
+                            maxZoom: 18,
+                            minZoom: 3,
+                            tileSize: 256,
+                            crossOrigin: true,
+                            keepBuffer: 4, // УВЕЛИЧЕНО: Больше буфер для ПК
+                            updateWhenZooming: true, // ИЗМЕНЕНО: Обновляем при зуме на ПК
+                            updateWhenIdle: false, // ИЗМЕНЕНО: Не ждем idle на ПК
+                            detectRetina: true,
+                            maxNativeZoom: 18,
+                            subdomains: 'abc',
+                            errorTileUrl: '',
+                            zoomOffset: 0,
+                            opacity: 1,
+                            zIndex: 1,
+                            unloadInvisibleTiles: true,
+                            updateInterval: 200,
+                            reuseTiles: true
+                        });
                         
-                        resolve();
-                    }, 50); // Минимальная задержка
-                });
+                        tileLayer.addTo(map);
+                        
+                        // КРИТИЧЕСКИ ВАЖНО: Принудительная инвалидация размера
+                        setTimeout(() => {
+                            map.invalidateSize(true);
+                            console.log('🗺️ Map size invalidated');
+                            
+                            // Еще одна инвалидация через секунду
+                            setTimeout(() => {
+                                map.invalidateSize(true);
+                                console.log('🗺️ Map size double-checked');
+                            }, 1000);
+                        }, 100);
+                        
+                        // Быстрое добавление стилей
+                        addOptimizedMapStyles();
+                        
+                        // Уведомляем загрузчик
+                        if (window.AppLoader && window.AppLoader.onMapReady) {
+                            window.AppLoader.onMapReady();
+                        }
+                        
+                        // Обработчики событий карты
+                        map.on('load', () => {
+                            console.log('✅ Map loaded event');
+                            map.invalidateSize(true);
+                        });
+                        
+                        map.on('resize', () => {
+                            console.log('🔄 Map resize event');
+                            setTimeout(() => map.invalidateSize(true), 100);
+                        });
+                        
+                        // КРИТИЧЕСКИ ВАЖНО: Проверяем готовность карты
+                        map.whenReady(() => {
+                            console.log('🗺️ Map when ready triggered');
+                            
+                            // Несколько попыток инвалидации с задержками
+                            const invalidationAttempts = [50, 200, 500, 1000, 2000];
+                            invalidationAttempts.forEach(delay => {
+                                setTimeout(() => {
+                                    if (map) {
+                                        map.invalidateSize(true);
+                                        console.log(`🔄 Map invalidated at ${delay}ms`);
+                                    }
+                                }, delay);
+                            });
+                            
+                            isInitialized = true;
+                            console.log('✅ FIXED map ready for PC');
+                            
+                            // Автообновление каждые 45 секунд (оптимизировано)
+                            setInterval(loadPointsLightning, 45000);
+                            
+                            resolve();
+                        });
+                        
+                    } catch (mapError) {
+                        console.error('❌ Map creation error:', mapError);
+                        reject(mapError);
+                    }
+                }, 200); // Увеличенная задержка для ПК
                 
             } catch (error) {
-                console.error('❌ Ultra fast map error:', error);
+                console.error('❌ Fixed map error:', error);
                 reject(error);
             }
         });
     }
     
-    // Оптимизированные стили карты
+    // Оптимизированные стили карты с фиксами для ПК
     function addOptimizedMapStyles() {
         if (document.getElementById('optimized-map-styles')) return;
         
         const style = document.createElement('style');
         style.id = 'optimized-map-styles';
         style.textContent = `
+            /* КРИТИЧЕСКИЕ ФИКСЫ ДЛЯ ПК */
+            #map {
+                width: 100% !important;
+                height: 500px !important;
+                min-height: 500px !important;
+                display: block !important;
+                position: relative !important;
+                z-index: 1 !important;
+                background: #f8f9fa !important;
+            }
+            
+            .leaflet-container {
+                width: 100% !important;
+                height: 100% !important;
+                position: relative !important;
+                overflow: hidden !important;
+                background: #f8f9fa !important;
+                font-family: 'ABC Oracle', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                font-weight: 500 !important;
+            }
+            
+            .leaflet-map-pane {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            
+            .leaflet-tile-pane {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                z-index: 2 !important;
+            }
+            
+            .leaflet-tile {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 256px !important;
+                height: 256px !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: block !important;
+            }
+            
+            /* Маркеры */
             .marker-icon { background: none !important; border: none !important; }
             .marker-dot {
                 width: 20px; height: 20px; border-radius: 50%;
@@ -283,9 +412,30 @@
                 100% { transform: scale(2); opacity: 0; }
             }
             
+            /* Улучшенные стили popup для ПК */
+            .leaflet-popup-content-wrapper {
+                background: rgba(255, 255, 255, 0.98) !important;
+                border-radius: 12px !important;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+                backdrop-filter: blur(15px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                max-width: 320px !important; /* Увеличен для ПК */
+                font-family: 'ABC Oracle', sans-serif !important;
+                font-weight: 500 !important;
+            }
+            
+            .leaflet-popup-content {
+                margin: 12px 15px !important;
+                line-height: 1.4 !important;
+                text-align: center !important;
+                font-size: 0.95rem !important; /* Чуть больше для ПК */
+            }
+            
             /* Оптимизированные стили popup */
             .popup-content {
-                min-width: 200px; text-align: center !important; padding: 5px;
+                min-width: 220px; /* Увеличен для ПК */
+                text-align: center !important;
+                padding: 5px;
             }
             .popup-content h3 {
                 margin: 0 0 10px 0; color: #333; font-size: 1.1rem;
@@ -346,11 +496,35 @@
             .collector-info p {
                 margin: 5px 0; text-align: center !important;
             }
+            
+            /* Контролы Leaflet для ПК */
+            .leaflet-control-zoom a {
+                background-color: rgba(255, 255, 255, 0.95) !important;
+                color: #495057 !important;
+                border: 1px solid rgba(108, 117, 125, 0.2) !important;
+                backdrop-filter: blur(10px) !important;
+                transition: all 0.3s !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                font-family: 'ABC Oracle', sans-serif !important;
+                font-weight: 500 !important;
+                width: 30px !important;
+                height: 30px !important;
+                line-height: 28px !important;
+                text-align: center !important;
+                font-size: 16px !important;
+            }
+            
+            .leaflet-control-zoom a:hover {
+                background-color: #f8f9fa !important;
+                color: #343a40 !important;
+                transform: scale(1.05) !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            }
         `;
         document.head.appendChild(style);
     }
     
-    // МОЛНИЕНОСНАЯ загрузка точек
+    // МОЛНИЕНОСНАЯ загрузка точек (без изменений)
     function loadPointsLightning() {
         return new Promise((resolve) => {
             console.log('⚡ Lightning points loading');
@@ -381,7 +555,7 @@
         });
     }
     
-    // МОЛНИЕНОСНАЯ загрузка с сервера
+    // МОЛНИЕНОСНАЯ загрузка с сервера (без изменений)
     function fetchPointsFromServerLightning(notifyLoader = true) {
         return new Promise((resolve) => {
             console.log('🌐 Lightning server fetch');
@@ -499,8 +673,10 @@
                     // Создаем оптимизированный popup
                     const popupContent = createOptimizedPopupContent(point);
                     marker.bindPopup(popupContent, {
-                        maxWidth: 300,
-                        className: 'custom-popup'
+                        maxWidth: 320, // Увеличен для ПК
+                        className: 'custom-popup',
+                        autoPan: true,
+                        keepInView: true
                     });
                     
                     marker._myPointId = point.id;
@@ -529,7 +705,7 @@
         markers = [];
     }
     
-    // Создание оптимизированного popup контента (сохраняем ВЕСЬ UI!)
+    // Создание оптимизированного popup контента (без изменений)
     function createOptimizedPopupContent(point) {
         const isAvailable = point.status === 'available';
         
@@ -758,16 +934,39 @@
         document.body.appendChild(modal);
     };
     
-    // Обработчики событий
+    // ОБРАБОТЧИКИ СОБЫТИЙ С ИСПРАВЛЕНИЯМИ ДЛЯ ПК
     window.addEventListener('resize', debounce(() => {
         if (map) {
-            map.invalidateSize();
+            console.log('🔄 Window resize detected');
+            
+            // Исправляем размеры контейнера
+            const mapElement = document.getElementById('map');
+            if (mapElement) {
+                mapElement.style.width = '100%';
+                mapElement.style.height = '500px';
+                mapElement.style.minHeight = '500px';
+            }
+            
+            // Множественная инвалидация для надежности
+            setTimeout(() => map.invalidateSize(true), 50);
+            setTimeout(() => map.invalidateSize(true), 200);
+            setTimeout(() => map.invalidateSize(true), 500);
         }
-    }, 150));
+    }, 250));
     
     // Очистка кэша при видимости страницы
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && map) {
+            console.log('🔄 Page became visible - checking map');
+            
+            // Принудительная проверка размеров карты
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize(true);
+                    console.log('🗺️ Map invalidated on visibility change');
+                }
+            }, 100);
+            
             // Перезагружаем точки при возвращении на страницу
             setTimeout(loadPointsLightning, 1000);
         }
@@ -786,12 +985,44 @@
         }
     });
     
-    // ЗАПУСК МОЛНИЕНОСНОЙ ИНИЦИАЛИЗАЦИИ
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', ultraFastInit);
-    } else {
-        ultraFastInit();
+    // ДОПОЛНИТЕЛЬНЫЕ ПРОВЕРКИ ДЛЯ ПК
+    function performAdditionalPCChecks() {
+        setTimeout(() => {
+            const mapElement = document.getElementById('map');
+            if (mapElement && map) {
+                const rect = mapElement.getBoundingClientRect();
+                console.log('🗺️ Map element dimensions:', {
+                    width: rect.width,
+                    height: rect.height,
+                    display: getComputedStyle(mapElement).display,
+                    position: getComputedStyle(mapElement).position
+                });
+                
+                if (rect.height === 0) {
+                    console.error('❌ Map height is 0! Fixing...');
+                    mapElement.style.height = '500px';
+                    mapElement.style.minHeight = '500px';
+                    mapElement.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        map.invalidateSize(true);
+                        console.log('🔧 Map fixed and invalidated');
+                    }, 100);
+                }
+            }
+        }, 2000);
     }
     
-    console.log('🚀 PlasticBoy OPTIMIZED script loaded');
+    // ЗАПУСК ИСПРАВЛЕННОЙ ИНИЦИАЛИЗАЦИИ
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            ultraFastInit();
+            performAdditionalPCChecks();
+        });
+    } else {
+        ultraFastInit();
+        performAdditionalPCChecks();
+    }
+    
+    console.log('🚀 PlasticBoy FIXED script loaded for PC compatibility');
 })();
