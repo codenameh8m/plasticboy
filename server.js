@@ -26,7 +26,7 @@ const upload = multer({
   }
 });
 
-// === TELEGRAM BOT INTEGRATION ===
+// === ТЕЛЕГРАМ БОТ ===
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'PlasticBoyBot';
 const WEBHOOK_PATH = `/webhook/${BOT_TOKEN}`;
@@ -36,7 +36,66 @@ console.log('Token available:', !!BOT_TOKEN);
 console.log('Bot username:', BOT_USERNAME);
 console.log('Webhook path:', WEBHOOK_PATH);
 
-// Function to send messages to Telegram
+// ОПТИМИЗИРОВАННАЯ проверка пароля администратора - МАКСИМАЛЬНО БЫСТРАЯ
+function ultraFastPasswordCheck(req) {
+    const password = req.headers.authorization || req.headers['x-admin-password'] || req.get('Authorization');
+    const isValid = password === process.env.ADMIN_PASSWORD;
+    
+    // Минимальное логирование для скорости
+    console.log('⚡ Ultra fast password check:', isValid ? 'OK' : 'FAIL');
+    
+    return isValid;
+}
+
+// МГНОВЕННЫЙ HEAD endpoint для проверки пароля админа
+app.head('/api/admin/points', (req, res) => {
+    if (ultraFastPasswordCheck(req)) {
+        res.status(200).end();
+    } else {
+        res.status(401).end();
+    }
+});
+
+// MongoDB Schema и модель
+const modelPointSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true, index: true },
+  name: { type: String, required: true },
+  coordinates: {
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
+  },
+  qrCode: { type: String, required: true },
+  qrSecret: { type: String, required: true, index: true },
+  status: { type: String, enum: ['available', 'collected'], default: 'available', index: true },
+  createdAt: { type: Date, default: Date.now, index: true },
+  scheduledTime: { type: Date, default: Date.now, index: true },
+  collectedAt: { type: Date },
+  collectorInfo: {
+    name: String,
+    signature: String,
+    selfie: String,
+    authMethod: { type: String, enum: ['manual', 'telegram'], default: 'manual' },
+    telegramData: {
+      id: Number,
+      first_name: String,
+      last_name: String,
+      username: String,
+      photo_url: String,
+      auth_date: Number,
+      hash: String
+    }
+  }
+});
+
+// Indexes for optimization
+modelPointSchema.index({ id: 1, qrSecret: 1 });
+modelPointSchema.index({ status: 1, scheduledTime: 1 });
+modelPointSchema.index({ collectedAt: 1 });
+modelPointSchema.index({ 'collectorInfo.telegramData.id': 1 });
+
+const ModelPoint = mongoose.model('ModelPoint', modelPointSchema);
+
+// Функция для отправки сообщений в Telegram
 async function sendTelegramMessage(chatId, message, options = {}) {
   if (!BOT_TOKEN) {
     console.log('⚠️ BOT_TOKEN not available, cannot send message');
@@ -111,7 +170,6 @@ async function handleTelegramUpdate(update, req) {
       // Handle commands
       if (text && text.startsWith('/')) {
         const command = text.split(' ')[0].substring(1).toLowerCase();
-        // Remove bot username if present (e.g., /start@PlasticBoyBot -> start)
         const cleanCommand = command.replace(`@${BOT_USERNAME.toLowerCase()}`, '');
         console.log(`🔧 Processing command: /${cleanCommand}`);
         
@@ -529,7 +587,7 @@ Use /start to return to the main menu.`, {
   }
 }
 
-// === WEBHOOK ROUTE FOR TELEGRAM ===
+// === WEBHOOK ROUTES FOR TELEGRAM ===
 if (BOT_TOKEN) {
   // Webhook route
   app.post(WEBHOOK_PATH, async (req, res) => {
@@ -622,46 +680,9 @@ if (BOT_TOKEN) {
     }
   });
   
-  // Test bot endpoint
-  app.get('/test-bot', async (req, res) => {
-    try {
-      const testChatId = req.query.chat_id;
-      if (!testChatId) {
-        return res.status(400).json({
-          error: 'Please provide chat_id parameter',
-          example: `/test-bot?chat_id=YOUR_CHAT_ID`
-        });
-      }
-      
-      await sendTelegramMessage(testChatId, `🧪 Test message from PlasticBoy Bot!
-
-This is a test to verify the bot is working correctly.
-
-Time: ${new Date().toISOString()}`, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '🗺️ Open Game', url: getAppUrl(req) }]
-          ]
-        }
-      });
-      
-      res.json({
-        success: true,
-        message: 'Test message sent successfully!'
-      });
-    } catch (error) {
-      console.error('❌ Test bot error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.response?.data || error.message
-      });
-    }
-  });
-  
   console.log(`🔗 Telegram webhook route configured: ${WEBHOOK_PATH}`);
   console.log(`🔧 Webhook setup available at: /setup-webhook`);
   console.log(`ℹ️ Webhook info available at: /webhook-info`);
-  console.log(`🧪 Bot test available at: /test-bot?chat_id=YOUR_CHAT_ID`);
 } else {
   console.log('⚠️ TELEGRAM_BOT_TOKEN not found, webhook not configured');
 }
@@ -680,72 +701,11 @@ const connectDB = async () => {
   }
 };
 
-// Collection point model
-const modelPointSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true, index: true },
-  name: { type: String, required: true },
-  coordinates: {
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true }
-  },
-  qrCode: { type: String, required: true },
-  qrSecret: { type: String, required: true, index: true },
-  status: { type: String, enum: ['available', 'collected'], default: 'available', index: true },
-  createdAt: { type: Date, default: Date.now, index: true },
-  scheduledTime: { type: Date, default: Date.now, index: true },
-  collectedAt: { type: Date },
-  collectorInfo: {
-    name: String,
-    signature: String,
-    selfie: String,
-    authMethod: { type: String, enum: ['manual', 'telegram'], default: 'manual' },
-    telegramData: {
-      id: Number,
-      first_name: String,
-      last_name: String,
-      username: String,
-      photo_url: String,
-      auth_date: Number,
-      hash: String
-    }
-  }
-});
-
-// Indexes for optimization
-modelPointSchema.index({ id: 1, qrSecret: 1 });
-modelPointSchema.index({ status: 1, scheduledTime: 1 });
-modelPointSchema.index({ collectedAt: 1 });
-modelPointSchema.index({ 'collectorInfo.telegramData.id': 1 });
-
-const ModelPoint = mongoose.model('ModelPoint', modelPointSchema);
-
 // Log user actions
 function logUserAction(action, data, req) {
   const timestamp = new Date().toISOString();
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
   console.log(`📝 [${timestamp}] ${action} - IP: ${ip} - Data:`, JSON.stringify(data));
-}
-
-// ОПТИМИЗИРОВАННАЯ проверка пароля администратора
-function checkAdminPassword(req) {
-  let password = null;
-  
-  if (req.headers.authorization) {
-    password = req.headers.authorization;
-  }
-  
-  if (!password && req.headers['x-admin-password']) {
-    password = decodeURIComponent(req.headers['x-admin-password']);
-  }
-  
-  if (!password && req.get('Authorization')) {
-    password = req.get('Authorization');
-  }
-  
-  const isValid = password && password === process.env.ADMIN_PASSWORD;
-  console.log('🔐 Admin password check:', isValid ? 'SUCCESS' : 'FAILED');
-  
-  return isValid;
 }
 
 // Health check
@@ -980,26 +940,10 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
 
 // ============== ADMIN ROUTES ==============
 
-// БЫСТРАЯ проверка пароля админа - HEAD запрос без загрузки данных
-app.head('/api/admin/points', async (req, res) => {
-  try {
-    if (!checkAdminPassword(req)) {
-      logUserAction('ADMIN_PASSWORD_CHECK_FAILED', { ip: req.ip }, req);
-      return res.status(401).end();
-    }
-    
-    logUserAction('ADMIN_PASSWORD_CHECK_SUCCESS', { ip: req.ip }, req);
-    res.status(200).end();
-  } catch (error) {
-    console.error('❌ Admin password check error:', error);
-    res.status(500).end();
-  }
-});
-
-// Get all points for admin
+// Get all points for admin (полный GET запрос)
 app.get('/api/admin/points', async (req, res) => {
   try {
-    if (!checkAdminPassword(req)) {
+    if (!ultraFastPasswordCheck(req)) {
       logUserAction('ADMIN_ACCESS_DENIED', { ip: req.ip }, req);
       return res.status(401).json({ error: 'Invalid admin password' });
     }
@@ -1019,7 +963,7 @@ app.get('/api/admin/points', async (req, res) => {
 // Create new point (admin)
 app.post('/api/admin/points', async (req, res) => {
   try {
-    if (!checkAdminPassword(req)) {
+    if (!ultraFastPasswordCheck(req)) {
       logUserAction('ADMIN_CREATE_DENIED', { ip: req.ip }, req);
       return res.status(401).json({ error: 'Invalid admin password' });
     }
@@ -1081,7 +1025,7 @@ app.post('/api/admin/points', async (req, res) => {
 // Delete point (admin)
 app.delete('/api/admin/points/:id', async (req, res) => {
   try {
-    if (!checkAdminPassword(req)) {
+    if (!ultraFastPasswordCheck(req)) {
       logUserAction('ADMIN_DELETE_DENIED', { ip: req.ip, pointId: req.params.id }, req);
       return res.status(401).json({ error: 'Invalid admin password' });
     }
@@ -1252,7 +1196,6 @@ const startServer = async () => {
         console.log(`📱 Telegram integration: ACTIVE`);
         console.log(`🔧 Setup webhook: http://localhost:${PORT}/setup-webhook`);
         console.log(`ℹ️ Webhook info: http://localhost:${PORT}/webhook-info`);
-        console.log(`🧪 Test bot: http://localhost:${PORT}/test-bot?chat_id=YOUR_CHAT_ID`);
       } else {
         console.log(`📱 Telegram integration: NOT CONFIGURED`);
       }
