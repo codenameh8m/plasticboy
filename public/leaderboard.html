@@ -5,11 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>PlasticBoy - Collectors Leaderboard</title>
+    
+    <!-- Preload критических ресурсов -->
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" as="style">
+    
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* Special styles for leaderboard table */
+        /* Оптимизированные стили для лидерборда */
         .leaderboard-container {
             max-width: 900px;
             margin: 0 auto;
@@ -26,6 +31,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 10px 40px rgba(0, 136, 204, 0.3);
+            will-change: transform;
         }
 
         .leaderboard-header::before {
@@ -35,7 +41,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="2.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="1.2" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="10" r="1.8" fill="rgba(255,255,255,0.1)"/></svg>');
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="2.5" fill="rgba(255,255,255,0.1)"/></svg>');
             animation: float 20s infinite linear;
         }
 
@@ -100,6 +106,7 @@
             border-radius: 15px;
             transition: transform 0.3s ease;
             border: 2px solid transparent;
+            will-change: transform;
         }
 
         .stat-card:hover {
@@ -177,6 +184,7 @@
             overflow: hidden;
             border: 2px solid transparent;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            will-change: transform;
         }
 
         .leaderboard-item::before {
@@ -205,10 +213,6 @@
             background: linear-gradient(135deg, #fff8e1, #ffecb3);
             border: 3px solid #ffc107;
             box-shadow: 0 8px 30px rgba(255, 193, 7, 0.4);
-        }
-
-        .leaderboard-item.first::before {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 235, 59, 0.1));
         }
 
         .leaderboard-item.second {
@@ -328,20 +332,6 @@
             box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
         }
 
-        .user-meta {
-            font-size: 0.9rem;
-            color: #777;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
         .collection-stats {
             text-align: center;
             min-width: 140px;
@@ -380,7 +370,7 @@
             font-weight: 500;
         }
 
-        /* Compact styles for positions 4-10 */
+        /* Компактные стили для позиций 4-10 */
         .leaderboard-item.compact {
             padding: 15px 25px;
             background: linear-gradient(135deg, #f8f9fa, #ffffff);
@@ -547,7 +537,7 @@
             transform: translateY(-1px);
         }
 
-        /* Mobile adaptation */
+        /* Оптимизированная мобильная адаптация */
         @media (max-width: 768px) {
             .leaderboard-container {
                 padding: 15px;
@@ -587,10 +577,8 @@
                 padding: 20px;
             }
 
-            /* KEEP HORIZONTAL LAYOUT ON MOBILE */
             .leaderboard-item {
                 padding: 18px;
-                /* Keep flex-direction: row */
                 gap: 15px;
             }
 
@@ -605,7 +593,6 @@
             }
 
             .user-info {
-                /* Keep flex-direction: row */
                 gap: 12px;
             }
 
@@ -621,10 +608,6 @@
             .user-username {
                 font-size: 0.85rem;
                 padding: 3px 8px;
-            }
-
-            .user-meta {
-                font-size: 0.8rem;
             }
 
             .collection-stats {
@@ -644,7 +627,6 @@
                 padding: 4px 8px;
             }
 
-            /* Adapt compact elements on mobile */
             .leaderboard-item.compact {
                 padding: 12px 18px;
             }
@@ -714,14 +696,6 @@
                 padding: 2px 6px;
             }
 
-            .user-meta {
-                font-size: 0.75rem;
-            }
-
-            .meta-item {
-                gap: 3px;
-            }
-
             .collection-stats {
                 min-width: 85px;
             }
@@ -748,7 +722,6 @@
                 font-size: 1rem;
             }
 
-            /* Adapt compact elements for small screens */
             .leaderboard-item.compact {
                 padding: 10px 15px;
             }
@@ -776,7 +749,7 @@
             }
         }
 
-        /* Hide auto-refresh */
+        /* Скрыть авто-обновление */
         .auto-refresh-indicator {
             display: none;
         }
@@ -784,20 +757,20 @@
 </head>
 <body>
     <div class="leaderboard-container">
-        <!-- Back button -->
+        <!-- Кнопка возврата -->
         <a href="/" class="back-btn">
             <span>←</span>
             Back to map
         </a>
 
-        <!-- Header -->
+        <!-- Заголовок -->
         <div class="leaderboard-header">
             <span class="trophy-icon">🏆</span>
             <h1 class="leaderboard-title">Collectors Leaderboard</h1>
             <p class="leaderboard-subtitle">Top participants authorized via Telegram</p>
         </div>
 
-        <!-- Statistics -->
+        <!-- Статистика -->
         <div class="leaderboard-stats" id="statsContainer">
             <div class="stat-card">
                 <span class="stat-icon">👥</span>
@@ -811,15 +784,15 @@
             </div>
         </div>
 
-        <!-- Leaderboard table -->
+        <!-- Таблица лидерборда -->
         <div class="leaderboard" id="leaderboardContainer">
-            <!-- Loading state -->
+            <!-- Состояние загрузки -->
             <div class="loading-state" id="loadingState">
                 <div class="loading-spinner"></div>
                 <div class="loading-text">Loading collectors leaderboard...</div>
             </div>
 
-            <!-- Error state -->
+            <!-- Состояние ошибки -->
             <div class="error-state" id="errorState" style="display: none;">
                 <div class="error-icon">❌</div>
                 <h3>Loading error</h3>
@@ -827,7 +800,7 @@
                 <button class="retry-btn" onclick="loadLeaderboard()">Try again</button>
             </div>
 
-            <!-- Empty state -->
+            <!-- Пустое состояние -->
             <div class="empty-state" id="emptyState" style="display: none;">
                 <div class="empty-icon">📱</div>
                 <div class="empty-title">No data yet</div>
@@ -837,46 +810,65 @@
                 </div>
             </div>
 
-            <!-- Leaders list -->
+            <!-- Список лидеров -->
             <div id="leaderboardList" style="display: none;">
                 <div class="leaderboard-title-section">
                     <h2>Top Collectors</h2>
                     <p>Leaderboard updates automatically</p>
                 </div>
-                <!-- Leaderboard items will be added dynamically -->
+                <!-- Элементы лидерборда будут добавлены динамически -->
             </div>
         </div>
     </div>
 
     <script>
-        console.log('🏆 Leaderboard - Initialization');
+        console.log('🏆 Leaderboard - OPTIMIZED Initialization');
 
         let leaderboardData = [];
         let isLoading = false;
+        let cache = null;
+        let cacheTimestamp = 0;
+        const CACHE_TTL = 60 * 1000; // 1 минута кэш
 
-        // Load leaderboard on page start
+        // Загрузка лидерборда при старте страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadLeaderboard();
         });
 
-        // Main leaderboard loading function
+        // ОСНОВНАЯ функция загрузки лидерборда с кэшированием
         async function loadLeaderboard() {
             if (isLoading) return;
             
             isLoading = true;
             console.log('📊 Loading Telegram users leaderboard...');
             
-            // Show loading state
+            // Проверяем кэш
+            const now = Date.now();
+            if (cache && (now - cacheTimestamp) < CACHE_TTL) {
+                console.log('📦 Using cached leaderboard data');
+                updateStats(cache);
+                updateLeaderboard(cache.leaderboard);
+                isLoading = false;
+                return;
+            }
+            
+            // Показываем состояние загрузки
             showLoadingState();
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
+
                 const response = await fetch('/api/telegram/leaderboard', {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -885,19 +877,31 @@
                 const data = await response.json();
                 console.log('✅ Leaderboard loaded:', data);
 
+                // Сохраняем в кэш
+                cache = data;
+                cacheTimestamp = now;
+                
                 leaderboardData = data;
                 updateStats(data);
                 updateLeaderboard(data.leaderboard);
                 
             } catch (error) {
                 console.error('❌ Leaderboard loading error:', error);
-                showErrorState();
+                
+                // Если есть кэш, используем его
+                if (cache) {
+                    console.log('📦 Using stale cache due to error');
+                    updateStats(cache);
+                    updateLeaderboard(cache.leaderboard);
+                } else {
+                    showErrorState();
+                }
             } finally {
                 isLoading = false;
             }
         }
 
-        // Show loading state
+        // Показать состояние загрузки
         function showLoadingState() {
             document.getElementById('loadingState').style.display = 'block';
             document.getElementById('errorState').style.display = 'none';
@@ -905,7 +909,7 @@
             document.getElementById('leaderboardList').style.display = 'none';
         }
 
-        // Show error state
+        // Показать состояние ошибки
         function showErrorState() {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('errorState').style.display = 'block';
@@ -913,7 +917,7 @@
             document.getElementById('leaderboardList').style.display = 'none';
         }
 
-        // Show empty state
+        // Показать пустое состояние
         function showEmptyState() {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('errorState').style.display = 'none';
@@ -921,7 +925,7 @@
             document.getElementById('leaderboardList').style.display = 'none';
         }
 
-        // Show leaderboard list
+        // Показать список лидерборда
         function showLeaderboardList() {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('errorState').style.display = 'none';
@@ -929,44 +933,47 @@
             document.getElementById('leaderboardList').style.display = 'block';
         }
 
-        // Update statistics
+        // Обновить статистику
         function updateStats(data) {
             const stats = data.stats;
             
-            animateNumber(document.getElementById('totalUsers'), stats.totalUsers);
-            animateNumber(document.getElementById('totalCollections'), stats.totalCollections);
+            lightningAnimateNumber(document.getElementById('totalUsers'), stats.totalUsers);
+            lightningAnimateNumber(document.getElementById('totalCollections'), stats.totalCollections);
         }
 
-        // Update leaderboard table
+        // Обновить таблицу лидерборда
         function updateLeaderboard(leaderboard) {
             const container = document.getElementById('leaderboardList');
-            const listContainer = container.querySelector('.leaderboard-title-section').nextSibling;
             
             if (!leaderboard || leaderboard.length === 0) {
                 showEmptyState();
                 return;
             }
 
-            // Clear previous leaderboard items
+            // Очищаем предыдущие элементы лидерборда
             const existingItems = container.querySelectorAll('.leaderboard-item');
             existingItems.forEach(item => item.remove());
             
+            // Создаем фрагмент для оптимизации DOM операций
+            const fragment = document.createDocumentFragment();
+            
             leaderboard.forEach((user, index) => {
                 const item = createLeaderboardItem(user, index + 1);
-                container.appendChild(item);
+                fragment.appendChild(item);
             });
 
+            container.appendChild(fragment);
             showLeaderboardList();
         }
 
-        // Create leaderboard item with English text
+        // Создать элемент лидерборда
         function createLeaderboardItem(user, position) {
             const item = document.createElement('div');
             
-            // Determine position class and display type
+            // Определяем класс позиции и тип отображения
             let positionClass = 'other';
             let rankContent = position;
-            let isCompact = position > 3; // Compact mode after 3rd place
+            let isCompact = position > 3; // Компактный режим после 3-го места
             
             if (position === 1) {
                 positionClass = 'first';
@@ -982,7 +989,7 @@
             item.className = `leaderboard-item ${positionClass} ${isCompact ? 'compact' : ''}`;
             
             if (isCompact) {
-                // Compact display for 4-10 places
+                // Компактное отображение для 4-10 мест
                 const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
                 const displayName = user.username ? `@${user.username}` : fullName;
                 
@@ -997,7 +1004,7 @@
                     </div>
                 `;
             } else {
-                // Full display for top-3
+                // Полное отображение для топ-3
                 let avatarElement = '';
                 if (user.photo_url) {
                     avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="user-avatar" onerror="this.outerHTML='<div class=&quot;user-avatar no-photo&quot;>${user.first_name.charAt(0).toUpperCase()}</div>'">`;
@@ -1043,47 +1050,45 @@
             return item;
         }
 
-        // Animate number change
-        function animateNumber(element, targetValue) {
+        // МОЛНИЕНОСНАЯ анимация изменения чисел
+        function lightningAnimateNumber(element, targetValue) {
             if (!element) return;
             
             const currentValue = parseInt(element.textContent) || 0;
             if (currentValue === targetValue) return;
             
-            const duration = 1000;
-            const steps = 30;
-            const stepValue = (targetValue - currentValue) / steps;
-            const stepDuration = duration / steps;
+            // Мгновенно устанавливаем значение для скорости
+            element.textContent = targetValue;
             
-            let current = currentValue;
-            let step = 0;
-            
+            // Добавляем быструю анимацию
             element.style.transform = 'scale(1.1)';
-            element.style.transition = 'transform 0.3s ease';
+            element.style.transition = 'transform 0.2s ease';
             
-            const timer = setInterval(() => {
-                step++;
-                current += stepValue;
-                
-                if (step >= steps) {
-                    element.textContent = targetValue;
-                    element.style.transform = 'scale(1)';
-                    clearInterval(timer);
-                } else {
-                    element.textContent = Math.round(current);
-                }
-            }, stepDuration);
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 200);
         }
 
-        // Auto-update every 60 seconds
+        // Оптимизированное авто-обновление каждые 90 секунд
         setInterval(() => {
             if (!isLoading) {
                 console.log('🔄 Auto-updating leaderboard...');
                 loadLeaderboard();
             }
-        }, 60000);
+        }, 90000);
 
-        console.log('🏆 Leaderboard ready to work');
+        // Обновление при возвращении на страницу
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && !isLoading) {
+                // Проверяем возраст кэша
+                const cacheAge = Date.now() - cacheTimestamp;
+                if (cacheAge > CACHE_TTL) {
+                    setTimeout(loadLeaderboard, 1000);
+                }
+            }
+        });
+
+        console.log('🏆 Leaderboard OPTIMIZED and ready to work');
     </script>
 </body>
 </html>
