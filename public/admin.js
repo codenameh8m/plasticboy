@@ -119,7 +119,29 @@ function setupEventListeners() {
     });
 }
 
-// Admin panel login
+// БЫСТРАЯ проверка пароля - только проверяем валидность, без загрузки данных
+async function quickPasswordCheck(password) {
+    try {
+        console.log('🔐 Quick password validation...');
+        
+        // Создаем минимальный запрос только для проверки пароля
+        const response = await fetch('/api/admin/points', {
+            method: 'HEAD', // HEAD запрос - только проверяем доступ без получения данных
+            headers: {
+                'Authorization': password
+            }
+        });
+        
+        console.log('📡 Password check response:', response.status);
+        return response.status === 200;
+        
+    } catch (error) {
+        console.error('❌ Quick password check error:', error);
+        return false;
+    }
+}
+
+// Admin panel login - ОПТИМИЗИРОВАННЫЙ
 async function adminLogin() {
     const password = document.getElementById('adminPassword').value;
     
@@ -128,67 +150,65 @@ async function adminLogin() {
         return;
     }
     
-    console.log('🔐 Attempting admin panel login...');
+    console.log('🔐 Starting fast admin login...');
     
-    // First check password
-    const isValid = await checkPassword(password);
-    if (!isValid) {
-        showNotification('Invalid administrator password', 'error');
-        return;
-    }
+    // Показываем загрузку
+    const passwordInput = document.getElementById('adminPassword');
+    const originalPlaceholder = passwordInput.placeholder;
+    passwordInput.disabled = true;
+    passwordInput.placeholder = 'Checking password...';
     
-    currentPassword = password;
-    sessionStorage.setItem('adminPassword', password);
-    showAdminPanel();
-}
-
-// Check administrator password
-async function checkPassword(password) {
     try {
-        console.log('🔐 Checking administrator password...');
+        // БЫСТРАЯ проверка пароля без загрузки данных
+        const isValid = await quickPasswordCheck(password);
         
-        const response = await fetch('/api/admin/points', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': password
-            }
-        });
-        
-        console.log('📡 Password check response:', response.status);
-        
-        if (response.status === 401) {
-            console.log('❌ Invalid password');
-            return false;
+        if (!isValid) {
+            showNotification('Invalid administrator password', 'error');
+            passwordInput.disabled = false;
+            passwordInput.placeholder = originalPlaceholder;
+            passwordInput.value = '';
+            return;
         }
         
-        if (!response.ok) {
-            console.warn('⚠️ Unexpected server response:', response.status);
-            return false;
-        }
+        // Пароль верный - сохраняем и показываем панель
+        currentPassword = password;
+        sessionStorage.setItem('adminPassword', password);
         
-        console.log('✅ Password correct');
-        return true;
+        console.log('✅ Password correct, showing admin panel');
+        showAdminPanel();
         
     } catch (error) {
-        console.error('❌ Password check error:', error);
+        console.error('❌ Admin login error:', error);
         showNotification('Server connection error', 'error');
-        return false;
+        passwordInput.disabled = false;
+        passwordInput.placeholder = originalPlaceholder;
     }
 }
 
-// Show admin panel
+// Show admin panel - БЫСТРЫЙ показ без ожидания загрузки данных
 async function showAdminPanel() {
     try {
+        console.log('🛡️ Showing admin panel...');
+        
+        // Сразу показываем панель
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         
-        // Initialize map
-        await initAdminMap();
+        // Показываем состояние загрузки
+        showNotification('Loading admin panel...', 'info');
         
-        // Load points
-        await loadAdminPoints();
+        // Инициализируем карту в фоне
+        initAdminMap().then(() => {
+            console.log('✅ Admin map ready');
+            // Загружаем точки в фоне
+            return loadAdminPoints();
+        }).then(() => {
+            showNotification('Admin panel loaded successfully!', 'success');
+        }).catch(error => {
+            console.error('❌ Admin panel initialization error:', error);
+            showNotification('Error loading admin data', 'error');
+        });
+        
     } catch (error) {
         console.error('❌ Admin panel display error:', error);
         showNotification('Panel initialization error', 'error');
@@ -201,7 +221,7 @@ async function showAdminPanel() {
     }
 }
 
-// Admin map initialization
+// Admin map initialization - БЫСТРАЯ инициализация
 function initAdminMap() {
     return new Promise((resolve, reject) => {
         try {
@@ -210,7 +230,7 @@ function initAdminMap() {
                 adminMap = null;
             }
             
-            console.log('🗺️ Admin map initialization');
+            console.log('🗺️ Quick admin map initialization');
             
             // Check Leaflet availability
             if (typeof L === 'undefined') {
@@ -236,14 +256,14 @@ function initAdminMap() {
                 }
             });
             
-            // Force map size update after initialization
+            // БЫСТРАЯ готовность карты
             setTimeout(() => {
                 if (adminMap) {
                     adminMap.invalidateSize();
-                    console.log('✅ Admin map ready');
+                    console.log('✅ Admin map ready quickly');
                     resolve();
                 }
-            }, 200);
+            }, 100); // Уменьшили с 200 до 100
             
         } catch (error) {
             console.error('❌ Admin map initialization error:', error);
@@ -252,156 +272,10 @@ function initAdminMap() {
     });
 }
 
-// Get geolocation for admin
-function getAdminLocation() {
-    const locationBtn = document.querySelector('.location-btn');
-    
-    if (!navigator.geolocation) {
-        showNotification('Geolocation not supported', 'error');
-        return;
-    }
-    
-    if (!adminMap) {
-        showNotification('Map not ready', 'error');
-        return;
-    }
-    
-    const originalText = locationBtn.innerHTML;
-    locationBtn.innerHTML = '⏳ Locating...';
-    locationBtn.disabled = true;
-    locationBtn.style.opacity = '0.8';
-    
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            // Create enhanced user marker for admin
-            const userIcon = L.divIcon({
-                className: 'admin-user-location-marker',
-                html: `<div style="
-                    background: linear-gradient(45deg, #667eea, #764ba2);
-                    width: 26px; 
-                    height: 26px; 
-                    border-radius: 50%; 
-                    border: 3px solid white; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                    position: relative;
-                    transition: all 0.3s ease;
-                ">
-                    <div style="
-                        position: absolute;
-                        top: -6px;
-                        left: -6px;
-                        right: -6px;
-                        bottom: -6px;
-                        border-radius: 50%;
-                        border: 2px solid #667eea;
-                        opacity: 0.3;
-                        animation: adminUserPulse 2s infinite;
-                    "></div>
-                </div>`,
-                iconSize: [26, 26],
-                iconAnchor: [13, 13]
-            });
-            
-            // Add pulse animation styles for admin
-            addAdminUserPulseStyles();
-            
-            // Remove previous admin marker if exists
-            if (window.adminUserMarker) {
-                adminMap.removeLayer(window.adminUserMarker);
-            }
-            
-            // Add new marker
-            window.adminUserMarker = L.marker([lat, lng], { icon: userIcon })
-                .addTo(adminMap)
-                .bindPopup(`
-                    <div style="text-align: center; min-width: 150px;">
-                        <strong>🛡️ Admin location</strong><br>
-                        <small style="color: #666;">
-                            ${lat.toFixed(6)}, ${lng.toFixed(6)}
-                        </small>
-                    </div>
-                `);
-            
-            // Smoothly center map on admin
-            adminMap.flyTo([lat, lng], 16, {
-                duration: 1.5,
-                easeLinearity: 0.5
-            });
-            
-            showNotification('Location determined', 'success');
-            
-            // Restore button
-            locationBtn.innerHTML = originalText;
-            locationBtn.disabled = false;
-            locationBtn.style.opacity = '';
-        },
-        function(error) {
-            console.error('Geolocation error:', error);
-            let errorMessage = 'Could not determine location';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = 'Geolocation access denied';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Location unavailable';
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = 'Timeout exceeded';
-                    break;
-            }
-            
-            showNotification(errorMessage, 'error');
-            
-            // Restore button
-            locationBtn.innerHTML = originalText;
-            locationBtn.disabled = false;
-            locationBtn.style.opacity = '';
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000
-        }
-    );
-}
-
-// Add pulse animation styles for admin
-function addAdminUserPulseStyles() {
-    if (!document.getElementById('admin-user-pulse-styles')) {
-        const style = document.createElement('style');
-        style.id = 'admin-user-pulse-styles';
-        style.textContent = `
-            @keyframes adminUserPulse {
-                0% {
-                    transform: scale(1);
-                    opacity: 0.7;
-                }
-                50% {
-                    opacity: 0.2;
-                }
-                100% {
-                    transform: scale(2.2);
-                    opacity: 0;
-                }
-            }
-            
-            .admin-user-location-marker:hover > div {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Load points for admin
+// Load points for admin - БЕЗ блокировки UI
 async function loadAdminPoints() {
     try {
-        console.log('🔄 Loading points for admin...');
+        console.log('🔄 Loading points for admin in background...');
         
         const response = await fetch('/api/admin/points', {
             method: 'GET',
@@ -416,7 +290,7 @@ async function loadAdminPoints() {
         
         if (!response.ok) {
             if (response.status === 401) {
-                showNotification('Invalid password', 'error');
+                showNotification('Session expired', 'error');
                 sessionStorage.removeItem('adminPassword');
                 
                 // Return to login form
@@ -442,19 +316,10 @@ async function loadAdminPoints() {
     } catch (error) {
         console.error('❌ Admin points loading error:', error);
         showNotification(`Data loading error: ${error.message}`, 'error');
-        
-        // Return to login form on network error
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            sessionStorage.removeItem('adminPassword');
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('adminPassword').value = '';
-            currentPassword = '';
-            showNotification('Check server connection', 'error');
-        }
     }
 }
 
+// Остальные функции остаются теми же...
 // Update admin map with enhanced markers
 function updateAdminMap() {
     if (!adminMap || !allPoints) {
@@ -624,6 +489,152 @@ function updatePointsList() {
             </div>
         `;
     }).join('');
+}
+
+// Get geolocation for admin
+function getAdminLocation() {
+    const locationBtn = document.querySelector('.location-btn');
+    
+    if (!navigator.geolocation) {
+        showNotification('Geolocation not supported', 'error');
+        return;
+    }
+    
+    if (!adminMap) {
+        showNotification('Map not ready', 'error');
+        return;
+    }
+    
+    const originalText = locationBtn.innerHTML;
+    locationBtn.innerHTML = '⏳ Locating...';
+    locationBtn.disabled = true;
+    locationBtn.style.opacity = '0.8';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Create enhanced user marker for admin
+            const userIcon = L.divIcon({
+                className: 'admin-user-location-marker',
+                html: `<div style="
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    width: 26px; 
+                    height: 26px; 
+                    border-radius: 50%; 
+                    border: 3px solid white; 
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    position: relative;
+                    transition: all 0.3s ease;
+                ">
+                    <div style="
+                        position: absolute;
+                        top: -6px;
+                        left: -6px;
+                        right: -6px;
+                        bottom: -6px;
+                        border-radius: 50%;
+                        border: 2px solid #667eea;
+                        opacity: 0.3;
+                        animation: adminUserPulse 2s infinite;
+                    "></div>
+                </div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+            });
+            
+            // Add pulse animation styles for admin
+            addAdminUserPulseStyles();
+            
+            // Remove previous admin marker if exists
+            if (window.adminUserMarker) {
+                adminMap.removeLayer(window.adminUserMarker);
+            }
+            
+            // Add new marker
+            window.adminUserMarker = L.marker([lat, lng], { icon: userIcon })
+                .addTo(adminMap)
+                .bindPopup(`
+                    <div style="text-align: center; min-width: 150px;">
+                        <strong>🛡️ Admin location</strong><br>
+                        <small style="color: #666;">
+                            ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                        </small>
+                    </div>
+                `);
+            
+            // Smoothly center map on admin
+            adminMap.flyTo([lat, lng], 16, {
+                duration: 1.5,
+                easeLinearity: 0.5
+            });
+            
+            showNotification('Location determined', 'success');
+            
+            // Restore button
+            locationBtn.innerHTML = originalText;
+            locationBtn.disabled = false;
+            locationBtn.style.opacity = '';
+        },
+        function(error) {
+            console.error('Geolocation error:', error);
+            let errorMessage = 'Could not determine location';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Geolocation access denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Location unavailable';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Timeout exceeded';
+                    break;
+            }
+            
+            showNotification(errorMessage, 'error');
+            
+            // Restore button
+            locationBtn.innerHTML = originalText;
+            locationBtn.disabled = false;
+            locationBtn.style.opacity = '';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000
+        }
+    );
+}
+
+// Add pulse animation styles for admin
+function addAdminUserPulseStyles() {
+    if (!document.getElementById('admin-user-pulse-styles')) {
+        const style = document.createElement('style');
+        style.id = 'admin-user-pulse-styles';
+        style.textContent = `
+            @keyframes adminUserPulse {
+                0% {
+                    transform: scale(1);
+                    opacity: 0.7;
+                }
+                50% {
+                    opacity: 0.2;
+                }
+                100% {
+                    transform: scale(2.2);
+                    opacity: 0;
+                }
+            }
+            
+            .admin-user-location-marker:hover > div {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 // Toggle add mode
@@ -813,49 +824,6 @@ async function handleAddPointSubmit(e) {
 
 // Show QR code for newly created point
 function showQRCodeForNewPoint(point) {
-    currentQRCode = point.qrCode;
-    
-    const qrDisplay = document.getElementById('qrCodeDisplay');
-    if (qrDisplay) {
-        qrDisplay.innerHTML = `
-            <img src="${point.qrCode}" alt="QR code for ${point.name}" style="max-width: 280px; border-radius: 12px;">
-            <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
-            <p style="color: #666;">ID: ${point.id}</p>
-        `;
-    }
-    
-    const modal = document.getElementById('qrModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-// Show QR code for existing points
-function showQRCode(pointId, qrCodeData = null) {
-    // If ready QR code passed (for new points), use it
-    if (qrCodeData) {
-        currentQRCode = qrCodeData;
-        const qrDisplay = document.getElementById('qrCodeDisplay');
-        if (qrDisplay) {
-            qrDisplay.innerHTML = `
-                <img src="${qrCodeData}" alt="QR code" style="max-width: 280px; border-radius: 12px;">
-                <p style="color: #666; margin-top: 15px;">ID: ${pointId}</p>
-            `;
-        }
-        const modal = document.getElementById('qrModal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
-        return;
-    }
-    
-    // For existing points search in list
-    const point = allPoints.find(p => p.id === pointId);
-    if (!point) {
-        showNotification('Point not found', 'error');
-        return;
-    }
-    
     currentQRCode = point.qrCode;
     
     const qrDisplay = document.getElementById('qrCodeDisplay');
@@ -1199,5 +1167,47 @@ window.deletePoint = deletePoint;
 window.closeAddModal = closeAddModal;
 window.closeQrModal = closeQrModal;
 window.downloadQR = downloadQR;
-window.debugAdminState = debugAdminState;
-window.checkPassword = checkPassword;
+window.debugAdminState = debugAdminState;');
+    if (qrDisplay) {
+        qrDisplay.innerHTML = `
+            <img src="${point.qrCode}" alt="QR code for ${point.name}" style="max-width: 280px; border-radius: 12px;">
+            <p style="font-weight: 600; margin-top: 15px;"><strong>${point.name}</strong></p>
+            <p style="color: #666;">ID: ${point.id}</p>
+        `;
+    }
+    
+    const modal = document.getElementById('qrModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+// Show QR code for existing points
+function showQRCode(pointId, qrCodeData = null) {
+    // If ready QR code passed (for new points), use it
+    if (qrCodeData) {
+        currentQRCode = qrCodeData;
+        const qrDisplay = document.getElementById('qrCodeDisplay');
+        if (qrDisplay) {
+            qrDisplay.innerHTML = `
+                <img src="${qrCodeData}" alt="QR code" style="max-width: 280px; border-radius: 12px;">
+                <p style="color: #666; margin-top: 15px;">ID: ${pointId}</p>
+            `;
+        }
+        const modal = document.getElementById('qrModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+        return;
+    }
+    
+    // For existing points search in list
+    const point = allPoints.find(p => p.id === pointId);
+    if (!point) {
+        showNotification('Point not found', 'error');
+        return;
+    }
+    
+    currentQRCode = point.qrCode;
+    
+    const qrDisplay = document.getElementById('qrCodeDisplay
