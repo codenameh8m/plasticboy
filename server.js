@@ -7,115 +7,46 @@ const crypto = require('crypto');
 const cors = require('cors');
 const axios = require('axios');
 const compression = require('compression');
-const cluster = require('cluster');
-const os = require('os');
 require('dotenv').config();
 
-// Кластеризация для многоядерности (только в продакшене)
-if (cluster.isMaster && process.env.NODE_ENV === 'production') {
-    const numCPUs = Math.min(os.cpus().length, 2); // Максимум 2 воркера для бесплатного плана
-    console.log(`🚀 Master ${process.pid} starting ${numCPUs} workers`);
-    
-    for (let i = 0; i < numCPUs; i++) {
-        cluster.fork();
-    }
-    
-    cluster.on('exit', (worker, code, signal) => {
-        console.log(`💀 Worker ${worker.process.pid} died, restarting...`);
-        cluster.fork();
-    });
-    
-    return;
-}
+console.log('🚀 PlasticBoy v2.1 starting...');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// КРИТИЧЕСКАЯ ОПТИМИЗАЦИЯ: Compression и кэширование
+// === БАЗОВЫЕ MIDDLEWARE ===
 app.use(compression({
-    level: 6, // Компромисс между скоростью и размером
-    threshold: 1024, // Сжимать файлы больше 1KB
-    filter: (req, res) => {
-        if (req.headers['x-no-compression']) return false;
-        return compression.filter(req, res);
-    }
+    level: 6,
+    threshold: 1024
 }));
 
-// Агрессивное кэширование статических файлов
 app.use(express.static('public', {
     maxAge: process.env.NODE_ENV === 'production' ? '1d' : '0',
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, path) => {
-        if (path.endsWith('.js') || path.endsWith('.css')) {
-            res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 день
-        }
-        if (path.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'public, max-age=300'); // 5 минут
-        }
-    }
+    etag: true
 }));
 
-// УЛЬТРА-БЫСТРЫЕ middleware
 app.use(cors({
     origin: true,
-    credentials: false,
-    maxAge: 86400 // 24 часа preflight кэш
+    credentials: false
 }));
 
-// Увеличиваем лимиты только где нужно
-const jsonParser = express.json({ limit: '1mb' });
-const urlencodedParser = express.urlencoded({ extended: true, limit: '1mb' });
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-// Middleware только для POST запросов
-app.use((req, res, next) => {
-    if (req.method === 'POST' || req.method === 'PUT') {
-        return jsonParser(req, res, next);
-    }
-    next();
-});
-
-app.use((req, res, next) => {
-    if (req.method === 'POST' || req.method === 'PUT') {
-        return urlencodedParser(req, res, next);
-    }
-    next();
-});
-
-// ОПТИМИЗИРОВАННАЯ конфигурация multer
-const storage = multer.memoryStorage();
-const upload = multer({ 
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024, // Уменьшили до 5MB
-        files: 1
-    },
-    fileFilter: (req, file, cb) => {
-        // Быстрая проверка типа файла
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only images allowed'), false);
-        }
-    }
-});
-
-// КЭШИРОВАНИЕ В ПАМЯТИ для критических данных
+// === КЭШИРОВАНИЕ В ПАМЯТИ ===
 class MemoryCache {
     constructor() {
         this.cache = new Map();
         this.timers = new Map();
     }
     
-    set(key, value, ttl = 300000) { // 5 минут по умолчанию
-        // Очищаем старый таймер
+    set(key, value, ttl = 60000) {
         if (this.timers.has(key)) {
             clearTimeout(this.timers.get(key));
         }
         
         this.cache.set(key, value);
         
-        // Устанавливаем TTL
         const timer = setTimeout(() => {
             this.cache.delete(key);
             this.timers.delete(key);
@@ -139,39 +70,43 @@ class MemoryCache {
         }
         return this.cache.delete(key);
     }
-    
-    clear() {
-        for (const timer of this.timers.values()) {
-            clearTimeout(timer);
-        }
-        this.cache.clear();
-        this.timers.clear();
-    }
 }
 
 const cache = new MemoryCache();
 
-// === ТЕЛЕГРАМ БОТ ===
+// === TELEGRAM BOT ===
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'PlasticBoyBot';
 const WEBHOOK_PATH = `/webhook/${BOT_TOKEN}`;
 
-// ОПТИМИЗИРОВАННАЯ проверка пароля администратора
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD;
-function ultraFastPasswordCheck(req) {
+// === АДМИН ПАРОЛЬ ===
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+function checkAdminPassword(req) {
     const password = req.headers.authorization || req.headers['x-admin-password'] || req.get('Authorization');
-    return password === ADMIN_PASSWORD_HASH;
+    return password === ADMIN_PASSWORD;
 }
 
-// МГНОВЕННЫЙ HEAD endpoint для проверки пароля админа
-app.head('/api/admin/points', (req, res) => {
-    res.status(ultraFastPasswordCheck(req) ? 200 : 401).end();
+// === MULTER НАСТРОЙКИ ===
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images allowed'), false);
+        }
+    }
 });
 
-// ОПТИМИЗИРОВАННАЯ MongoDB схема с индексами
+// === MONGOOSE СХЕМА ===
 const modelPointSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true, index: true },
-    name: { type: String, required: true, index: 'text' }, // Текстовый поиск
+    name: { type: String, required: true, index: 'text' },
     coordinates: {
         lat: { type: Number, required: true, index: true },
         lng: { type: Number, required: true, index: true }
@@ -198,70 +133,81 @@ const modelPointSchema = new mongoose.Schema({
         }
     }
 }, {
-    // Оптимизация схемы
-    autoIndex: false, // Отключаем автоматическое создание индексов в продакшене
-    minimize: false,
     versionKey: false
 });
 
-// СОСТАВНЫЕ ИНДЕКСЫ для ускорения запросов
-modelPointSchema.index({ status: 1, scheduledTime: 1 }); // Основной запрос
-modelPointSchema.index({ id: 1, qrSecret: 1 }); // Поиск для сбора
-modelPointSchema.index({ 'collectorInfo.telegramData.id': 1, collectedAt: -1 }); // Лидерборд
-modelPointSchema.index({ 'collectorInfo.authMethod': 1, status: 1 }); // Статистика
+// === СОСТАВНЫЕ ИНДЕКСЫ ===
+modelPointSchema.index({ status: 1, scheduledTime: 1 });
+modelPointSchema.index({ id: 1, qrSecret: 1 });
+modelPointSchema.index({ 'collectorInfo.telegramData.id': 1, collectedAt: -1 });
 
 const ModelPoint = mongoose.model('ModelPoint', modelPointSchema);
 
-// ОПТИМИЗИРОВАННОЕ подключение к MongoDB
+// === ПОДКЛЮЧЕНИЕ К MONGODB ===
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            maxPoolSize: 5, // Максимум 5 подключений
-            serverSelectionTimeoutMS: 5000, // 5 секунд таймаут
-            socketTimeoutMS: 45000,
-            bufferMaxEntries: 0,
-            bufferCommands: false,
-            // Важные оптимизации
-            readPreference: 'secondaryPreferred', // Читаем с реплик
-            compressors: ['zlib'], // Сжатие данных
-            // Пул подключений
-            minPoolSize: 1,
-            heartbeatFrequencyMS: 30000,
-            retryWrites: true,
-            retryReads: true
-        });
+        console.log('🔌 Connecting to MongoDB...');
         
-        console.log('✅ MongoDB connected with optimizations');
+        const options = {
+            maxPoolSize: 5,
+            minPoolSize: 1,
+            serverSelectionTimeoutMS: 10000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 10000,
+            retryWrites: true,
+            retryReads: true,
+            heartbeatFrequencyMS: 30000,
+            maxIdleTimeMS: 30000
+        };
+        
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', options);
+        
+        console.log('✅ MongoDB connected successfully');
+        console.log('📊 Database:', mongoose.connection.name);
         
         // Создаем индексы в продакшене
         if (process.env.NODE_ENV === 'production') {
-            await ModelPoint.ensureIndexes();
-            console.log('📊 MongoDB indexes created');
+            try {
+                await ModelPoint.createIndexes();
+                console.log('📊 MongoDB indexes created');
+            } catch (indexError) {
+                console.warn('⚠️ Index warning:', indexError.message);
+            }
         }
+        
     } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
+        console.error('❌ MongoDB connection error:', error.message);
+        
+        if (error.name === 'MongoParseError') {
+            console.error('🔧 Check MONGODB_URI format');
+        } else if (error.name === 'MongoNetworkError') {
+            console.error('🌐 Check internet connection');
+        } else if (error.name === 'MongoServerSelectionError') {
+            console.error('🎯 Check MongoDB cluster status');
+        }
+        
         process.exit(1);
     }
 };
 
-// УЛЬТРА-БЫСТРЫЙ health check
+// === API ENDPOINTS ===
+
+// Health check
 app.get('/health', (req, res) => {
     res.json({
         status: 'OK',
-        worker: process.pid,
+        pid: process.pid,
         uptime: process.uptime(),
-        memory: process.memoryUsage().heapUsed / 1024 / 1024
+        memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
     });
 });
 
-// КЭШИРОВАННЫЙ endpoint для точек
+// Получение точек (с кэшированием)
 app.get('/api/points', async (req, res) => {
     try {
         const cacheKey = 'public_points';
         
-        // Проверяем кэш
         if (cache.has(cacheKey)) {
             const cachedPoints = cache.get(cacheKey);
             res.set('X-Cache', 'HIT');
@@ -270,19 +216,17 @@ app.get('/api/points', async (req, res) => {
         
         const now = new Date();
         
-        // ОПТИМИЗИРОВАННЫЙ запрос с проекцией
         const points = await ModelPoint.find({
             scheduledTime: { $lte: now }
         }, {
-            qrSecret: 0, // Исключаем секретное поле
-            __v: 0 // Исключаем версию
+            qrSecret: 0,
+            __v: 0
         })
-        .lean() // Возвращаем plain objects
-        .limit(1000) // Лимит для безопасности
+        .lean()
+        .limit(1000)
         .exec();
         
-        // Кэшируем на 30 секунд
-        cache.set(cacheKey, points, 30000);
+        cache.set(cacheKey, points, 30000); // 30 секунд кэш
         
         res.set('X-Cache', 'MISS');
         res.json(points);
@@ -292,7 +236,7 @@ app.get('/api/points', async (req, res) => {
     }
 });
 
-// ОПТИМИЗИРОВАННЫЙ сбор модели
+// Сбор модели
 app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -302,7 +246,7 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
             return res.status(400).json({ error: 'Secret and name are required' });
         }
         
-        // АТОМАРНЫЙ поиск и обновление
+        // Атомарный поиск и обновление
         const point = await ModelPoint.findOneAndUpdate(
             {
                 id: id.trim(),
@@ -319,19 +263,16 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
                     'collectorInfo.authMethod': authMethod || 'manual'
                 }
             },
-            {
-                new: false, // Возвращаем старый документ
-                runValidators: false // Отключаем валидацию для скорости
-            }
+            { new: false }
         );
         
         if (!point) {
             return res.status(404).json({ error: 'Point not found, already collected, or not ready' });
         }
         
-        // Обрабатываем Telegram данные асинхронно
+        // Обработка Telegram данных асинхронно
         if (authMethod === 'telegram' && telegramData) {
-            setImmediate(async () => {
+            setTimeout(async () => {
                 try {
                     const parsedTelegramData = typeof telegramData === 'string' 
                         ? JSON.parse(telegramData) 
@@ -356,14 +297,14 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
                         );
                     }
                 } catch (error) {
-                    console.error('❌ Async Telegram data error:', error);
+                    console.error('❌ Telegram data error:', error);
                 }
-            });
+            }, 0);
         }
         
-        // Обрабатываем селфи асинхронно
+        // Обработка селфи асинхронно
         if (req.file) {
-            setImmediate(async () => {
+            setTimeout(async () => {
                 try {
                     const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
                     await ModelPoint.updateOne(
@@ -371,18 +312,15 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
                         { $set: { 'collectorInfo.selfie': base64Image } }
                     );
                 } catch (error) {
-                    console.error('❌ Async selfie error:', error);
+                    console.error('❌ Selfie error:', error);
                 }
-            });
+            }, 0);
         }
         
-        // Инвалидируем кэш асинхронно
-        setImmediate(() => {
-            cache.delete('public_points');
-            cache.delete('leaderboard_data');
-        });
+        // Инвалидируем кэш
+        cache.delete('public_points');
+        cache.delete('leaderboard_data');
         
-        // Быстрый ответ
         res.json({
             success: true,
             point: {
@@ -398,7 +336,84 @@ app.post('/api/collect/:id', upload.single('selfie'), async (req, res) => {
     }
 });
 
-// КЭШИРОВАННЫЙ leaderboard
+// Админ панель - получение всех точек
+app.get('/api/admin/points', async (req, res) => {
+    if (!checkAdminPassword(req)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    try {
+        const points = await ModelPoint.find({}, { __v: 0 }).lean().exec();
+        res.json(points);
+    } catch (error) {
+        console.error('❌ Admin points error:', error);
+        res.status(500).json({ error: 'Failed to load points' });
+    }
+});
+
+// Админ панель - создание точки
+app.post('/api/admin/points', async (req, res) => {
+    if (!checkAdminPassword(req)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    try {
+        const { name, lat, lng, scheduledTime } = req.body;
+        
+        if (!name || !lat || !lng) {
+            return res.status(400).json({ error: 'Name, lat, lng are required' });
+        }
+        
+        const id = crypto.randomBytes(8).toString('hex');
+        const qrSecret = crypto.randomBytes(16).toString('hex');
+        
+        const qrText = `${process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'}/collect.html?id=${id}&secret=${qrSecret}`;
+        const qrCode = await QRCode.toDataURL(qrText);
+        
+        const point = new ModelPoint({
+            id,
+            name: name.trim(),
+            coordinates: { lat: parseFloat(lat), lng: parseFloat(lng) },
+            qrCode,
+            qrSecret,
+            scheduledTime: scheduledTime ? new Date(scheduledTime) : new Date()
+        });
+        
+        await point.save();
+        
+        cache.delete('public_points');
+        
+        res.json({ success: true, point });
+    } catch (error) {
+        console.error('❌ Point creation error:', error);
+        res.status(500).json({ error: 'Failed to create point' });
+    }
+});
+
+// Админ панель - удаление точки
+app.delete('/api/admin/points/:id', async (req, res) => {
+    if (!checkAdminPassword(req)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    try {
+        const { id } = req.params;
+        const deletedPoint = await ModelPoint.findOneAndDelete({ id });
+        
+        if (!deletedPoint) {
+            return res.status(404).json({ error: 'Point not found' });
+        }
+        
+        cache.delete('public_points');
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Point deletion error:', error);
+        res.status(500).json({ error: 'Failed to delete point' });
+    }
+});
+
+// Лидерборд
 app.get('/api/telegram/leaderboard', async (req, res) => {
     try {
         const cacheKey = 'leaderboard_data';
@@ -408,7 +423,6 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
             return res.json(cache.get(cacheKey));
         }
         
-        // ОПТИМИЗИРОВАННЫЙ агрегационный запрос
         const [leaderboard, stats] = await Promise.all([
             ModelPoint.aggregate([
                 {
@@ -480,8 +494,7 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
             timestamp: new Date().toISOString()
         };
         
-        // Кэшируем на 60 секунд
-        cache.set(cacheKey, response, 60000);
+        cache.set(cacheKey, response, 60000); // 60 секунд кэш
         
         res.set('X-Cache', 'MISS');
         res.json(response);
@@ -492,34 +505,18 @@ app.get('/api/telegram/leaderboard', async (req, res) => {
     }
 });
 
-// БЫСТРЫЕ админ endpoints
-app.get('/api/admin/points', async (req, res) => {
-    if (!ultraFastPasswordCheck(req)) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    try {
-        const points = await ModelPoint.find({}, { __v: 0 }).lean().exec();
-        res.json(points);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to load points' });
-    }
-});
-
-// Оптимизированный Telegram webhook
+// === TELEGRAM WEBHOOK ===
 if (BOT_TOKEN) {
-    // Простой обработчик webhook без сложной логики
     app.post(WEBHOOK_PATH, express.json({ limit: '1mb' }), async (req, res) => {
-        res.status(200).send('OK'); // Отвечаем сразу
+        res.status(200).send('OK');
         
-        // Обрабатываем update асинхронно
-        setImmediate(() => {
+        setTimeout(() => {
             handleTelegramUpdate(req.body, req).catch(console.error);
-        });
+        }, 0);
     });
 }
 
-// Telegram functions (упрощенные)
+// Функции Telegram бота
 async function handleTelegramUpdate(update, req) {
     if (!update.message?.text) return;
     
@@ -545,6 +542,21 @@ async function handleTelegramUpdate(update, req) {
                     }
                 });
                 break;
+                
+            case 'help':
+                await sendTelegramMessage(chatId, `📋 *Как играть:*\n\n1️⃣ Открой карту\n2️⃣ Найди ближайшую точку\n3️⃣ Отсканируй QR код\n4️⃣ Собери 3D модель\n5️⃣ Получи очки!`, {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '🗺️ Карта', url: appUrl }]
+                        ]
+                    }
+                });
+                break;
+                
+            case 'stats':
+                const stats = await getGameStats();
+                await sendTelegramMessage(chatId, `📊 *Статистика игры:*\n\n🎯 Всего моделей: ${stats.totalPoints}\n✅ Собрано: ${stats.collected}\n🎮 Игроков: ${stats.players}\n\n🏆 [Посмотреть рейтинг](${appUrl}/leaderboard.html)`);
+                break;
         }
     } catch (error) {
         console.error('❌ Telegram error:', error);
@@ -559,6 +571,7 @@ async function sendTelegramMessage(chatId, message, options = {}) {
             chat_id: chatId,
             text: message,
             parse_mode: 'Markdown',
+            disable_web_page_preview: true,
             ...options
         }, { timeout: 5000 });
     } catch (error) {
@@ -566,11 +579,33 @@ async function sendTelegramMessage(chatId, message, options = {}) {
     }
 }
 
+async function getGameStats() {
+    try {
+        const [totalPoints, collected, players] = await Promise.all([
+            ModelPoint.countDocuments(),
+            ModelPoint.countDocuments({ status: 'collected' }),
+            ModelPoint.distinct('collectorInfo.telegramData.id', { 
+                status: 'collected',
+                'collectorInfo.authMethod': 'telegram' 
+            })
+        ]);
+        
+        return {
+            totalPoints,
+            collected,
+            players: players.length
+        };
+    } catch (error) {
+        console.error('❌ Stats error:', error);
+        return { totalPoints: 0, collected: 0, players: 0 };
+    }
+}
+
 function getAppUrl(req) {
     return process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
 }
 
-// Статические файлы
+// === СТАТИЧЕСКИЕ МАРШРУТЫ ===
 const staticRoutes = ['/', '/admin.html', '/collect.html', '/leaderboard.html'];
 staticRoutes.forEach(route => {
     app.get(route, (req, res) => {
@@ -590,23 +625,50 @@ app.use((error, req, res, next) => {
     res.status(500).json({ error: 'Internal error' });
 });
 
+// === ОБРАБОТКА СОБЫТИЙ MONGOOSE ===
+mongoose.connection.on('connected', () => {
+    console.log('🟢 Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('🔴 Mongoose connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('🟡 Mongoose disconnected from MongoDB');
+});
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
     console.log('📛 Shutting down...');
-    cache.clear();
     mongoose.connection.close();
     process.exit(0);
 });
 
-// Запуск сервера
+process.on('SIGINT', async () => {
+    try {
+        await mongoose.connection.close();
+        console.log('👋 MongoDB connection closed');
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error during shutdown:', error);
+        process.exit(1);
+    }
+});
+
+// === ЗАПУСК СЕРВЕРА ===
 const startServer = async () => {
     try {
         await connectDB();
         
         app.listen(PORT, () => {
-            console.log(`🚀 Worker ${process.pid} started on port ${PORT}`);
+            console.log(`🚀 PlasticBoy v2.1 started on port ${PORT}`);
             console.log(`📊 Memory cache active`);
-            console.log(`⚡ Optimizations enabled`);
+            console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+            
+            if (BOT_TOKEN) {
+                console.log(`🤖 Telegram bot ready: @${BOT_USERNAME}`);
+            }
         });
     } catch (error) {
         console.error('❌ Startup error:', error);
