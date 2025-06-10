@@ -28,10 +28,12 @@ const upload = multer({
 
 // === TELEGRAM BOT INTEGRATION ===
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'PlasticBoyBot';
 const WEBHOOK_PATH = `/webhook/${BOT_TOKEN}`;
 
 console.log('🤖 Telegram Bot Configuration:');
 console.log('Token available:', !!BOT_TOKEN);
+console.log('Bot username:', BOT_USERNAME);
 console.log('Webhook path:', WEBHOOK_PATH);
 
 // Function to send messages to Telegram
@@ -42,16 +44,42 @@ async function sendTelegramMessage(chatId, message, options = {}) {
   }
   
   try {
+    console.log(`📤 Sending message to chat ${chatId}:`, message.substring(0, 100) + '...');
+    
     const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       chat_id: chatId,
       text: message,
       parse_mode: 'Markdown',
+      disable_web_page_preview: true,
       ...options
+    }, {
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
-    console.log(`📱 Message sent to chat ${chatId}: "${message.substring(0, 50)}..."`);
+    
+    console.log(`✅ Message sent successfully to chat ${chatId}`);
     return response.data;
   } catch (error) {
     console.error('❌ Telegram message error:', error.response?.data || error.message);
+    
+    // Try sending without markdown if parsing failed
+    if (error.response?.data?.description?.includes('parse')) {
+      try {
+        console.log('🔄 Retrying without markdown...');
+        const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          chat_id: chatId,
+          text: message.replace(/[*_`\[\]]/g, ''), // Remove markdown
+          ...options,
+          parse_mode: undefined
+        });
+        console.log(`✅ Message sent without markdown to chat ${chatId}`);
+        return response.data;
+      } catch (retryError) {
+        console.error('❌ Retry also failed:', retryError.response?.data || retryError.message);
+      }
+    }
     throw error;
   }
 }
@@ -83,24 +111,26 @@ async function handleTelegramUpdate(update, req) {
       // Handle commands
       if (text && text.startsWith('/')) {
         const command = text.split(' ')[0].substring(1).toLowerCase();
-        console.log(`🔧 Processing command: /${command}`);
+        // Remove bot username if present (e.g., /start@PlasticBoyBot -> start)
+        const cleanCommand = command.replace(`@${BOT_USERNAME.toLowerCase()}`, '');
+        console.log(`🔧 Processing command: /${cleanCommand}`);
         
         const appUrl = getAppUrl(req);
         
-        switch (command) {
+        switch (cleanCommand) {
           case 'start':
             const welcomeMessage = `🎯 *PlasticBoy - Almighty Edition*
 
 Hello, ${user.first_name}! 👋
 
-Welcome to the 3D model collection hunt game in Almaty!
+Welcome to the 3D model collection hunt in Almaty!
 
 🎮 *How to play:*
-• Find QR codes of models around the city
-• Scan them and collect your collection
+• Find QR codes around the city
+• Scan them to collect models
 • Compete with other players
 
-Happy hunting! 🎯`;
+🏆 Happy hunting!`;
             
             await sendTelegramMessage(chatId, welcomeMessage, {
               reply_markup: {
@@ -109,7 +139,8 @@ Happy hunting! 🎯`;
                   [
                     { text: '🏆 Leaderboard', callback_data: 'leaderboard' },
                     { text: '📊 Statistics', callback_data: 'stats' }
-                  ]
+                  ],
+                  [{ text: '❓ Help', callback_data: 'help' }]
                 ]
               }
             });
@@ -118,34 +149,53 @@ Happy hunting! 🎯`;
           case 'help':
             const helpMessage = `❓ *PlasticBoy Help*
 
-🎯 *Game goal:* Collect as many 3D models as possible!
+🎯 *Game Goal:* Collect as many 3D models as possible!
 
-📱 *Commands:*
-/start - Main menu
-/map - Open map
-/leaderboard - Player rankings
+📱 *Available Commands:*
+/start - Main menu with buttons
+/map - Open interactive map
+/leaderboard - View player rankings
 /stats - Game statistics
-/help - This help
+/help - Show this help
 
-Good luck! 🚀`;
-            await sendTelegramMessage(chatId, helpMessage);
+🎮 *How to Play:*
+1. Find QR codes around Almaty
+2. Scan them with your phone
+3. Fill in your info (use Telegram login!)
+4. Collect points and climb the leaderboard
+
+🏆 Good luck, collector!`;
+            
+            await sendTelegramMessage(chatId, helpMessage, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🗺️ Start Playing', url: appUrl }],
+                  [{ text: '🏆 View Leaderboard', url: `${appUrl}/leaderboard.html` }]
+                ]
+              }
+            });
             break;
             
           case 'map':
-            const mapMessage = `🗺️ *PlasticBoy Map*
+            const mapMessage = `🗺️ *Interactive Map*
 
-Open the interactive map to find 3D models in Almaty!
+Open the map to find 3D models around Almaty!
 
-🎯 On the map you will see:
-• 🟢 Available models
+🔍 *Map Legend:*
+• 🟢 Available models (ready to collect)
 • 🔴 Already collected models
-• 📍 Your location`;
+• 📍 Your current location
+
+💡 *Tip:* Use the location button to find nearby models!`;
             
             await sendTelegramMessage(chatId, mapMessage, {
               reply_markup: {
                 inline_keyboard: [
                   [{ text: '🗺️ Open Map', url: appUrl }],
-                  [{ text: '📊 Statistics', callback_data: 'stats' }]
+                  [
+                    { text: '📊 Game Stats', callback_data: 'stats' },
+                    { text: '🏆 Rankings', callback_data: 'leaderboard' }
+                  ]
                 ]
               }
             });
@@ -156,109 +206,81 @@ Open the interactive map to find 3D models in Almaty!
 
 Check out the top PlasticBoy players!
 
-⭐ Only users authorized via Telegram participate in the rankings
+⭐ Only Telegram-authenticated users appear in rankings
 
-🥇🥈🥉 Who will collect the most models?`;
+🥇🥈🥉 Who will collect the most models?
+
+💡 Use Telegram login when collecting to join the leaderboard!`;
             
             await sendTelegramMessage(chatId, leaderboardMessage, {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🏆 Open Leaderboard', url: `${appUrl}/leaderboard.html` }],
-                  [{ text: '🗺️ To Map', url: appUrl }]
+                  [{ text: '🏆 View Full Leaderboard', url: `${appUrl}/leaderboard.html` }],
+                  [
+                    { text: '🗺️ Play Game', url: appUrl },
+                    { text: '📊 Statistics', callback_data: 'stats' }
+                  ]
                 ]
               }
             });
             break;
             
           case 'stats':
-            try {
-              const totalPoints = await ModelPoint.countDocuments();
-              const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
-              const availablePoints = totalPoints - collectedPoints;
-              
-              // Get Telegram users statistics
-              const telegramStats = await ModelPoint.aggregate([
-                {
-                  $match: {
-                    status: 'collected',
-                    'collectorInfo.authMethod': 'telegram'
-                  }
-                },
-                {
-                  $group: {
-                    _id: null,
-                    telegramCollections: { $sum: 1 },
-                    uniqueTelegramUsers: { $addToSet: '$collectorInfo.telegramData.id' }
-                  }
-                }
-              ]);
-              
-              const tgStats = telegramStats[0] || { telegramCollections: 0, uniqueTelegramUsers: [] };
-              const telegramUsers = tgStats.uniqueTelegramUsers.length;
-              const telegramCollections = tgStats.telegramCollections;
-              
-              const statsMessage = `📊 *PlasticBoy Statistics*
-
-📦 Total models: *${totalPoints}*
-🟢 Available: *${availablePoints}*
-🔴 Collected: *${collectedPoints}*
-
-📱 *Telegram players:*
-👥 Participants: *${telegramUsers}*
-🎯 Collected by them: *${telegramCollections}*
-
-🎮 Join the game!`;
-              
-              await sendTelegramMessage(chatId, statsMessage, {
-                reply_markup: {
-                  inline_keyboard: [
-                    [{ text: '🗺️ Play', url: appUrl }],
-                    [{ text: '🏆 Leaderboard', url: `${appUrl}/leaderboard.html` }]
-                  ]
-                }
-              });
-            } catch (error) {
-              console.error('❌ Stats error:', error);
-              await sendTelegramMessage(chatId, '❌ Statistics retrieval error');
-            }
+            await handleStatsCommand(chatId, appUrl);
             break;
             
           default:
-            console.log(`❓ Unknown command: /${command}`);
-            const unknownMessage = `❓ Unknown command: /${command}
+            console.log(`❓ Unknown command: /${cleanCommand}`);
+            const unknownMessage = `❓ Unknown command: /${cleanCommand}
 
-📱 *Available commands:*
+📱 *Available Commands:*
 /start - Main menu
 /map - Open map
-/leaderboard - Player rankings
+/leaderboard - Rankings
 /stats - Game statistics
-/help - Help
+/help - Detailed help
 
-🎯 Use commands for navigation!`;
+🎯 Use the buttons below for quick access!`;
             
             await sendTelegramMessage(chatId, unknownMessage, {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: '🗺️ Open Map', url: appUrl }],
+                  [{ text: '🗺️ Play Game', url: appUrl }],
                   [
                     { text: '🏆 Leaderboard', callback_data: 'leaderboard' },
                     { text: '📊 Statistics', callback_data: 'stats' }
-                  ]
+                  ],
+                  [{ text: '❓ Help', callback_data: 'help' }]
                 ]
               }
             });
         }
       } else if (text) {
-        // Regular message
+        // Handle regular messages
         console.log(`💭 Regular message from ${user.first_name}: ${text}`);
         const appUrl = getAppUrl(req);
         
-        await sendTelegramMessage(chatId, `Got your message: "${text}"
+        const responses = [
+          "Got your message! 📨",
+          "Thanks for writing! 💬", 
+          "Hello there! 👋",
+          "Nice to hear from you! 😊"
+        ];
+        
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        
+        await sendTelegramMessage(chatId, `${randomResponse}
 
-Use /help for command list.`, {
+Your message: "${text}"
+
+Use /help to see available commands or click the buttons below!`, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🗺️ Play', url: appUrl }]
+              [{ text: '🗺️ Start Playing', url: appUrl }],
+              [
+                { text: '❓ Help', callback_data: 'help' },
+                { text: '📊 Stats', callback_data: 'stats' }
+              ]
             ]
           }
         });
@@ -267,101 +289,243 @@ Use /help for command list.`, {
     
     // Handle callback buttons
     if (update.callback_query) {
-      const callbackQuery = update.callback_query;
-      const chatId = callbackQuery.message.chat.id;
-      const data = callbackQuery.data;
-      const messageId = callbackQuery.message.message_id;
-      
-      console.log(`🔘 Callback: ${data} from ${callbackQuery.from.first_name}`);
-      
-      // Confirm callback
-      try {
-        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-          callback_query_id: callbackQuery.id
-        });
-      } catch (error) {
-        console.error('❌ answerCallbackQuery error:', error);
-      }
-      
-      const appUrl = getAppUrl(req);
-      
-      // Handle callback
-      switch (data) {
-        case 'leaderboard':
-          try {
-            await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
-              chat_id: chatId,
-              message_id: messageId,
-              text: '🏆 *Collectors Leaderboard*\n\nOpen the web version to view the full player rankings!',
-              parse_mode: 'Markdown',
-              reply_markup: {
-                inline_keyboard: [
-                  [{ text: '🏆 Open Leaderboard', url: `${appUrl}/leaderboard.html` }],
-                  [{ text: '🗺️ To Map', url: appUrl }]
-                ]
-              }
-            });
-          } catch (error) {
-            console.error('❌ Edit message error:', error);
-          }
-          break;
-          
-        case 'stats':
-          try {
-            const totalPoints = await ModelPoint.countDocuments();
-            const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
-            const availablePoints = totalPoints - collectedPoints;
-            
-            // Get Telegram users statistics
-            const telegramStats = await ModelPoint.aggregate([
-              {
-                $match: {
-                  status: 'collected',
-                  'collectorInfo.authMethod': 'telegram'
-                }
-              },
-              {
-                $group: {
-                  _id: null,
-                  telegramCollections: { $sum: 1 },
-                  uniqueTelegramUsers: { $addToSet: '$collectorInfo.telegramData.id' }
-                }
-              }
-            ]);
-            
-            const tgStats = telegramStats[0] || { telegramCollections: 0, uniqueTelegramUsers: [] };
-            const telegramUsers = tgStats.uniqueTelegramUsers.length;
-            const telegramCollections = tgStats.telegramCollections;
-            
-            await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
-              chat_id: chatId,
-              message_id: messageId,
-              text: `📊 *Game Statistics*
-
-📦 Total models: *${totalPoints}*
-🟢 Available: *${availablePoints}*
-🔴 Collected: *${collectedPoints}*
-
-📱 *Telegram players:*
-👥 Participants: *${telegramUsers}*
-🎯 Collected by them: *${telegramCollections}*`,
-              parse_mode: 'Markdown',
-              reply_markup: {
-                inline_keyboard: [
-                  [{ text: '🗺️ Play', url: appUrl }],
-                  [{ text: '🏆 Leaderboard', url: `${appUrl}/leaderboard.html` }]
-                ]
-              }
-            });
-          } catch (error) {
-            console.error('❌ Statistics callback error:', error);
-          }
-          break;
-      }
+      await handleCallbackQuery(update.callback_query, req);
     }
     
   } catch (error) {
     console.error('❌ Telegram update handling error:', error);
+    
+    // Try to send error message to user
+    if (update.message?.chat?.id) {
+      try {
+        await sendTelegramMessage(update.message.chat.id, 
+          "Sorry, something went wrong! Please try again or use /start");
+      } catch (sendError) {
+        console.error('❌ Failed to send error message:', sendError);
+      }
+    }
+  }
+}
+
+// Handle statistics command
+async function handleStatsCommand(chatId, appUrl) {
+  try {
+    const totalPoints = await ModelPoint.countDocuments();
+    const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
+    const availablePoints = totalPoints - collectedPoints;
+    
+    // Get Telegram users statistics
+    const telegramStats = await ModelPoint.aggregate([
+      {
+        $match: {
+          status: 'collected',
+          'collectorInfo.authMethod': 'telegram'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          telegramCollections: { $sum: 1 },
+          uniqueTelegramUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+        }
+      }
+    ]);
+    
+    const tgStats = telegramStats[0] || { telegramCollections: 0, uniqueTelegramUsers: [] };
+    const telegramUsers = tgStats.uniqueTelegramUsers.length;
+    const telegramCollections = tgStats.telegramCollections;
+    
+    const statsMessage = `📊 *Game Statistics*
+
+📦 Total Models: *${totalPoints}*
+🟢 Available: *${availablePoints}*
+🔴 Collected: *${collectedPoints}*
+
+📱 *Telegram Players:*
+👥 Active Players: *${telegramUsers}*
+🎯 Their Collections: *${telegramCollections}*
+
+🏆 Join the competition - use Telegram login when collecting!`;
+    
+    await sendTelegramMessage(chatId, statsMessage, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🗺️ Start Playing', url: appUrl }],
+          [
+            { text: '🏆 View Leaderboard', url: `${appUrl}/leaderboard.html` },
+            { text: '❓ Help', callback_data: 'help' }
+          ]
+        ]
+      }
+    });
+  } catch (error) {
+    console.error('❌ Stats command error:', error);
+    await sendTelegramMessage(chatId, '❌ Unable to load statistics. Please try again later.');
+  }
+}
+
+// Handle callback queries
+async function handleCallbackQuery(callbackQuery, req) {
+  const chatId = callbackQuery.message.chat.id;
+  const data = callbackQuery.data;
+  const messageId = callbackQuery.message.message_id;
+  const user = callbackQuery.from;
+  
+  console.log(`🔘 Callback: ${data} from ${user.first_name} (${user.id})`);
+  
+  // Always answer callback query first
+  try {
+    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+      callback_query_id: callbackQuery.id,
+      text: '✅ Processing...'
+    });
+  } catch (error) {
+    console.error('❌ answerCallbackQuery error:', error.response?.data || error.message);
+  }
+  
+  const appUrl = getAppUrl(req);
+  
+  try {
+    switch (data) {
+      case 'help':
+        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+          chat_id: chatId,
+          message_id: messageId,
+          text: `❓ *PlasticBoy Help*
+
+🎯 *Game Goal:* Collect 3D models around Almaty!
+
+📱 *Commands:*
+/start - Main menu
+/map - Interactive map
+/leaderboard - Player rankings
+/stats - Game statistics
+
+🎮 *How to Play:*
+1. Find QR codes around the city
+2. Scan with your phone camera
+3. Use Telegram login for leaderboard
+4. Collect points and compete!
+
+🏆 Happy hunting!`,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🗺️ Start Playing', url: appUrl }],
+              [
+                { text: '🏆 Leaderboard', callback_data: 'leaderboard' },
+                { text: '📊 Statistics', callback_data: 'stats' }
+              ]
+            ]
+          }
+        });
+        break;
+        
+      case 'leaderboard':
+        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+          chat_id: chatId,
+          message_id: messageId,
+          text: `🏆 *Collectors Leaderboard*
+
+View the top PlasticBoy players!
+
+⭐ Only Telegram-authenticated users appear in rankings
+
+🥇🥈🥉 Compete for the top spots!
+
+💡 Use Telegram login when collecting models to join the leaderboard!`,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🏆 View Full Leaderboard', url: `${appUrl}/leaderboard.html` }],
+              [
+                { text: '🗺️ Play Game', url: appUrl },
+                { text: '📊 Statistics', callback_data: 'stats' }
+              ],
+              [{ text: '❓ Help', callback_data: 'help' }]
+            ]
+          }
+        });
+        break;
+        
+      case 'stats':
+        try {
+          const totalPoints = await ModelPoint.countDocuments();
+          const collectedPoints = await ModelPoint.countDocuments({ status: 'collected' });
+          const availablePoints = totalPoints - collectedPoints;
+          
+          const telegramStats = await ModelPoint.aggregate([
+            {
+              $match: {
+                status: 'collected',
+                'collectorInfo.authMethod': 'telegram'
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                telegramCollections: { $sum: 1 },
+                uniqueTelegramUsers: { $addToSet: '$collectorInfo.telegramData.id' }
+              }
+            }
+          ]);
+          
+          const tgStats = telegramStats[0] || { telegramCollections: 0, uniqueTelegramUsers: [] };
+          const telegramUsers = tgStats.uniqueTelegramUsers.length;
+          const telegramCollections = tgStats.telegramCollections;
+          
+          await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+            chat_id: chatId,
+            message_id: messageId,
+            text: `📊 *Game Statistics*
+
+📦 Total Models: *${totalPoints}*
+🟢 Available: *${availablePoints}*
+🔴 Collected: *${collectedPoints}*
+
+📱 *Telegram Players:*
+👥 Active Players: *${telegramUsers}*
+🎯 Their Collections: *${telegramCollections}*
+
+🏆 Join the competition!`,
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🗺️ Start Playing', url: appUrl }],
+                [
+                  { text: '🏆 Leaderboard', callback_data: 'leaderboard' },
+                  { text: '❓ Help', callback_data: 'help' }
+                ]
+              ]
+            }
+          });
+        } catch (error) {
+          console.error('❌ Statistics callback error:', error);
+          await sendTelegramMessage(chatId, '❌ Unable to load statistics. Please try again.');
+        }
+        break;
+        
+      default:
+        console.log(`❓ Unknown callback data: ${data}`);
+        await sendTelegramMessage(chatId, 'Unknown action. Please use /start to see available options.');
+    }
+  } catch (error) {
+    console.error('❌ Callback handling error:', error.response?.data || error.message);
+    
+    // Fallback: send new message if edit fails
+    try {
+      await sendTelegramMessage(chatId, `Sorry, something went wrong with that action.
+
+Use /start to return to the main menu.`, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🗺️ Start Playing', url: appUrl }]
+          ]
+        }
+      });
+    } catch (fallbackError) {
+      console.error('❌ Fallback message also failed:', fallbackError);
+    }
   }
 }
 
@@ -370,13 +534,14 @@ if (BOT_TOKEN) {
   // Webhook route
   app.post(WEBHOOK_PATH, async (req, res) => {
     console.log('📥 Webhook received from Telegram');
+    console.log('📋 Update body:', JSON.stringify(req.body, null, 2));
     
     try {
       await handleTelegramUpdate(req.body, req);
       res.status(200).send('OK');
     } catch (error) {
       console.error('❌ Webhook handling error:', error);
-      res.status(500).send('Error');
+      res.status(200).send('OK'); // Always return 200 to prevent Telegram retries
     }
   });
   
@@ -388,23 +553,51 @@ if (BOT_TOKEN) {
       
       console.log('🔧 Setting up webhook:', webhookUrl);
       
+      // First, delete existing webhook
+      try {
+        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/deleteWebhook`);
+        console.log('🗑️ Previous webhook deleted');
+      } catch (deleteError) {
+        console.log('⚠️ No previous webhook to delete');
+      }
+      
+      // Set new webhook
       const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
         url: webhookUrl,
-        allowed_updates: ['message', 'callback_query']
+        allowed_updates: ['message', 'callback_query'],
+        drop_pending_updates: true // Clear any pending updates
       });
       
       console.log('✅ Webhook set successfully:', response.data);
       
+      // Test the bot
+      try {
+        const meInfo = await axios.get(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+        console.log('🤖 Bot info:', meInfo.data.result);
+      } catch (meError) {
+        console.error('❌ Failed to get bot info:', meError.response?.data);
+      }
+      
       res.json({
         success: true,
         webhook_url: webhookUrl,
-        response: response.data
+        telegram_response: response.data,
+        instructions: {
+          message: "Webhook set successfully!",
+          test_bot: `Send /start to @${BOT_USERNAME} in Telegram`,
+          check_status: `${appUrl}/webhook-info`
+        }
       });
     } catch (error) {
-      console.error('❌ Webhook setup error:', error);
+      console.error('❌ Webhook setup error:', error.response?.data || error.message);
       res.status(500).json({
         success: false,
-        error: error.response?.data || error.message
+        error: error.response?.data || error.message,
+        instructions: {
+          message: "Webhook setup failed!",
+          check_token: "Verify your TELEGRAM_BOT_TOKEN",
+          check_bot: `Make sure @${BOT_USERNAME} is correct`
+        }
       });
     }
   });
@@ -413,10 +606,53 @@ if (BOT_TOKEN) {
   app.get('/webhook-info', async (req, res) => {
     try {
       const response = await axios.get(`https://api.telegram.org/bot${BOT_TOKEN}/getWebhookInfo`);
-      res.json(response.data);
+      const botInfo = await axios.get(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+      
+      res.json({
+        webhook_info: response.data,
+        bot_info: botInfo.data,
+        status: response.data.result.url ? 'Webhook is set' : 'No webhook configured',
+        last_error: response.data.result.last_error_message || 'No errors'
+      });
     } catch (error) {
-      console.error('❌ Webhook info error:', error);
+      console.error('❌ Webhook info error:', error.response?.data || error.message);
       res.status(500).json({
+        error: error.response?.data || error.message
+      });
+    }
+  });
+  
+  // Test bot endpoint
+  app.get('/test-bot', async (req, res) => {
+    try {
+      const testChatId = req.query.chat_id;
+      if (!testChatId) {
+        return res.status(400).json({
+          error: 'Please provide chat_id parameter',
+          example: `/test-bot?chat_id=YOUR_CHAT_ID`
+        });
+      }
+      
+      await sendTelegramMessage(testChatId, `🧪 Test message from PlasticBoy Bot!
+
+This is a test to verify the bot is working correctly.
+
+Time: ${new Date().toISOString()}`, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🗺️ Open Game', url: getAppUrl(req) }]
+          ]
+        }
+      });
+      
+      res.json({
+        success: true,
+        message: 'Test message sent successfully!'
+      });
+    } catch (error) {
+      console.error('❌ Test bot error:', error);
+      res.status(500).json({
+        success: false,
         error: error.response?.data || error.message
       });
     }
@@ -425,6 +661,7 @@ if (BOT_TOKEN) {
   console.log(`🔗 Telegram webhook route configured: ${WEBHOOK_PATH}`);
   console.log(`🔧 Webhook setup available at: /setup-webhook`);
   console.log(`ℹ️ Webhook info available at: /webhook-info`);
+  console.log(`🧪 Bot test available at: /test-bot?chat_id=YOUR_CHAT_ID`);
 } else {
   console.log('⚠️ TELEGRAM_BOT_TOKEN not found, webhook not configured');
 }
@@ -517,6 +754,17 @@ app.get('/health', async (req, res) => {
     const dbState = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     const totalPoints = await ModelPoint.countDocuments();
     
+    // Test Telegram bot
+    let telegramStatus = 'not_configured';
+    if (BOT_TOKEN) {
+      try {
+        const botInfo = await axios.get(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+        telegramStatus = botInfo.data.ok ? 'working' : 'error';
+      } catch (error) {
+        telegramStatus = 'error';
+      }
+    }
+    
     res.json({
       status: 'OK',
       timestamp: new Date().toISOString(),
@@ -525,6 +773,8 @@ app.get('/health', async (req, res) => {
       environment: process.env.NODE_ENV || 'development',
       telegramBot: {
         configured: !!BOT_TOKEN,
+        status: telegramStatus,
+        username: BOT_USERNAME,
         webhookPath: BOT_TOKEN ? WEBHOOK_PATH : null
       }
     });
@@ -979,13 +1229,14 @@ const startServer = async () => {
       console.log(`🛡️ Admin panel: http://localhost:${PORT}/admin.html`);
       console.log(`🏆 Leaderboard: http://localhost:${PORT}/leaderboard.html`);
       console.log(`🔐 Admin password: ${process.env.ADMIN_PASSWORD ? 'set' : 'NOT SET!'}`);
-      console.log(`📱 Telegram bot: ${process.env.TELEGRAM_BOT_USERNAME ? process.env.TELEGRAM_BOT_USERNAME : 'NOT CONFIGURED'}`);
+      console.log(`📱 Telegram bot: @${BOT_USERNAME}`);
       
       if (BOT_TOKEN) {
         console.log(`🔗 Telegram webhook: ${WEBHOOK_PATH}`);
         console.log(`📱 Telegram integration: ACTIVE`);
         console.log(`🔧 Setup webhook: http://localhost:${PORT}/setup-webhook`);
         console.log(`ℹ️ Webhook info: http://localhost:${PORT}/webhook-info`);
+        console.log(`🧪 Test bot: http://localhost:${PORT}/test-bot?chat_id=YOUR_CHAT_ID`);
       } else {
         console.log(`📱 Telegram integration: NOT CONFIGURED`);
       }
