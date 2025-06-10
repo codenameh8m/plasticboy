@@ -103,7 +103,7 @@ body {
     letter-spacing: 0.3px;
 }
 
-/* УВЕЛИЧЕННЫЕ КАРТЫ */
+/* КРИТИЧЕСКИ ВАЖНЫЕ ИСПРАВЛЕНИЯ ДЛЯ КАРТ НА ПК */
 .map-container {
     position: relative;
     background: white;
@@ -111,17 +111,58 @@ body {
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
-}
-
-/* ОСНОВНЫЕ РАЗМЕРЫ КАРТ */
-#map, #adminMap {
-    height: 400px !important;
     width: 100% !important;
-    min-height: 500px !important;
+    height: auto !important;
+    min-height: 520px !important; /* Минимальная высота для контейнера */
 }
 
-/* СЕРО-БЕЛЫЕ ТАЙЛЫ КАРТЫ */
+/* КРИТИЧЕСКИЕ ФИКСЫ РАЗМЕРОВ КАРТ ДЛЯ ПК */
+#map, #adminMap {
+    width: 100% !important;
+    height: 500px !important;
+    min-height: 500px !important;
+    max-height: none !important;
+    display: block !important;
+    position: relative !important;
+    z-index: 1 !important;
+    background: #f8f9fa !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Принудительные стили для Leaflet контейнера */
+.leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background: #f8f9fa !important;
+    font-family: 'ABC Oracle', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+    border-radius: 0 !important;
+    outline: none !important;
+}
+
+/* Фиксы для панелей Leaflet карты */
+.leaflet-map-pane {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: auto !important;
+}
+
 .leaflet-tile-pane {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 2 !important;
+    /* СЕРО-БЕЛЫЕ ТАЙЛЫ КАРТЫ ОСТАЮТСЯ */
     filter: grayscale(100%) contrast(1.1) brightness(1.05) !important;
 }
 
@@ -132,29 +173,60 @@ body {
     filter: none !important;
 }
 
-/* Кастомные стили для Leaflet карты */
-.leaflet-container {
-    background: #f8f9fa !important;
-    font-family: 'ABC Oracle', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    font-weight: 500 !important;
+.leaflet-tile {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 256px !important;
+    height: 256px !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Улучшенные стили контролов Leaflet для ПК */
+.leaflet-control-zoom {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid rgba(108, 117, 125, 0.2) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
 }
 
 .leaflet-control-zoom a {
     background-color: rgba(255, 255, 255, 0.95) !important;
     color: #495057 !important;
-    border: 1px solid rgba(108, 117, 125, 0.2) !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(108, 117, 125, 0.1) !important;
     backdrop-filter: blur(10px) !important;
     transition: all 0.3s !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
     font-family: 'ABC Oracle', sans-serif !important;
     font-weight: 500 !important;
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 28px !important;
+    text-align: center !important;
+    font-size: 16px !important;
+    text-decoration: none !important;
+    display: block !important;
+}
+
+.leaflet-control-zoom a:last-child {
+    border-bottom: none !important;
 }
 
 .leaflet-control-zoom a:hover {
     background-color: #f8f9fa !important;
     color: #343a40 !important;
     transform: scale(1.05) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-control-zoom a:active {
+    background-color: #e9ecef !important;
+    transform: scale(0.95) !important;
 }
 
 .leaflet-control-attribution {
@@ -167,22 +239,29 @@ body {
     padding: 2px 5px !important;
     font-family: 'ABC Oracle', sans-serif !important;
     font-weight: 500 !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
+/* УЛУЧШЕННЫЕ СТИЛИ POPUP ДЛЯ ПК */
 .leaflet-popup-content-wrapper {
     background: rgba(255, 255, 255, 0.98) !important;
     border-radius: 12px !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
     backdrop-filter: blur(15px) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    max-width: 280px !important;
+    max-width: 320px !important; /* Увеличен для ПК */
+    min-width: 250px !important; /* Минимальная ширина для ПК */
     font-family: 'ABC Oracle', sans-serif !important;
     font-weight: 500 !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .leaflet-popup-tip {
     background: rgba(255, 255, 255, 0.98) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 .leaflet-popup-close-button {
@@ -192,25 +271,37 @@ body {
     transition: color 0.3s !important;
     font-weight: bold !important;
     font-family: 'ABC Oracle', sans-serif !important;
+    width: 30px !important;
+    height: 30px !important;
+    text-align: center !important;
+    line-height: 14px !important;
+    top: 5px !important;
+    right: 5px !important;
+    background: none !important;
+    border: none !important;
 }
 
 .leaflet-popup-close-button:hover {
     color: #495057 !important;
-    background: none !important;
+    background: rgba(248, 249, 250, 0.8) !important;
+    border-radius: 50% !important;
 }
 
-/* УЛУЧШЕННЫЕ СТИЛИ ДЛЯ POPUP ОКОН */
 .leaflet-popup-content {
     margin: 12px 15px !important;
     line-height: 1.4 !important;
-    text-align: center !important; /* Центрируем весь контент */
+    text-align: center !important;
+    font-size: 0.95rem !important; /* Чуть больше для ПК */
+    width: auto !important;
+    max-width: none !important;
 }
 
 /* Основной контейнер popup */
 .popup-content {
-    min-width: 200px;
-    text-align: center !important; /* Центрируем всё содержимое */
+    min-width: 220px; /* Увеличен для ПК */
+    text-align: center !important;
     padding: 5px;
+    width: 100%;
 }
 
 .popup-content h3 {
@@ -246,7 +337,7 @@ body {
     background: #f8f9fa;
     padding: 10px;
     border-radius: 8px;
-    margin: 10px auto; /* Центрируем контейнер */
+    margin: 10px auto;
     font-size: 0.9rem;
     text-align: center !important;
     max-width: 100%;
@@ -266,7 +357,7 @@ body {
     color: white;
     padding: 12px;
     border-radius: 10px;
-    margin: 10px auto; /* Центрируем */
+    margin: 10px auto;
     text-align: center !important;
     box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
     max-width: 100%;
@@ -278,7 +369,7 @@ body {
     height: 50px;
     border-radius: 50%;
     border: 2px solid white;
-    margin: 0 auto 8px auto !important; /* Центрируем аватар */
+    margin: 0 auto 8px auto !important;
     display: block !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
@@ -307,7 +398,7 @@ body {
     font-family: 'ABC Oracle', sans-serif;
     font-weight: 500;
     letter-spacing: 0.2px;
-    margin: 0 auto; /* Центрируем ссылку */
+    margin: 0 auto;
 }
 
 .telegram-username:hover {
@@ -323,7 +414,7 @@ body {
     background: #f8f9fa;
     padding: 12px;
     border-radius: 10px;
-    margin: 10px auto; /* Центрируем */
+    margin: 10px auto;
     border-left: 4px solid #4CAF50;
     text-align: center !important;
     max-width: 100%;
@@ -369,6 +460,7 @@ body {
     z-index: 1000;
     font-family: 'ABC Oracle', sans-serif;
     font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .legend-item {
@@ -1135,8 +1227,23 @@ button:not(.control-btn):disabled {
     letter-spacing: 0.3px !important;
 }
 
-/* МОБИЛЬНАЯ АДАПТАЦИЯ С УЛУЧШЕННЫМИ POPUP */
+.leaderboard-btn {
+    background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
+    border: 2px solid rgba(0, 136, 204, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* УЛУЧШЕННАЯ МОБИЛЬНАЯ АДАПТАЦИЯ С ФИКСАМИ ДЛЯ ПК */
 @media (max-width: 768px) {
+    /* Сохраняем размеры карт для планшетов */
+    #map, #adminMap {
+        height: 420px !important;
+        min-height: 420px !important;
+    }
+    
     .leaflet-popup-content-wrapper {
         max-width: 280px !important;
         font-size: 0.9rem !important;
@@ -1144,90 +1251,6 @@ button:not(.control-btn):disabled {
         font-weight: 500 !important;
     }
     
-    .leaflet-popup-content {
-        margin: 10px 12px !important;
-        line-height: 1.3 !important;
-        text-align: center !important;
-    }
-    
-    .popup-content h3 {
-        font-size: 1rem !important;
-        margin: 0 0 8px 0 !important;
-        font-family: 'ABC Oracle', sans-serif !important;
-        font-weight: 500 !important;
-        text-align: center !important;
-    }
-    
-    .status {
-        font-size: 0.9rem !important;
-        text-align: center !important;
-        margin: 8px 0 !important;
-        display: block !important;
-        width: 100% !important;
-    }
-    
-    .telegram-user-info {
-        padding: 8px !important;
-        margin: 8px auto !important;
-        text-align: center !important;
-        width: fit-content !important;
-        max-width: 100% !important;
-    }
-    
-    .telegram-avatar {
-        width: 40px !important;
-        height: 40px !important;
-        margin: 0 auto 6px auto !important;
-    }
-    
-    .telegram-name {
-        font-size: 0.9rem !important;
-        margin-bottom: 3px !important;
-        text-align: center !important;
-    }
-    
-    .telegram-username {
-        font-size: 0.8rem !important;
-        padding: 3px 6px !important;
-        margin: 0 auto !important;
-        display: inline-flex !important;
-    }
-    
-    .collector-info-enhanced {
-        padding: 8px !important;
-        margin: 8px auto !important;
-        text-align: center !important;
-        max-width: 100% !important;
-    }
-    
-    .collector-info-enhanced h4 {
-        font-size: 0.85rem !important;
-        margin: 0 0 6px 0 !important;
-        text-align: center !important;
-    }
-    
-    .collector-detail {
-        font-size: 0.8rem !important;
-        margin: 3px 0 !important;
-        text-align: center !important;
-    }
-    
-    /* Центрированная информация о коллекторе */
-    .collector-info {
-        text-align: center !important;
-        margin: 8px auto !important;
-        padding: 8px !important;
-        max-width: 100% !important;
-    }
-    
-    .collector-info p {
-        text-align: center !important;
-        margin: 3px 0 !important;
-        font-size: 0.8rem !important;
-    }
-}
-
-@media (max-width: 768px) {
     .container {
         padding: 10px;
     }
@@ -1238,12 +1261,6 @@ button:not(.control-btn):disabled {
     
     .header p {
         font-size: 1rem;
-    }
-    
-    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
-    #map, #adminMap {
-        height: 420px !important;
-        min-height: 420px !important;
     }
     
     .modal-content {
@@ -1268,7 +1285,6 @@ button:not(.control-btn):disabled {
         margin-bottom: 0;
     }
     
-    /* Адаптивная кнопка управления для планшетов */
     .map-controls {
         max-width: 350px;
         padding: 18px;
@@ -1282,6 +1298,12 @@ button:not(.control-btn):disabled {
 }
 
 @media (max-width: 480px) {
+    /* Увеличенные размеры карт для смартфонов */
+    #map, #adminMap {
+        height: 50vh !important;
+        min-height: 400px !important;
+    }
+    
     .header {
         padding: 15px;
         margin-bottom: 15px;
@@ -1295,99 +1317,11 @@ button:not(.control-btn):disabled {
         padding: 20px;
     }
     
-    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ - НА 20% БОЛЬШЕ */
-    #map, #adminMap {
-        height: 50vh !important;
-        min-height: 400px !important;
-    }
-    
     .leaflet-popup-content-wrapper {
         max-width: 240px !important;
         font-size: 0.85rem !important;
     }
     
-    .leaflet-popup-content {
-        margin: 8px 10px !important;
-        line-height: 1.2 !important;
-        text-align: center !important;
-    }
-    
-    .popup-content h3 {
-        font-size: 0.95rem !important;
-        margin: 0 0 6px 0 !important;
-        text-align: center !important;
-    }
-    
-    .status {
-        font-size: 0.85rem !important;
-        text-align: center !important;
-        margin: 6px 0 !important;
-    }
-    
-    .telegram-user-info {
-        padding: 6px !important;
-        margin: 6px auto !important;
-        text-align: center !important;
-        width: fit-content !important;
-    }
-    
-    .telegram-avatar {
-        width: 35px !important;
-        height: 35px !important;
-        margin: 0 auto 4px auto !important;
-    }
-    
-    .telegram-name {
-        font-size: 0.85rem !important;
-        margin-bottom: 2px !important;
-        text-align: center !important;
-    }
-    
-    .telegram-username {
-        font-size: 0.75rem !important;
-        padding: 2px 4px !important;
-        margin: 0 auto !important;
-    }
-    
-    .collector-info-enhanced {
-        padding: 6px !important;
-        margin: 6px auto !important;
-        text-align: center !important;
-    }
-    
-    .collector-info-enhanced h4 {
-        font-size: 0.8rem !important;
-        margin: 0 0 4px 0 !important;
-        text-align: center !important;
-    }
-    
-    .collector-detail {
-        font-size: 0.75rem !important;
-        margin: 2px 0 !important;
-        text-align: center !important;
-    }
-    
-    .collector-info {
-        text-align: center !important;
-        margin: 6px auto !important;
-        padding: 6px !important;
-    }
-    
-    .collector-info p {
-        text-align: center !important;
-        margin: 2px 0 !important;
-        font-size: 0.75rem !important;
-    }
-    
-    /* Компактные изображения селфи в popup */
-    .leaflet-popup-content img {
-        max-width: 120px !important;
-        max-height: 80px !important;
-        margin: 5px auto !important;
-        display: block !important;
-    }
-    
-    /* Адаптивная кнопка для смартфонов */
     .map-controls {
         max-width: 320px;
         padding: 16px;
@@ -1401,7 +1335,7 @@ button:not(.control-btn):disabled {
 }
 
 @media (max-width: 360px) {
-    /* БОЛЬШАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    /* Большие карты для очень маленьких экранов */
     #map, #adminMap {
         height: 45vh !important;
         min-height: 380px !important;
@@ -1426,33 +1360,57 @@ button:not(.control-btn):disabled {
         max-width: 220px !important;
         font-size: 0.8rem !important;
     }
-    
-    .popup-content h3 {
-        font-size: 0.9rem !important;
+}
+
+/* КРИТИЧЕСКИЕ ДОПОЛНИТЕЛЬНЫЕ ФИКСЫ ДЛЯ ПК */
+@media (min-width: 1024px) {
+    /* Специальные правила только для ПК */
+    .map-container {
+        min-height: 540px !important;
     }
     
-    .status {
-        font-size: 0.8rem !important;
+    #map, #adminMap {
+        height: 520px !important;
+        min-height: 520px !important;
     }
     
-    .telegram-name {
-        font-size: 0.8rem !important;
+    .leaflet-popup-content-wrapper {
+        max-width: 350px !important;
+        min-width: 280px !important;
     }
     
-    .telegram-username {
-        font-size: 0.7rem !important;
+    .popup-content {
+        min-width: 250px;
     }
     
-    .collector-detail {
-        font-size: 0.7rem !important;
+    .control-btn {
+        max-width: 400px;
+        font-size: 1.2rem !important;
+        padding: 20px 28px !important;
+        min-height: 65px;
     }
 }
 
-.leaderboard-btn {
-    background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
-    border: 2px solid rgba(0, 136, 204, 0.3) !important;
-    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
+/* ДОПОЛНИТЕЛЬНЫЕ ФИКСЫ ДЛЯ МАРКЕРОВ НА ПК */
+.marker-icon {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.user-marker {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Убираем любые стили по умолчанию от Leaflet для маркеров */
+.leaflet-marker-icon {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+}
+
+.leaflet-div-icon {
+    background: transparent !important;
+    border: none !important;
 }
