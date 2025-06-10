@@ -693,13 +693,12 @@ if (BOT_TOKEN) {
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plasticboy', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      bufferCommands: false,
-      bufferMaxEntries: 0
+      family: 4, // Use IPv4, skip trying IPv6
+      retryWrites: true,
+      w: 'majority'
     });
     console.log('✅ MongoDB connected');
   } catch (error) {
