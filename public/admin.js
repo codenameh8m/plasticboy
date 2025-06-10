@@ -1,4 +1,4 @@
-// PlasticBoy Admin Panel - ОПТИМИЗИРОВАННАЯ версия для максимальной скорости
+// Admin panel variables
 let adminMap;
 let adminMarkers = [];
 let isAddMode = false;
@@ -6,67 +6,28 @@ let currentPassword = '';
 let allPoints = [];
 let currentQRCode = '';
 
-// Координаты Алматы
+// Almaty coordinates
 const ALMATY_CENTER = [43.2220, 76.8512];
 
-// КЭШИРОВАНИЕ для админа
-const AdminCache = {
-    key: 'plasticboy_admin_cache_v2',
-    ttl: 60 * 1000, // 1 минута для админа
-    
-    save: function(data) {
-        try {
-            sessionStorage.setItem(this.key, JSON.stringify({
-                data: data,
-                timestamp: Date.now()
-            }));
-        } catch (e) {
-            console.warn('⚠️ Admin cache save failed:', e);
-        }
-    },
-    
-    load: function() {
-        try {
-            const item = sessionStorage.getItem(this.key);
-            if (!item) return null;
-            
-            const parsed = JSON.parse(item);
-            const age = Date.now() - parsed.timestamp;
-            
-            if (age > this.ttl) {
-                sessionStorage.removeItem(this.key);
-                return null;
-            }
-            
-            return parsed.data;
-        } catch (e) {
-            sessionStorage.removeItem(this.key);
-            return null;
-        }
-    },
-    
-    clear: function() {
-        sessionStorage.removeItem(this.key);
-    }
-};
-
-// Инициализация админ панели
+// Admin panel initialization
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🛡️ Admin panel - OPTIMIZED initialization');
+    console.log('🛡️ Admin panel - initialization');
     
-    // Проверяем сохраненный пароль
+    // Check saved password
     const savedPassword = sessionStorage.getItem('adminPassword');
     if (savedPassword) {
         currentPassword = savedPassword;
         showAdminPanel();
     }
     
-    // Инициализируем кнопки и обработчики
+    // Initialize admin buttons
     initAdminControlButtons();
+    
+    // Add event handlers
     setupEventListeners();
 });
 
-// Инициализация кнопок управления админа
+// Initialize admin control buttons
 function initAdminControlButtons() {
     const checkAdminPanel = setInterval(() => {
         const adminPanel = document.getElementById('adminPanel');
@@ -88,9 +49,9 @@ function initAdminControlButtons() {
     }, 100);
 }
 
-// Настройка обработчиков событий
+// Setup event listeners
 function setupEventListeners() {
-    // Enter в поле пароля
+    // Enter handler in password field
     const passwordInput = document.getElementById('adminPassword');
     if (passwordInput) {
         passwordInput.addEventListener('keypress', function(e) {
@@ -100,13 +61,13 @@ function setupEventListeners() {
         });
     }
 
-    // Форма добавления точки
+    // Add point form handler
     const form = document.getElementById('addPointForm');
     if (form) {
         form.addEventListener('submit', handleAddPointSubmit);
     }
 
-    // Закрытие модальных окон при клике вне
+    // Close modal windows when clicking outside
     window.addEventListener('click', function(event) {
         const addModal = document.getElementById('addPointModal');
         const qrModal = document.getElementById('qrModal');
@@ -120,7 +81,7 @@ function setupEventListeners() {
         }
     });
 
-    // Обработка изменения размера окна для админ карты
+    // Handle window resize for admin map
     window.addEventListener('resize', function() {
         if (adminMap) {
             clearTimeout(window.adminResizeTimeout);
@@ -130,15 +91,15 @@ function setupEventListeners() {
         }
     });
 
-    // Горячие клавиши для админа
+    // Enhanced key handling for admin
     document.addEventListener('keydown', function(event) {
-        // Закрытие модальных окон с Escape
+        // Close modal windows with Escape
         if (event.key === 'Escape') {
             closeAddModal();
             closeQrModal();
         }
         
-        // Получить местоположение с Ctrl+L
+        // Get location with Ctrl+L
         if (event.ctrlKey && event.key === 'l') {
             const adminPanel = document.getElementById('adminPanel');
             if (adminPanel && adminPanel.style.display !== 'none') {
@@ -147,7 +108,7 @@ function setupEventListeners() {
             }
         }
         
-        // Переключить режим добавления с Ctrl+A
+        // Toggle add mode with Ctrl+A
         if (event.ctrlKey && event.key === 'a') {
             const adminPanel = document.getElementById('adminPanel');
             if (adminPanel && adminPanel.style.display !== 'none') {
@@ -158,14 +119,14 @@ function setupEventListeners() {
     });
 }
 
-// МОЛНИЕНОСНАЯ проверка пароля - только валидация без загрузки данных
+// МАКСИМАЛЬНО БЫСТРАЯ проверка пароля - только валидация без загрузки данных
 async function lightningFastPasswordCheck(password) {
     try {
         console.log('⚡ Lightning fast password validation...');
         
         // Создаем минимальный HEAD запрос - только статус без данных
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 секунды таймаут
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды таймаут
         
         const response = await fetch('/api/admin/points', {
             method: 'HEAD', // HEAD запрос - никаких данных, только статус
@@ -176,7 +137,7 @@ async function lightningFastPasswordCheck(password) {
         });
         
         clearTimeout(timeoutId);
-        console.log('📡 Password check response:', response.status);
+        console.log('📡 Password check response:', response.status, 'in', performance.now());
         
         return response.status === 200;
         
@@ -263,7 +224,7 @@ function showAdminPanelInstantly() {
     // Запускаем инициализацию в фоне БЕЗ ожидания
     setTimeout(() => {
         initializeAdminPanelBackground();
-    }, 50); // Минимальная задержка для плавности UI
+    }, 100); // Небольшая задержка для плавности UI
 }
 
 // Фоновая инициализация админ панели
@@ -306,7 +267,7 @@ function initAdminMapBackground() {
             // Проверяем доступность Leaflet
             if (typeof L === 'undefined') {
                 console.warn('⚠️ Leaflet not loaded yet, will retry...');
-                setTimeout(() => initAdminMapBackground().then(resolve), 300);
+                setTimeout(() => initAdminMapBackground().then(resolve), 500);
                 return;
             }
             
@@ -317,19 +278,11 @@ function initAdminMapBackground() {
                 return;
             }
             
-            adminMap = L.map('adminMap', {
-                center: ALMATY_CENTER,
-                zoom: 13,
-                zoomControl: true,
-                preferCanvas: true,
-                renderer: L.canvas({ padding: 0.5 })
-            });
+            adminMap = L.map('adminMap').setView(ALMATY_CENTER, 13);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
-                maxZoom: 18,
-                keepBuffer: 2,
-                updateWhenIdle: true
+                maxZoom: 18
             }).addTo(adminMap);
             
             // Добавляем обработчик кликов
@@ -355,37 +308,11 @@ function initAdminMapBackground() {
     });
 }
 
-// Фоновая загрузка точек с кэшированием
+// Фоновая загрузка точек
 async function loadAdminPointsBackground() {
     try {
-        console.log('🔄 Loading admin points in background...');
+        console.log('🔄 Loading points in background...');
         
-        // Проверяем кэш
-        let cachedPoints = AdminCache.load();
-        if (cachedPoints) {
-            allPoints = cachedPoints;
-            updateAdminMap();
-            updateAdminStats();
-            updatePointsList();
-            console.log('📦 Loaded from admin cache:', allPoints.length);
-            
-            // Обновляем в фоне
-            setTimeout(() => fetchAdminPointsFromServer(), 500);
-            return;
-        }
-        
-        // Загружаем с сервера
-        await fetchAdminPointsFromServer();
-        
-    } catch (error) {
-        console.error('❌ Background points loading error:', error);
-        showNotification(`Data loading error: ${error.message}`, 'error');
-    }
-}
-
-// Загрузка точек с сервера для админа
-async function fetchAdminPointsFromServer() {
-    try {
         const response = await fetch('/api/admin/points', {
             method: 'GET',
             headers: {
@@ -395,7 +322,7 @@ async function fetchAdminPointsFromServer() {
             }
         });
         
-        console.log('📡 Admin points response:', response.status);
+        console.log('📡 Background points response:', response.status);
         
         if (!response.ok) {
             if (response.status === 401) {
@@ -408,10 +335,7 @@ async function fetchAdminPointsFromServer() {
         }
         
         allPoints = await response.json();
-        console.log('✅ Loaded admin points:', allPoints.length);
-        
-        // Сохраняем в кэш
-        AdminCache.save(allPoints);
+        console.log('✅ Background loaded points:', allPoints.length);
         
         // Обновляем UI
         updateAdminMap();
@@ -419,19 +343,19 @@ async function fetchAdminPointsFromServer() {
         updatePointsList();
         
     } catch (error) {
-        console.error('❌ Admin points fetch error:', error);
-        throw error;
+        console.error('❌ Background points loading error:', error);
+        showNotification(`Data loading error: ${error.message}`, 'error');
     }
 }
 
-// Обновление карты админа
+// Остальные функции остаются теми же
 function updateAdminMap() {
     if (!adminMap || !allPoints) {
-        console.warn('⚠️ Admin map or points not ready for update');
+        console.warn('⚠️ Map or points not ready for update');
         return;
     }
     
-    // Очищаем существующие маркеры
+    // Clear existing markers
     adminMarkers.forEach(marker => {
         if (adminMap.hasLayer(marker)) {
             adminMap.removeLayer(marker);
@@ -445,9 +369,9 @@ function updateAdminMap() {
             const isScheduled = new Date(point.scheduledTime) > now;
             const isCollected = point.status === 'collected';
             
-            let iconColor = '#4CAF50'; // зеленый для доступных
-            if (isCollected) iconColor = '#f44336'; // красный для собранных
-            else if (isScheduled) iconColor = '#ff9800'; // оранжевый для запланированных
+            let iconColor = '#4CAF50'; // green for available
+            if (isCollected) iconColor = '#f44336'; // red for collected
+            else if (isScheduled) iconColor = '#ff9800'; // orange for scheduled
             
             const icon = L.divIcon({
                 className: 'admin-marker',
@@ -491,7 +415,7 @@ function updateAdminMap() {
             marker.bindPopup(popupContent);
             adminMarkers.push(marker);
         } catch (error) {
-            console.error('❌ Admin marker addition error:', error, point);
+            console.error('❌ Marker addition error:', error, point);
         }
     });
     
@@ -504,14 +428,13 @@ function getStatusText(point, isScheduled) {
     return '🟢 Available';
 }
 
-// Обновление статистики админа
 function updateAdminStats() {
     const now = new Date();
     const total = allPoints.length;
     const scheduled = allPoints.filter(p => new Date(p.scheduledTime) > now && p.status !== 'collected').length;
     const active = allPoints.filter(p => new Date(p.scheduledTime) <= now && p.status === 'available').length;
     
-    // Анимированное обновление
+    // Animated update
     animateAdminNumber(document.getElementById('totalPoints'), total);
     animateAdminNumber(document.getElementById('activePoints'), active);
     animateAdminNumber(document.getElementById('scheduledPoints'), scheduled);
@@ -523,17 +446,31 @@ function animateAdminNumber(element, targetValue) {
     const currentValue = parseInt(element.textContent) || 0;
     if (currentValue === targetValue) return;
     
-    // Быстрая анимация для админа
-    element.textContent = targetValue;
-    element.style.transform = 'scale(1.1)';
-    element.style.transition = 'transform 0.2s ease';
+    const duration = 600;
+    const steps = 20;
+    const stepValue = (targetValue - currentValue) / steps;
+    const stepDuration = duration / steps;
     
-    setTimeout(() => {
-        element.style.transform = 'scale(1)';
-    }, 200);
+    let current = currentValue;
+    let step = 0;
+    
+    element.style.transform = 'scale(1.1)';
+    element.style.transition = 'transform 0.3s ease';
+    
+    const timer = setInterval(() => {
+        step++;
+        current += stepValue;
+        
+        if (step >= steps) {
+            element.textContent = targetValue;
+            element.style.transform = 'scale(1)';
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.round(current);
+        }
+    }, stepDuration);
 }
 
-// Обновление списка точек
 function updatePointsList() {
     const container = document.getElementById('pointsList');
     
@@ -682,8 +619,6 @@ async function handleAddPointSubmit(e) {
             showQRCodeForNewPoint(responseData);
         }
         
-        // Очищаем кэш и перезагружаем
-        AdminCache.clear();
         await loadAdminPointsBackground();
         
     } catch (error) {
@@ -775,9 +710,6 @@ async function deletePoint(pointId) {
         }
         
         showNotification('Point deleted', 'success');
-        
-        // Очищаем кэш и перезагружаем
-        AdminCache.clear();
         await loadAdminPointsBackground();
         
     } catch (error) {
@@ -855,8 +787,8 @@ function getAdminLocation() {
                 `);
             
             adminMap.flyTo([lat, lng], 16, {
-                duration: 1.2,
-                easeLinearity: 0.3
+                duration: 1.5,
+                easeLinearity: 0.5
             });
             
             showNotification('Location determined', 'success');
@@ -875,7 +807,7 @@ function getAdminLocation() {
         },
         {
             enableHighAccuracy: true,
-            timeout: 8000,
+            timeout: 10000,
             maximumAge: 300000
         }
     );
@@ -1161,7 +1093,7 @@ function showNotification(message, type = 'info') {
     });
     
     // Автоматическое скрытие
-    const hideTimeout = type === 'error' ? 5000 : (type === 'success' ? 2000 : 3000);
+    const hideTimeout = type === 'error' ? 7000 : (type === 'success' ? 3000 : 5000);
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOut 0.3s ease';
@@ -1187,8 +1119,7 @@ function debugAdminState() {
         isAddMode: isAddMode,
         allPointsCount: allPoints.length,
         adminMapReady: !!adminMap,
-        tempCoordinates: window.tempCoordinates,
-        cacheSize: AdminCache.load()?.length || 0
+        tempCoordinates: window.tempCoordinates
     });
 }
 
