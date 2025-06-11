@@ -371,7 +371,7 @@
             font-weight: 500;
         }
 
-        /* Компактные стили для позиций 4-10 */
+        /* НОВЫЕ стили для переработанного компактного дизайна позиций 4-10 */
         .leaderboard-item.compact {
             padding: 15px 25px;
             background: linear-gradient(135deg, #f8f9fa, #ffffff);
@@ -392,48 +392,62 @@
             color: #6c757d;
         }
 
-        .user-info-compact {
+        .user-info-compact-new {
             flex: 1;
             display: flex;
             align-items: center;
+            padding: 0 10px;
         }
 
-        .user-name-compact {
+        .compact-user-details {
+            flex: 1;
+        }
+
+        .compact-user-name {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #495057;
+            color: #333;
+            margin-bottom: 4px;
+            font-family: 'ABC Oracle', sans-serif;
+            letter-spacing: 0.2px;
         }
 
-        /* Стили для кликабельных Telegram ссылок в компактном режиме */
-        .telegram-link {
-            color: #0088cc !important;
-            text-decoration: none !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            transition: all 0.3s ease !important;
-            padding: 4px 8px !important;
-            border-radius: 12px !important;
-            background: rgba(0, 136, 204, 0.1) !important;
-            font-weight: 600 !important;
-            font-size: 1rem !important;
-            cursor: pointer !important;
+        .compact-telegram-username {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #0088cc;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: rgba(0, 136, 204, 0.1);
+            transition: all 0.3s ease;
+            font-family: 'ABC Oracle', sans-serif;
+            letter-spacing: 0.2px;
+            width: fit-content;
         }
 
-        .telegram-link:hover {
-            color: #006699 !important;
-            background: rgba(0, 136, 204, 0.2) !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 3px 8px rgba(0, 136, 204, 0.2) !important;
+        .compact-telegram-username:hover {
+            background: rgba(0, 136, 204, 0.2);
+            color: #006699;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 136, 204, 0.2);
         }
 
-        .telegram-link:active {
-            transform: translateY(0) !important;
+        .compact-telegram-username:active {
+            transform: translateY(0);
         }
 
-        .collection-stats-compact {
+        .telegram-icon {
+            font-size: 0.8rem;
+        }
+
+        .collection-stats-compact-new {
             text-align: center;
             min-width: 80px;
+            padding-left: 10px;
         }
 
         .collection-count-compact {
@@ -565,7 +579,7 @@
             transform: translateY(-1px);
         }
 
-        /* Оптимизированная мобильная адаптация */
+        /* Мобильная адаптация для нового дизайна */
         @media (max-width: 768px) {
             .leaderboard-container {
                 padding: 15px;
@@ -665,18 +679,20 @@
                 margin-right: 15px;
             }
 
-            .user-name-compact {
+            .compact-user-name {
                 font-size: 1rem;
+                margin-bottom: 3px;
             }
 
-            .telegram-link {
-                font-size: 0.9rem !important;
-                padding: 3px 6px !important;
-                gap: 4px !important;
+            .compact-telegram-username {
+                font-size: 0.85rem;
+                padding: 2px 5px;
+                gap: 3px;
             }
 
-            .collection-stats-compact {
+            .collection-stats-compact-new {
                 min-width: 70px;
+                padding-left: 8px;
             }
 
             .collection-count-compact {
@@ -766,18 +782,24 @@
                 margin-right: 12px;
             }
 
-            .user-name-compact {
-                font-size: 0.9rem;
+            .compact-user-name {
+                font-size: 0.95rem;
+                margin-bottom: 2px;
             }
 
-            .telegram-link {
-                font-size: 0.85rem !important;
-                padding: 2px 5px !important;
-                gap: 3px !important;
+            .compact-telegram-username {
+                font-size: 0.8rem;
+                padding: 1px 4px;
+                gap: 2px;
             }
 
-            .collection-stats-compact {
-                min-width: 60px;
+            .telegram-icon {
+                font-size: 0.75rem;
+            }
+
+            .collection-stats-compact-new {
+                min-width: 65px;
+                padding-left: 6px;
             }
 
             .collection-count-compact {
@@ -1004,13 +1026,12 @@
 
             container.appendChild(fragment);
             
-            // ДОБАВЛЯЕМ обработчики кликов после добавления элементов в DOM
-            attachTelegramClickHandlers();
+            // НЕ вызываем attachTelegramClickHandlers() - используем onclick в HTML
             
             showLeaderboardList();
         }
 
-        // ИСПРАВЛЕННАЯ функция создания элемента лидерборда
+        // НОВАЯ функция создания элемента лидерборда с переработанным блоком 4-10
         function createLeaderboardItem(user, position) {
             const item = document.createElement('div');
             
@@ -1033,35 +1054,38 @@
             item.className = `leaderboard-item ${positionClass} ${isCompact ? 'compact' : ''}`;
             
             if (isCompact) {
-                // Компактное отображение для 4-10 мест
+                // НОВЫЙ дизайн для позиций 4-10: Имя + под ним кликабельный @username
                 const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
                 
-                let userNameElement = '';
+                let userInfoHtml = `
+                    <div class="compact-user-details">
+                        <div class="compact-user-name">${fullName}</div>
+                `;
+                
                 if (user.username) {
-                    // ИСПРАВЛЕННАЯ кликабельная ссылка на Telegram с правильным обработчиком
-                    userNameElement = `<span class="user-name-compact telegram-link" 
-                                             data-username="${user.username}" 
-                                             style="cursor: pointer;">
-                        <span>✈️</span>
-                        @${user.username}
-                    </span>`;
-                } else {
-                    // Обычное отображение имени для пользователей без username
-                    userNameElement = `<div class="user-name-compact">${fullName}</div>`;
+                    // Кликабельный Telegram username под именем
+                    userInfoHtml += `
+                        <div class="compact-telegram-username" onclick="openTelegramProfile('${user.username}', event)">
+                            <span class="telegram-icon">✈️</span>
+                            @${user.username}
+                        </div>
+                    `;
                 }
+                
+                userInfoHtml += `</div>`;
                 
                 item.innerHTML = `
                     <div class="rank ${positionClass}">${position}</div>
-                    <div class="user-info-compact">
-                        ${userNameElement}
+                    <div class="user-info-compact-new">
+                        ${userInfoHtml}
                     </div>
-                    <div class="collection-stats-compact">
+                    <div class="collection-stats-compact-new">
                         <span class="collection-count-compact">${user.totalCollections}</span>
                         <div class="collection-label-compact">models</div>
                     </div>
                 `;
             } else {
-                // Полное отображение для топ-3
+                // Полное отображение для топ-3 (остается без изменений)
                 let avatarElement = '';
                 if (user.photo_url) {
                     avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="user-avatar" onerror="this.outerHTML='<div class=&quot;user-avatar no-photo&quot;>${user.first_name.charAt(0).toUpperCase()}</div>'">`;
@@ -1073,12 +1097,10 @@
                 
                 let usernameElement = '';
                 if (user.username) {
-                    usernameElement = `<span class="user-username" 
-                                             data-username="${user.username}" 
-                                             style="cursor: pointer;">
+                    usernameElement = `<div class="user-username" onclick="openTelegramProfile('${user.username}', event)">
                         <span>✈️</span>
                         @${user.username}
-                    </span>`;
+                    </div>`;
                 }
 
                 const lastCollection = new Date(user.lastCollection).toLocaleDateString('en-US', {
@@ -1107,28 +1129,6 @@
             }
 
             return item;
-        }
-
-        // НОВАЯ функция для добавления обработчиков кликов на Telegram ссылки
-        function attachTelegramClickHandlers() {
-            // Удаляем старые обработчики
-            document.querySelectorAll('.telegram-link, .user-username').forEach(element => {
-                // Клонируем элемент чтобы удалить все обработчики
-                const newElement = element.cloneNode(true);
-                element.parentNode.replaceChild(newElement, element);
-            });
-            
-            // Добавляем новые обработчики
-            document.querySelectorAll('.telegram-link, .user-username').forEach(element => {
-                const username = element.getAttribute('data-username');
-                if (username) {
-                    element.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        openTelegramProfile(username, event);
-                    });
-                }
-            });
         }
 
         // МОЛНИЕНОСНАЯ анимация изменения чисел
