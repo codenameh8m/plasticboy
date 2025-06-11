@@ -323,6 +323,7 @@
             border-radius: 15px;
             background: rgba(0, 136, 204, 0.1);
             font-weight: 600;
+            cursor: pointer !important;
         }
 
         .user-username:hover {
@@ -428,29 +429,6 @@
 
         .telegram-link:active {
             transform: translateY(0) !important;
-        }
-
-        .user-username {
-            color: #0088cc;
-            font-size: 1rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            margin-bottom: 8px;
-            padding: 4px 10px;
-            border-radius: 15px;
-            background: rgba(0, 136, 204, 0.1);
-            font-weight: 600;
-            cursor: pointer !important;
-        }
-
-        .user-username:hover {
-            color: #006699;
-            background: rgba(0, 136, 204, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
         }
 
         .collection-stats-compact {
@@ -1025,10 +1003,14 @@
             });
 
             container.appendChild(fragment);
+            
+            // ДОБАВЛЯЕМ обработчики кликов после добавления элементов в DOM
+            attachTelegramClickHandlers();
+            
             showLeaderboardList();
         }
 
-        // Создать элемент лидерборда
+        // ИСПРАВЛЕННАЯ функция создания элемента лидерборда
         function createLeaderboardItem(user, position) {
             const item = document.createElement('div');
             
@@ -1056,11 +1038,13 @@
                 
                 let userNameElement = '';
                 if (user.username) {
-                    // Кликабельная ссылка на Telegram для пользователей с username
-                    userNameElement = `<a href="https://t.me/${user.username}" target="_blank" rel="noopener noreferrer" class="user-name-compact telegram-link" onclick="openTelegramProfile('${user.username}', event)">
+                    // ИСПРАВЛЕННАЯ кликабельная ссылка на Telegram с правильным обработчиком
+                    userNameElement = `<span class="user-name-compact telegram-link" 
+                                             data-username="${user.username}" 
+                                             style="cursor: pointer;">
                         <span>✈️</span>
                         @${user.username}
-                    </a>`;
+                    </span>`;
                 } else {
                     // Обычное отображение имени для пользователей без username
                     userNameElement = `<div class="user-name-compact">${fullName}</div>`;
@@ -1089,10 +1073,12 @@
                 
                 let usernameElement = '';
                 if (user.username) {
-                    usernameElement = `<a href="https://t.me/${user.username}" target="_blank" rel="noopener noreferrer" class="user-username" onclick="openTelegramProfile('${user.username}', event)">
+                    usernameElement = `<span class="user-username" 
+                                             data-username="${user.username}" 
+                                             style="cursor: pointer;">
                         <span>✈️</span>
                         @${user.username}
-                    </a>`;
+                    </span>`;
                 }
 
                 const lastCollection = new Date(user.lastCollection).toLocaleDateString('en-US', {
@@ -1121,6 +1107,28 @@
             }
 
             return item;
+        }
+
+        // НОВАЯ функция для добавления обработчиков кликов на Telegram ссылки
+        function attachTelegramClickHandlers() {
+            // Удаляем старые обработчики
+            document.querySelectorAll('.telegram-link, .user-username').forEach(element => {
+                // Клонируем элемент чтобы удалить все обработчики
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
+            });
+            
+            // Добавляем новые обработчики
+            document.querySelectorAll('.telegram-link, .user-username').forEach(element => {
+                const username = element.getAttribute('data-username');
+                if (username) {
+                    element.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openTelegramProfile(username, event);
+                    });
+                }
+            });
         }
 
         // МОЛНИЕНОСНАЯ анимация изменения чисел
