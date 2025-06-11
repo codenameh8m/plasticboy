@@ -1135,6 +1135,65 @@ button:not(.control-btn):disabled {
     letter-spacing: 0.3px !important;
 }
 
+/* === НОВЫЕ СТИЛИ ДЛЯ ПЕРЕРАБОТАННЫХ ПОЗИЦИЙ 4-10 В LEADERBOARD === */
+.user-info-compact-new {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.compact-user-details {
+    flex: 1;
+}
+
+.compact-user-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+    font-family: 'ABC Oracle', sans-serif;
+    letter-spacing: 0.2px;
+}
+
+.compact-telegram-username {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #0088cc;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(0, 136, 204, 0.1);
+    transition: all 0.3s ease;
+    font-family: 'ABC Oracle', sans-serif;
+    letter-spacing: 0.2px;
+    width: fit-content;
+}
+
+.compact-telegram-username:hover {
+    background: rgba(0, 136, 204, 0.2);
+    color: #006699;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 136, 204, 0.2);
+}
+
+.compact-telegram-username:active {
+    transform: translateY(0);
+}
+
+.telegram-icon {
+    font-size: 0.8rem;
+}
+
+.collection-stats-compact-new {
+    text-align: center;
+    min-width: 80px;
+    padding-left: 10px;
+}
+
 /* МОБИЛЬНАЯ АДАПТАЦИЯ С УЛУЧШЕННЫМИ POPUP */
 @media (max-width: 768px) {
     .leaflet-popup-content-wrapper {
@@ -1151,6 +1210,34 @@ button:not(.control-btn):disabled {
     }
     
     .popup-content h3 {
+        font-size: 0.9rem !important;
+    }
+    
+    .status {
+        font-size: 0.8rem !important;
+    }
+    
+    .telegram-name {
+        font-size: 0.8rem !important;
+    }
+    
+    .telegram-username {
+        font-size: 0.7rem !important;
+    }
+    
+    .collector-detail {
+        font-size: 0.7rem !important;
+    }
+}
+
+.leaderboard-btn {
+    background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
+    border: 2px solid rgba(0, 136, 204, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+} h3 {
         font-size: 1rem !important;
         margin: 0 0 8px 0 !important;
         font-family: 'ABC Oracle', sans-serif !important;
@@ -1224,6 +1311,23 @@ button:not(.control-btn):disabled {
         text-align: center !important;
         margin: 3px 0 !important;
         font-size: 0.8rem !important;
+    }
+
+    /* Новые мобильные стили для переработанного компактного дизайна */
+    .compact-user-name {
+        font-size: 1rem;
+        margin-bottom: 3px;
+    }
+
+    .compact-telegram-username {
+        font-size: 0.85rem;
+        padding: 2px 5px;
+        gap: 3px;
+    }
+
+    .collection-stats-compact-new {
+        min-width: 70px;
+        padding-left: 8px;
     }
 }
 
@@ -1398,6 +1502,27 @@ button:not(.control-btn):disabled {
         padding: 14px 18px !important;
         min-height: 50px;
     }
+
+    /* Мобильные стили для нового компактного дизайна */
+    .compact-user-name {
+        font-size: 0.95rem;
+        margin-bottom: 2px;
+    }
+
+    .compact-telegram-username {
+        font-size: 0.8rem;
+        padding: 1px 4px;
+        gap: 2px;
+    }
+
+    .telegram-icon {
+        font-size: 0.75rem;
+    }
+
+    .collection-stats-compact-new {
+        min-width: 65px;
+        padding-left: 6px;
+    }
 }
 
 @media (max-width: 360px) {
@@ -1427,32 +1552,4 @@ button:not(.control-btn):disabled {
         font-size: 0.8rem !important;
     }
     
-    .popup-content h3 {
-        font-size: 0.9rem !important;
-    }
-    
-    .status {
-        font-size: 0.8rem !important;
-    }
-    
-    .telegram-name {
-        font-size: 0.8rem !important;
-    }
-    
-    .telegram-username {
-        font-size: 0.7rem !important;
-    }
-    
-    .collector-detail {
-        font-size: 0.7rem !important;
-    }
-}
-
-.leaderboard-btn {
-    background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
-    border: 2px solid rgba(0, 136, 204, 0.3) !important;
-    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
-}
+    .popup-content
