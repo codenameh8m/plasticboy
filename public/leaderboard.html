@@ -376,7 +376,6 @@
             background: linear-gradient(135deg, #f8f9fa, #ffffff);
             border: 1px solid #e9ecef;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            pointer-events: none; /* Отключаем клики по всему контейнеру */
         }
 
         .leaderboard-item.compact:hover {
@@ -390,21 +389,18 @@
             width: 50px;
             margin-right: 20px;
             color: #6c757d;
-            pointer-events: none; /* Отключаем клики по рангу */
         }
 
         .user-info-compact {
             flex: 1;
             display: flex;
             align-items: center;
-            pointer-events: none; /* Отключаем клики по контейнеру */
         }
 
         .user-name-compact {
             font-size: 1.1rem;
             font-weight: 600;
             color: #495057;
-            pointer-events: none; /* Отключаем клики по обычному имени */
         }
 
         /* Стили для кликабельных Telegram ссылок в компактном режиме */
@@ -421,9 +417,6 @@
             font-weight: 600 !important;
             font-size: 1rem !important;
             cursor: pointer !important;
-            pointer-events: auto !important; /* ВКЛЮЧАЕМ клики только для Telegram ссылки */
-            position: relative !important;
-            z-index: 10 !important; /* Поднимаем над другими элементами */
         }
 
         .telegram-link:hover {
@@ -451,9 +444,6 @@
             background: rgba(0, 136, 204, 0.1);
             font-weight: 600;
             cursor: pointer !important;
-            pointer-events: auto !important; /* ВКЛЮЧАЕМ клики для топ-3 ссылок */
-            position: relative !important;
-            z-index: 10 !important;
         }
 
         .user-username:hover {
@@ -466,7 +456,6 @@
         .collection-stats-compact {
             text-align: center;
             min-width: 80px;
-            pointer-events: none; /* Отключаем клики по статистике */
         }
 
         .collection-count-compact {
@@ -690,32 +679,26 @@
 
             .leaderboard-item.compact {
                 padding: 12px 18px;
-                pointer-events: none; /* Отключаем клики по контейнеру на мобильных */
             }
 
             .leaderboard-item.compact .rank {
                 font-size: 1.2rem;
                 width: 40px;
                 margin-right: 15px;
-                pointer-events: none;
             }
 
             .user-name-compact {
                 font-size: 1rem;
-                pointer-events: none;
             }
 
             .telegram-link {
                 font-size: 0.9rem !important;
                 padding: 3px 6px !important;
                 gap: 4px !important;
-                pointer-events: auto !important; /* Включаем клики для ссылки */
-                z-index: 10 !important;
             }
 
             .collection-stats-compact {
                 min-width: 70px;
-                pointer-events: none;
             }
 
             .collection-count-compact {
@@ -797,32 +780,26 @@
 
             .leaderboard-item.compact {
                 padding: 10px 15px;
-                pointer-events: none; /* Отключаем клики по контейнеру */
             }
 
             .leaderboard-item.compact .rank {
                 font-size: 1.1rem;
                 width: 35px;
                 margin-right: 12px;
-                pointer-events: none;
             }
 
             .user-name-compact {
                 font-size: 0.9rem;
-                pointer-events: none;
             }
 
             .telegram-link {
                 font-size: 0.85rem !important;
                 padding: 2px 5px !important;
                 gap: 3px !important;
-                pointer-events: auto !important; /* Включаем клики для ссылки */
-                z-index: 10 !important;
             }
 
             .collection-stats-compact {
                 min-width: 60px;
-                pointer-events: none;
             }
 
             .collection-count-compact {
