@@ -403,6 +403,32 @@
             color: #495057;
         }
 
+        /* Стили для кликабельных Telegram ссылок в компактном режиме */
+        .telegram-link {
+            color: #0088cc !important;
+            text-decoration: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            transition: all 0.3s ease !important;
+            padding: 4px 8px !important;
+            border-radius: 12px !important;
+            background: rgba(0, 136, 204, 0.1) !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+        }
+
+        .telegram-link:hover {
+            color: #006699 !important;
+            background: rgba(0, 136, 204, 0.2) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 3px 8px rgba(0, 136, 204, 0.2) !important;
+        }
+
+        .telegram-link:active {
+            transform: translateY(0) !important;
+        }
+
         .collection-stats-compact {
             text-align: center;
             min-width: 80px;
@@ -641,6 +667,12 @@
                 font-size: 1rem;
             }
 
+            .telegram-link {
+                font-size: 0.9rem !important;
+                padding: 3px 6px !important;
+                gap: 4px !important;
+            }
+
             .collection-stats-compact {
                 min-width: 70px;
             }
@@ -734,6 +766,12 @@
 
             .user-name-compact {
                 font-size: 0.9rem;
+            }
+
+            .telegram-link {
+                font-size: 0.85rem !important;
+                padding: 2px 5px !important;
+                gap: 3px !important;
             }
 
             .collection-stats-compact {
@@ -991,12 +1029,23 @@
             if (isCompact) {
                 // Компактное отображение для 4-10 мест
                 const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
-                const displayName = user.username ? `@${user.username}` : fullName;
+                
+                let userNameElement = '';
+                if (user.username) {
+                    // Кликабельная ссылка на Telegram для пользователей с username
+                    userNameElement = `<a href="https://t.me/${user.username}" target="_blank" class="user-name-compact telegram-link">
+                        <span>✈️</span>
+                        @${user.username}
+                    </a>`;
+                } else {
+                    // Обычное отображение имени для пользователей без username
+                    userNameElement = `<div class="user-name-compact">${fullName}</div>`;
+                }
                 
                 item.innerHTML = `
                     <div class="rank ${positionClass}">${position}</div>
                     <div class="user-info-compact">
-                        <div class="user-name-compact">${displayName}</div>
+                        ${userNameElement}
                     </div>
                     <div class="collection-stats-compact">
                         <span class="collection-count-compact">${user.totalCollections}</span>
