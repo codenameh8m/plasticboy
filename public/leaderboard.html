@@ -371,7 +371,7 @@
             font-weight: 500;
         }
 
-        /* НОВЫЕ стили для переработанного компактного дизайна позиций 4-10 */
+        /* НОВЫЕ стили для переработанного компактного дизайна позиций 4-10 С АВАТАРКАМИ */
         .leaderboard-item.compact {
             padding: 15px 25px;
             background: linear-gradient(135deg, #f8f9fa, #ffffff);
@@ -392,11 +392,39 @@
             color: #6c757d;
         }
 
-        .user-info-compact-new {
+        /* НОВЫЙ блок с аватаркой для компактного режима */
+        .user-info-compact-with-avatar {
             flex: 1;
             display: flex;
             align-items: center;
+            gap: 15px;
             padding: 0 10px;
+        }
+
+        /* Аватарка для компактного режима */
+        .compact-user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            object-fit: cover;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .compact-user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .compact-user-avatar.no-photo {
+            background: linear-gradient(45deg, #0088cc, #00a0ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
         }
 
         .compact-user-details {
@@ -427,6 +455,7 @@
             font-family: 'ABC Oracle', sans-serif;
             letter-spacing: 0.2px;
             width: fit-content;
+            text-decoration: none;
         }
 
         .compact-telegram-username:hover {
@@ -579,7 +608,7 @@
             transform: translateY(-1px);
         }
 
-        /* Мобильная адаптация для нового дизайна */
+        /* Мобильная адаптация для нового дизайна с аватарками */
         @media (max-width: 768px) {
             .leaderboard-container {
                 padding: 15px;
@@ -677,6 +706,21 @@
                 font-size: 1.2rem;
                 width: 40px;
                 margin-right: 15px;
+            }
+
+            .user-info-compact-with-avatar {
+                gap: 12px;
+                padding: 0 8px;
+            }
+
+            .compact-user-avatar {
+                width: 45px;
+                height: 45px;
+                border-width: 2px;
+            }
+
+            .compact-user-avatar.no-photo {
+                font-size: 1rem;
             }
 
             .compact-user-name {
@@ -782,6 +826,21 @@
                 margin-right: 12px;
             }
 
+            .user-info-compact-with-avatar {
+                gap: 10px;
+                padding: 0 6px;
+            }
+
+            .compact-user-avatar {
+                width: 40px;
+                height: 40px;
+                border-width: 2px;
+            }
+
+            .compact-user-avatar.no-photo {
+                font-size: 0.9rem;
+            }
+
             .compact-user-name {
                 font-size: 0.95rem;
                 margin-bottom: 2px;
@@ -884,7 +943,7 @@
     </div>
 
     <script>
-        console.log('🏆 Leaderboard - OPTIMIZED Initialization');
+        console.log('🏆 Leaderboard - OPTIMIZED Initialization with Avatars');
 
         let leaderboardData = [];
         let isLoading = false;
@@ -1026,12 +1085,10 @@
 
             container.appendChild(fragment);
             
-            // НЕ вызываем attachTelegramClickHandlers() - используем onclick в HTML
-            
             showLeaderboardList();
         }
 
-        // НОВАЯ функция создания элемента лидерборда с переработанным блоком 4-10
+        // ОБНОВЛЕННАЯ функция создания элемента лидерборда с аватарками для позиций 4-10
         function createLeaderboardItem(user, position) {
             const item = document.createElement('div');
             
@@ -1054,8 +1111,16 @@
             item.className = `leaderboard-item ${positionClass} ${isCompact ? 'compact' : ''}`;
             
             if (isCompact) {
-                // НОВЫЙ дизайн для позиций 4-10: Имя + под ним кликабельный @username
+                // НОВЫЙ дизайн для позиций 4-10: аватарка + имя + под ним кликабельный @username
                 const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+                
+                // Создаем аватарку
+                let avatarElement = '';
+                if (user.photo_url) {
+                    avatarElement = `<img src="${user.photo_url}" alt="Avatar" class="compact-user-avatar" onerror="this.outerHTML='<div class=&quot;compact-user-avatar no-photo&quot;>${user.first_name.charAt(0).toUpperCase()}</div>'">`;
+                } else {
+                    avatarElement = `<div class="compact-user-avatar no-photo">${user.first_name.charAt(0).toUpperCase()}</div>`;
+                }
                 
                 let userInfoHtml = `
                     <div class="compact-user-details">
@@ -1065,10 +1130,10 @@
                 if (user.username) {
                     // Кликабельный Telegram username под именем
                     userInfoHtml += `
-                        <div class="compact-telegram-username" onclick="openTelegramProfile('${user.username}', event)">
+                        <a href="#" class="compact-telegram-username" onclick="openTelegramProfile('${user.username}', event)">
                             <span class="telegram-icon">✈️</span>
                             @${user.username}
-                        </div>
+                        </a>
                     `;
                 }
                 
@@ -1076,7 +1141,8 @@
                 
                 item.innerHTML = `
                     <div class="rank ${positionClass}">${position}</div>
-                    <div class="user-info-compact-new">
+                    <div class="user-info-compact-with-avatar">
+                        ${avatarElement}
                         ${userInfoHtml}
                     </div>
                     <div class="collection-stats-compact-new">
@@ -1097,10 +1163,10 @@
                 
                 let usernameElement = '';
                 if (user.username) {
-                    usernameElement = `<div class="user-username" onclick="openTelegramProfile('${user.username}', event)">
+                    usernameElement = `<a href="#" class="user-username" onclick="openTelegramProfile('${user.username}', event)">
                         <span>✈️</span>
                         @${user.username}
-                    </div>`;
+                    </a>`;
                 }
 
                 const lastCollection = new Date(user.lastCollection).toLocaleDateString('en-US', {
@@ -1207,7 +1273,7 @@
             }
         }
 
-        console.log('🏆 Leaderboard OPTIMIZED and ready to work');
+        console.log('🏆 Leaderboard OPTIMIZED with Avatars ready to work');
     </script>
 </body>
 </html>
