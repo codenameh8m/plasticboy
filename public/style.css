@@ -45,6 +45,675 @@ body {
 
 .header h1 {
     font-family: 'ABC Oracle', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.details-btn:hover {
+    background: #333333;
+    transform: translateY(-1px);
+}
+
+/* Админ маркеры */
+.admin-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.admin-marker-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+}
+
+.admin-popup {
+    min-width: 200px;
+}
+
+.admin-popup h3 {
+    margin: 0 0 10px 0;
+    color: #000000;
+    font-family: 'ABC Oracle', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.admin-popup p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+    font-family: 'ABC Oracle', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.admin-btn {
+    background: #000000;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin: 5px 5px 0 0;
+    min-width: 80px;
+    font-family: 'ABC Oracle', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.admin-btn:hover {
+    background: #333333;
+}
+
+.delete-btn {
+    background: #f44336 !important;
+}
+
+.delete-btn:hover {
+    background: #d32f2f !important;
+}
+
+/* Уведомления */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    padding: 15px;
+    min-width: 250px;
+    max-width: 350px;
+    animation: slideIn 0.3s ease-out;
+    font-family: 'ABC Oracle', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.notification.error {
+    border-left: 4px solid #f44336;
+}
+
+.notification.success {
+    border-left: 4px solid #4CAF50;
+}
+
+.notification.info {
+    border-left: 4px solid #000000;
+}
+
+.notification.warning {
+    border-left: 4px solid #ff9800;
+}
+
+.notification-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-content button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    margin: 0;
+    width: auto;
+    margin-left: 10px;
+    font-family: 'ABC Oracle', sans-serif;
+    font-weight: 500;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ ЗАГРУЗОЧНОГО ЭКРАНА === */
+.loading-screen {
+    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
+}
+
+.loading-screen .logo-title {
+    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
+}
+
+.loading-screen .logo-subtitle {
+    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
+}
+
+.loading-screen .loading-status {
+    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
+}
+
+.loading-screen .progress-text {
+    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
+}
+
+/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ LEADERBOARD === */
+.leaderboard-title {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+}
+
+.leaderboard-subtitle {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.stat-card .stat-number {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+}
+
+.stat-card .stat-label {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.user-name {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.user-name-compact {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.2px !important;
+}
+
+.collection-count, .collection-count-compact {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+}
+
+.collection-label, .collection-label-compact {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.last-collection {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.2px !important;
+}
+
+.rank {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.back-btn {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+/* === СТИЛИ ДЛЯ АВТОРИЗАЦИИ В COLLECT.HTML === */
+.auth-title {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.auth-description {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.2px !important;
+}
+
+.telegram-login-info {
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+}
+
+/* === НОВЫЕ СТИЛИ ДЛЯ ПЕРЕРАБОТАННЫХ ПОЗИЦИЙ 4-10 В LEADERBOARD === */
+.user-info-compact-new {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.compact-user-details {
+    flex: 1;
+}
+
+.compact-user-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 4px;
+    font-family: 'ABC Oracle', sans-serif;
+    letter-spacing: 0.2px;
+}
+
+.compact-telegram-username {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #000000;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    font-family: 'ABC Oracle', sans-serif;
+    letter-spacing: 0.2px;
+    width: fit-content;
+}
+
+.compact-telegram-username:hover {
+    background: rgba(0, 0, 0, 0.2);
+    color: #000000;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.compact-telegram-username:active {
+    transform: translateY(0);
+}
+
+.telegram-icon {
+    font-size: 0.8rem;
+}
+
+.collection-stats-compact-new {
+    text-align: center;
+    min-width: 80px;
+    padding-left: 10px;
+}
+
+/* МОБИЛЬНАЯ АДАПТАЦИЯ С УЛУЧШЕННЫМИ POPUP */
+@media (max-width: 768px) {
+    .leaflet-popup-content-wrapper {
+        max-width: 280px !important;
+        font-size: 0.9rem !important;
+        font-family: 'ABC Oracle', sans-serif !important;
+        font-weight: 500 !important;
+    }
+    
+    .leaflet-popup-content {
+        margin: 10px 12px !important;
+        line-height: 1.3 !important;
+        text-align: center !important;
+    }
+    
+    .popup-content h3 {
+        font-size: 0.9rem !important;
+    }
+    
+    .status {
+        font-size: 0.8rem !important;
+    }
+    
+    .telegram-name {
+        font-size: 0.8rem !important;
+    }
+    
+    .telegram-username {
+        font-size: 0.7rem !important;
+    }
+    
+    .collector-detail {
+        font-size: 0.7rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header p {
+        font-size: 1rem;
+    }
+    
+    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
+    #map, #adminMap {
+        height: 420px !important;
+        min-height: 420px !important;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 20px;
+    }
+    
+    .stats {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    /* Адаптивная кнопка управления для планшетов */
+    .map-controls {
+        max-width: 350px;
+        padding: 18px;
+    }
+    
+    .control-btn {
+        font-size: 1rem !important;
+        padding: 16px 20px !important;
+        min-height: 55px;
+    }
+
+    .popup-content h3 {
+        font-size: 1rem !important;
+        margin: 0 0 8px 0 !important;
+        font-family: 'ABC Oracle', sans-serif !important;
+        font-weight: 500 !important;
+        text-align: center !important;
+    }
+    
+    .status {
+        font-size: 0.9rem !important;
+        text-align: center !important;
+        margin: 8px 0 !important;
+        display: block !important;
+        width: 100% !important;
+    }
+    
+    .telegram-user-info {
+        padding: 8px !important;
+        margin: 8px auto !important;
+        text-align: center !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+    }
+    
+    .telegram-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        margin: 0 auto 6px auto !important;
+    }
+    
+    .telegram-name {
+        font-size: 0.9rem !important;
+        margin-bottom: 3px !important;
+        text-align: center !important;
+    }
+    
+    .telegram-username {
+        font-size: 0.8rem !important;
+        padding: 3px 6px !important;
+        margin: 0 auto !important;
+        display: inline-flex !important;
+    }
+    
+    .collector-info-enhanced {
+        padding: 8px !important;
+        margin: 8px auto !important;
+        text-align: center !important;
+        max-width: 100% !important;
+    }
+    
+    .collector-info-enhanced h4 {
+        font-size: 0.85rem !important;
+        margin: 0 0 6px 0 !important;
+        text-align: center !important;
+    }
+    
+    .collector-detail {
+        font-size: 0.8rem !important;
+        margin: 3px 0 !important;
+        text-align: center !important;
+    }
+    
+    /* Центрированная информация о коллекторе */
+    .collector-info {
+        text-align: center !important;
+        margin: 8px auto !important;
+        padding: 8px !important;
+        max-width: 100% !important;
+    }
+    
+    .collector-info p {
+        text-align: center !important;
+        margin: 3px 0 !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Новые мобильные стили для переработанного компактного дизайна */
+    .compact-user-name {
+        font-size: 1rem;
+        margin-bottom: 3px;
+    }
+
+    .compact-telegram-username {
+        font-size: 0.85rem;
+        padding: 2px 5px;
+        gap: 3px;
+    }
+
+    .collection-stats-compact-new {
+        min-width: 70px;
+        padding-left: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .form-container {
+        padding: 20px;
+    }
+    
+    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ - НА 20% БОЛЬШЕ */
+    #map, #adminMap {
+        height: 50vh !important;
+        min-height: 400px !important;
+    }
+    
+    .leaflet-popup-content-wrapper {
+        max-width: 240px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .leaflet-popup-content {
+        margin: 8px 10px !important;
+        line-height: 1.2 !important;
+        text-align: center !important;
+    }
+    
+    .popup-content h3 {
+        font-size: 0.95rem !important;
+        margin: 0 0 6px 0 !important;
+        text-align: center !important;
+    }
+    
+    .status {
+        font-size: 0.85rem !important;
+        text-align: center !important;
+        margin: 6px 0 !important;
+    }
+    
+    .telegram-user-info {
+        padding: 6px !important;
+        margin: 6px auto !important;
+        text-align: center !important;
+        width: fit-content !important;
+    }
+    
+    .telegram-avatar {
+        width: 35px !important;
+        height: 35px !important;
+        margin: 0 auto 4px auto !important;
+    }
+    
+    .telegram-name {
+        font-size: 0.85rem !important;
+        margin-bottom: 2px !important;
+        text-align: center !important;
+    }
+    
+    .telegram-username {
+        font-size: 0.75rem !important;
+        padding: 2px 4px !important;
+        margin: 0 auto !important;
+    }
+    
+    .collector-info-enhanced {
+        padding: 6px !important;
+        margin: 6px auto !important;
+        text-align: center !important;
+    }
+    
+    .collector-info-enhanced h4 {
+        font-size: 0.8rem !important;
+        margin: 0 0 4px 0 !important;
+        text-align: center !important;
+    }
+    
+    .collector-detail {
+        font-size: 0.75rem !important;
+        margin: 2px 0 !important;
+        text-align: center !important;
+    }
+    
+    .collector-info {
+        text-align: center !important;
+        margin: 6px auto !important;
+        padding: 6px !important;
+    }
+    
+    .collector-info p {
+        text-align: center !important;
+        margin: 2px 0 !important;
+        font-size: 0.75rem !important;
+    }
+    
+    /* Компактные изображения селфи в popup */
+    .leaflet-popup-content img {
+        max-width: 120px !important;
+        max-height: 80px !important;
+        margin: 5px auto !important;
+        display: block !important;
+    }
+    
+    /* Адаптивная кнопка для смартфонов */
+    .map-controls {
+        max-width: 320px;
+        padding: 16px;
+    }
+    
+    .control-btn {
+        font-size: 0.95rem !important;
+        padding: 14px 18px !important;
+        min-height: 50px;
+    }
+
+    /* Мобильные стили для нового компактного дизайна */
+    .compact-user-name {
+        font-size: 0.95rem;
+        margin-bottom: 2px;
+    }
+
+    .compact-telegram-username {
+        font-size: 0.8rem;
+        padding: 1px 4px;
+        gap: 2px;
+    }
+
+    .telegram-icon {
+        font-size: 0.75rem;
+    }
+
+    .collection-stats-compact-new {
+        min-width: 65px;
+        padding-left: 6px;
+    }
+}
+
+@media (max-width: 360px) {
+    /* БОЛЬШАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    #map, #adminMap {
+        height: 45vh !important;
+        min-height: 380px !important;
+    }
+    
+    .container {
+        padding: 5px;
+    }
+    
+    .control-btn {
+        font-size: 0.9rem !important;
+        padding: 12px 16px !important;
+        min-height: 48px;
+    }
+    
+    .map-controls {
+        max-width: 300px;
+        padding: 14px;
+    }
+    
+    .leaflet-popup-content-wrapper {
+        max-width: 220px !important;
+        font-size: 0.8rem !important;
+    }
+}
     font-size: 2.5rem;
     font-weight: 500;
     margin-bottom: 10px;
@@ -453,6 +1122,28 @@ body {
     color: white !important;
     box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
     border: 2px solid rgba(0, 136, 204, 0.3) !important;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: flex;
+    font-family: 'ABC Oracle', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+}
+
+.leaderboard-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.leaderboard-btn:hover::before {
+    left: 100%;
 }
 
 .leaderboard-btn:hover {
@@ -486,6 +1177,23 @@ body {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* Анимация иконки рейтинга */
+.leaderboard-btn .trophy-icon {
+    animation: trophyBounce 2s ease-in-out infinite;
+}
+
+@keyframes trophyBounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-3px);
+    }
+    60% {
+        transform: translateY(-1px);
+    }
 }
 
 /* Анимация пульса для загрузки */
@@ -895,687 +1603,3 @@ button:not(.control-btn):disabled {
     width: 100%;
     transition: all 0.3s;
     font-family: 'ABC Oracle', sans-serif;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
-
-.details-btn:hover {
-    background: #333333;
-    transform: translateY(-1px);
-}
-
-/* Админ маркеры */
-.admin-marker {
-    background: none !important;
-    border: none !important;
-}
-
-.admin-marker-dot {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px solid white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    font-size: 14px;
-    color: white;
-    font-weight: bold;
-}
-
-.admin-popup {
-    min-width: 200px;
-}
-
-.admin-popup h3 {
-    margin: 0 0 10px 0;
-    color: #000000;
-    font-family: 'ABC Oracle', sans-serif;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
-
-.admin-popup p {
-    margin: 5px 0;
-    font-size: 0.9rem;
-    font-family: 'ABC Oracle', sans-serif;
-    font-weight: 500;
-    letter-spacing: 0.2px;
-}
-
-.admin-btn {
-    background: #000000;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    margin: 5px 5px 0 0;
-    min-width: 80px;
-    font-family: 'ABC Oracle', sans-serif;
-    font-weight: 500;
-    letter-spacing: 0.2px;
-}
-
-.admin-btn:hover {
-    background: #333333;
-}
-
-.delete-btn {
-    background: #f44336 !important;
-}
-
-.delete-btn:hover {
-    background: #d32f2f !important;
-}
-
-/* Уведомления */
-.notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 2000;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    padding: 15px;
-    min-width: 250px;
-    max-width: 350px;
-    animation: slideIn 0.3s ease-out;
-    font-family: 'ABC Oracle', sans-serif;
-    font-weight: 500;
-    letter-spacing: 0.2px;
-}
-
-.notification.error {
-    border-left: 4px solid #f44336;
-}
-
-.notification.success {
-    border-left: 4px solid #4CAF50;
-}
-
-.notification.info {
-    border-left: 4px solid #000000;
-}
-
-.notification.warning {
-    border-left: 4px solid #ff9800;
-}
-
-.notification-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.notification-content button {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: #999;
-    padding: 0;
-    margin: 0;
-    width: auto;
-    margin-left: 10px;
-    font-family: 'ABC Oracle', sans-serif;
-    font-weight: 500;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ ЗАГРУЗОЧНОГО ЭКРАНА === */
-.loading-screen {
-    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
-}
-
-.loading-screen .logo-title {
-    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
-}
-
-.loading-screen .logo-subtitle {
-    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
-}
-
-.loading-screen .loading-status {
-    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
-}
-
-.loading-screen .progress-text {
-    font-family: 'Press Start 2P', 'ABC Oracle', monospace !important;
-}
-
-/* === СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ LEADERBOARD === */
-.leaderboard-title {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
-}
-
-.leaderboard-subtitle {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-.stat-card .stat-number {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
-}
-
-.stat-card .stat-label {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-.user-name {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-.user-name-compact {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.2px !important;
-}
-
-.collection-count, .collection-count-compact {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
-}
-
-.collection-label, .collection-label-compact {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-.last-collection {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.2px !important;
-}
-
-.rank {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-.back-btn {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-/* === СТИЛИ ДЛЯ АВТОРИЗАЦИИ В COLLECT.HTML === */
-.auth-title {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-.auth-description {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.2px !important;
-}
-
-.telegram-login-info {
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.3px !important;
-}
-
-/* === НОВЫЕ СТИЛИ ДЛЯ ПЕРЕРАБОТАННЫХ ПОЗИЦИЙ 4-10 В LEADERBOARD === */
-.user-info-compact-new {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding: 0 10px;
-}
-
-.compact-user-details {
-    flex: 1;
-}
-
-.compact-user-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #000000;
-    margin-bottom: 4px;
-    font-family: 'ABC Oracle', sans-serif;
-    letter-spacing: 0.2px;
-}
-
-.compact-telegram-username {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: #000000;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    font-family: 'ABC Oracle', sans-serif;
-    letter-spacing: 0.2px;
-    width: fit-content;
-}
-
-.compact-telegram-username:hover {
-    background: rgba(0, 0, 0, 0.2);
-    color: #000000;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.compact-telegram-username:active {
-    transform: translateY(0);
-}
-
-.telegram-icon {
-    font-size: 0.8rem;
-}
-
-.collection-stats-compact-new {
-    text-align: center;
-    min-width: 80px;
-    padding-left: 10px;
-}
-
-/* МОБИЛЬНАЯ АДАПТАЦИЯ С УЛУЧШЕННЫМИ POPUP */
-@media (max-width: 768px) {
-    .leaflet-popup-content-wrapper {
-        max-width: 280px !important;
-        font-size: 0.9rem !important;
-        font-family: 'ABC Oracle', sans-serif !important;
-        font-weight: 500 !important;
-    }
-    
-    .leaflet-popup-content {
-        margin: 10px 12px !important;
-        line-height: 1.3 !important;
-        text-align: center !important;
-    }
-    
-    .popup-content h3 {
-        font-size: 0.9rem !important;
-    }
-    
-    .status {
-        font-size: 0.8rem !important;
-    }
-    
-    .telegram-name {
-        font-size: 0.8rem !important;
-    }
-    
-    .telegram-username {
-        font-size: 0.7rem !important;
-    }
-    
-    .collector-detail {
-        font-size: 0.7rem !important;
-    }
-}
-
-.leaderboard-btn {
-    background: #000000 !important;
-    border: 2px solid #333333 !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-    font-family: 'ABC Oracle', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
-}
-
-.leaderboard-btn:hover {
-    background: #333333 !important;
-    border-color: #000000 !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    
-    .header h1 {
-        font-size: 2rem;
-    }
-    
-    .header p {
-        font-size: 1rem;
-    }
-    
-    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ ПЛАНШЕТОВ */
-    #map, #adminMap {
-        height: 420px !important;
-        min-height: 420px !important;
-    }
-    
-    .modal-content {
-        margin: 10% auto;
-        width: 95%;
-        padding: 20px;
-    }
-    
-    .stats {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .stat-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .stat-number {
-        font-size: 1.5rem;
-        margin-bottom: 0;
-    }
-    
-    /* Адаптивная кнопка управления для планшетов */
-    .map-controls {
-        max-width: 350px;
-        padding: 18px;
-    }
-    
-    .control-btn {
-        font-size: 1rem !important;
-        padding: 16px 20px !important;
-        min-height: 55px;
-    }
-
-    .popup-content h3 {
-        font-size: 1rem !important;
-        margin: 0 0 8px 0 !important;
-        font-family: 'ABC Oracle', sans-serif !important;
-        font-weight: 500 !important;
-        text-align: center !important;
-    }
-    
-    .status {
-        font-size: 0.9rem !important;
-        text-align: center !important;
-        margin: 8px 0 !important;
-        display: block !important;
-        width: 100% !important;
-    }
-    
-    .telegram-user-info {
-        padding: 8px !important;
-        margin: 8px auto !important;
-        text-align: center !important;
-        width: fit-content !important;
-        max-width: 100% !important;
-    }
-    
-    .telegram-avatar {
-        width: 40px !important;
-        height: 40px !important;
-        margin: 0 auto 6px auto !important;
-    }
-    
-    .telegram-name {
-        font-size: 0.9rem !important;
-        margin-bottom: 3px !important;
-        text-align: center !important;
-    }
-    
-    .telegram-username {
-        font-size: 0.8rem !important;
-        padding: 3px 6px !important;
-        margin: 0 auto !important;
-        display: inline-flex !important;
-    }
-    
-    .collector-info-enhanced {
-        padding: 8px !important;
-        margin: 8px auto !important;
-        text-align: center !important;
-        max-width: 100% !important;
-    }
-    
-    .collector-info-enhanced h4 {
-        font-size: 0.85rem !important;
-        margin: 0 0 6px 0 !important;
-        text-align: center !important;
-    }
-    
-    .collector-detail {
-        font-size: 0.8rem !important;
-        margin: 3px 0 !important;
-        text-align: center !important;
-    }
-    
-    /* Центрированная информация о коллекторе */
-    .collector-info {
-        text-align: center !important;
-        margin: 8px auto !important;
-        padding: 8px !important;
-        max-width: 100% !important;
-    }
-    
-    .collector-info p {
-        text-align: center !important;
-        margin: 3px 0 !important;
-        font-size: 0.8rem !important;
-    }
-
-    /* Новые мобильные стили для переработанного компактного дизайна */
-    .compact-user-name {
-        font-size: 1rem;
-        margin-bottom: 3px;
-    }
-
-    .compact-telegram-username {
-        font-size: 0.85rem;
-        padding: 2px 5px;
-        gap: 3px;
-    }
-
-    .collection-stats-compact-new {
-        min-width: 70px;
-        padding-left: 8px;
-    }
-}
-
-@media (max-width: 480px) {
-    .header {
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-    
-    .header h1 {
-        font-size: 1.8rem;
-    }
-    
-    .form-container {
-        padding: 20px;
-    }
-    
-    /* УВЕЛИЧЕННАЯ КАРТА ДЛЯ СМАРТФОНОВ - НА 20% БОЛЬШЕ */
-    #map, #adminMap {
-        height: 50vh !important;
-        min-height: 400px !important;
-    }
-    
-    .leaflet-popup-content-wrapper {
-        max-width: 240px !important;
-        font-size: 0.85rem !important;
-    }
-    
-    .leaflet-popup-content {
-        margin: 8px 10px !important;
-        line-height: 1.2 !important;
-        text-align: center !important;
-    }
-    
-    .popup-content h3 {
-        font-size: 0.95rem !important;
-        margin: 0 0 6px 0 !important;
-        text-align: center !important;
-    }
-    
-    .status {
-        font-size: 0.85rem !important;
-        text-align: center !important;
-        margin: 6px 0 !important;
-    }
-    
-    .telegram-user-info {
-        padding: 6px !important;
-        margin: 6px auto !important;
-        text-align: center !important;
-        width: fit-content !important;
-    }
-    
-    .telegram-avatar {
-        width: 35px !important;
-        height: 35px !important;
-        margin: 0 auto 4px auto !important;
-    }
-    
-    .telegram-name {
-        font-size: 0.85rem !important;
-        margin-bottom: 2px !important;
-        text-align: center !important;
-    }
-    
-    .telegram-username {
-        font-size: 0.75rem !important;
-        padding: 2px 4px !important;
-        margin: 0 auto !important;
-    }
-    
-    .collector-info-enhanced {
-        padding: 6px !important;
-        margin: 6px auto !important;
-        text-align: center !important;
-    }
-    
-    .collector-info-enhanced h4 {
-        font-size: 0.8rem !important;
-        margin: 0 0 4px 0 !important;
-        text-align: center !important;
-    }
-    
-    .collector-detail {
-        font-size: 0.75rem !important;
-        margin: 2px 0 !important;
-        text-align: center !important;
-    }
-    
-    .collector-info {
-        text-align: center !important;
-        margin: 6px auto !important;
-        padding: 6px !important;
-    }
-    
-    .collector-info p {
-        text-align: center !important;
-        margin: 2px 0 !important;
-        font-size: 0.75rem !important;
-    }
-    
-    /* Компактные изображения селфи в popup */
-    .leaflet-popup-content img {
-        max-width: 120px !important;
-        max-height: 80px !important;
-        margin: 5px auto !important;
-        display: block !important;
-    }
-    
-    /* Адаптивная кнопка для смартфонов */
-    .map-controls {
-        max-width: 320px;
-        padding: 16px;
-    }
-    
-    .control-btn {
-        font-size: 0.95rem !important;
-        padding: 14px 18px !important;
-        min-height: 50px;
-    }
-
-    /* Мобильные стили для нового компактного дизайна */
-    .compact-user-name {
-        font-size: 0.95rem;
-        margin-bottom: 2px;
-    }
-
-    .compact-telegram-username {
-        font-size: 0.8rem;
-        padding: 1px 4px;
-        gap: 2px;
-    }
-
-    .telegram-icon {
-        font-size: 0.75rem;
-    }
-
-    .collection-stats-compact-new {
-        min-width: 65px;
-        padding-left: 6px;
-    }
-}
-
-@media (max-width: 360px) {
-    /* БОЛЬШАЯ КАРТА ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
-    #map, #adminMap {
-        height: 45vh !important;
-        min-height: 380px !important;
-    }
-    
-    .container {
-        padding: 5px;
-    }
-    
-    .control-btn {
-        font-size: 0.9rem !important;
-        padding: 12px 16px !important;
-        min-height: 48px;
-    }
-    
-    .map-controls {
-        max-width: 300px;
-        padding: 14px;
-    }
-    
-    .leaflet-popup-content-wrapper {
-        max-width: 220px !important;
-        font-size: 0.8rem !important;
-    }
-}
