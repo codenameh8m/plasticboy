@@ -54,7 +54,7 @@
             z-index: 5;
         }
         
-        /* Изгиб экрана */
+        /* УБРАНА ЗЕЛЕНАЯ ВИНЬЕТКА - теперь просто прозрачный фон */
         .crt-effect::before {
             content: '';
             position: absolute;
@@ -62,11 +62,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(
-                ellipse at center,
-                transparent 70%,
-                rgba(0, 255, 0, 0.1) 100%
-            );
+            background: transparent;
             border-radius: 15px;
         }
         
