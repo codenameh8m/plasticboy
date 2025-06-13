@@ -10,15 +10,15 @@
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style">
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
     
-    <!-- Preload кастомного шрифта ABC Oracle Medium для быстрой загрузки -->
-    <link rel="preload" href="./fonts/abcoracle-medium.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- Preload кастомной гифки -->
+    <link rel="preload" href="./assets/plasticboy-logo.gif" as="image">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* Стили для загрузочного экрана - МИНИМАЛИСТИЧНЫЕ С СИЛЬНЫМ CRT ЭФФЕКТОМ */
+        /* Стили для загрузочного экрана с гифкой */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -43,7 +43,7 @@
             pointer-events: none;
         }
         
-        /* CRT эффект */
+        /* CRT эффект для всего экрана */
         .crt-effect {
             position: absolute;
             top: 0;
@@ -54,7 +54,6 @@
             z-index: 5;
         }
         
-        /* Изгиб экрана */
         .crt-effect::before {
             content: '';
             position: absolute;
@@ -70,7 +69,6 @@
             border-radius: 15px;
         }
         
-        /* Вертикальные полосы */
         .crt-effect::after {
             content: '';
             position: absolute;
@@ -87,26 +85,13 @@
             );
         }
         
-        /* Мерцание экрана */
         @keyframes crtFlicker {
-            0% {
-                opacity: 1;
-            }
-            96% {
-                opacity: 1;
-            }
-            97% {
-                opacity: 0.98;
-            }
-            98% {
-                opacity: 1;
-            }
-            99% {
-                opacity: 0.99;
-            }
-            100% {
-                opacity: 1;
-            }
+            0% { opacity: 1; }
+            96% { opacity: 1; }
+            97% { opacity: 0.98; }
+            98% { opacity: 1; }
+            99% { opacity: 0.99; }
+            100% { opacity: 1; }
         }
         
         /* Статические помехи */
@@ -135,7 +120,7 @@
             100% { transform: translate(0, 0); }
         }
         
-        /* Матричный фон в серых тонах */
+        /* Матричный фон */
         .matrix-bg {
             position: absolute;
             top: 0;
@@ -172,16 +157,36 @@
             }
         }
         
-        /* Логотип в минималистичном стиле */
-        .logo-container {
+        /* КОНТЕЙНЕР ДЛЯ ГИФКИ */
+        .logo-gif-container {
             text-align: center;
             margin-bottom: 40px;
-            animation: logoGlow 2s ease-in-out infinite alternate;
             z-index: 10;
             position: relative;
+            animation: logoGlow 2s ease-in-out infinite alternate;
         }
         
-        .logo-title {
+        /* ГИФКА ЛОГОТИПА */
+        .logo-gif {
+            max-width: 2000px;
+            max-height: 1000px;
+            width: 90vw; /* 90% ширины экрана для адаптивности */
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 
+                0 0 15px rgba(0, 0, 0, 0.25),
+                0 0 30px rgba(0, 0, 0, 0.15),
+                0 0 45px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            filter: 
+                contrast(1.1) 
+                brightness(1.05) 
+                drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+        }
+        
+        /* Fallback текст если гифка не загрузилась */
+        .logo-fallback {
+            display: none;
             font-size: 2.5rem;
             color: #333333;
             text-shadow: 
@@ -192,9 +197,9 @@
             position: relative;
         }
         
-        /* RGB смещение для текста в серых тонах */
-        .logo-title::before,
-        .logo-title::after {
+        /* RGB эффект для fallback текста */
+        .logo-fallback::before,
+        .logo-fallback::after {
             content: attr(data-text);
             position: absolute;
             top: 0;
@@ -203,13 +208,13 @@
             height: 100%;
         }
         
-        .logo-title::before {
+        .logo-fallback::before {
             color: rgba(0, 0, 0, 0.2);
             z-index: -1;
             animation: chromaShiftGray1 2s infinite;
         }
         
-        .logo-title::after {
+        .logo-fallback::after {
             color: rgba(0, 0, 0, 0.1);
             z-index: -2;
             animation: chromaShiftGray2 2s infinite;
@@ -239,19 +244,20 @@
         
         @keyframes logoGlow {
             0% {
-                text-shadow: 
-                    0 0 3px #666666,
-                    0 0 6px #666666;
+                filter: 
+                    contrast(1.1) 
+                    brightness(1.05) 
+                    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
             }
             100% {
-                text-shadow: 
-                    0 0 5px #666666,
-                    0 0 10px #666666,
-                    0 0 15px #999999;
+                filter: 
+                    contrast(1.2) 
+                    brightness(1.1) 
+                    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
             }
         }
         
-        /* Прогресс бар в минималистичном стиле */
+        /* Progress bar (БЕЗ ИЗМЕНЕНИЙ) */
         .progress-container {
             width: 320px;
             background: #ffffff;
@@ -306,7 +312,7 @@
             letter-spacing: 1px;
         }
         
-        /* Статус загрузки в серых тонах */
+        /* Статус загрузки */
         .loading-status {
             font-size: 0.8rem;
             color: #666666;
@@ -324,7 +330,7 @@
             71%, 100% { opacity: 0.6; }
         }
         
-        /* Пиксельная анимация в серой гамме */
+        /* Пиксельная анимация */
         .pixel-loader {
             display: flex;
             gap: 3px;
@@ -378,19 +384,39 @@
             100% { transform: translateY(4px); }
         }
         
-        /* Основной контент */
-        .main-content {
-            opacity: 0;
-            transition: opacity 0.6s ease-in;
+        /* МОБИЛЬНАЯ АДАПТАЦИЯ ДЛЯ ГИФКИ */
+        @media (max-width: 1920px) {
+            .logo-gif {
+                width: 85vw;
+                max-width: 1600px;
+                max-height: 800px;
+            }
         }
         
-        .main-content.loaded {
-            opacity: 1;
+        @media (max-width: 1366px) {
+            .logo-gif {
+                width: 80vw;
+                max-width: 1200px;
+                max-height: 600px;
+            }
         }
         
-        /* Мобильная оптимизация */
+        @media (max-width: 1024px) {
+            .logo-gif {
+                width: 85vw;
+                max-width: 900px;
+                max-height: 450px;
+            }
+        }
+        
         @media (max-width: 768px) {
-            .logo-title {
+            .logo-gif {
+                width: 90vw;
+                max-width: 700px;
+                max-height: 350px;
+            }
+            
+            .logo-fallback {
                 font-size: 2rem;
                 letter-spacing: 2px;
             }
@@ -414,7 +440,14 @@
         }
         
         @media (max-width: 480px) {
-            .logo-title {
+            .logo-gif {
+                width: 95vw;
+                max-width: 450px;
+                max-height: 225px;
+                border-radius: 12px;
+            }
+            
+            .logo-fallback {
                 font-size: 1.6rem;
                 letter-spacing: 1px;
             }
@@ -431,86 +464,29 @@
                 font-size: 0.6rem;
             }
         }
-
-        /* Стили для кнопки рейтинга и локации */
-        .location-btn {
-            background: linear-gradient(45deg, #4CAF50, #45a049) !important;
-            color: white !important;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2) !important;
-        }
-
-        .location-btn:hover {
-            background: linear-gradient(45deg, #45a049, #3d8b40) !important;
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4) !important;
-            transform: translateY(-3px);
-        }
-
-        .leaderboard-btn {
-            background: #000000 !important;
-            border: 2px solid #333333 !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-            margin-top: 15px;
-            text-decoration: none;
-            display: flex;
-            position: relative;
-            overflow: hidden;
-            font-family: 'ABC Oracle', sans-serif !important;
-            font-weight: 500 !important;
-            letter-spacing: 0.5px !important;
-        }
-
-        .leaderboard-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .leaderboard-btn:hover::before {
-            left: 100%;
-        }
-
-        .leaderboard-btn:hover {
-            background: #333333 !important;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
-            border-color: #000000 !important;
-            transform: translateY(-3px);
-        }
-
-        .leaderboard-btn:active {
-            transform: translateY(-1px);
-        }
-
-        /* Анимация иконки рейтинга */
-        .leaderboard-btn .trophy-icon {
-            animation: trophyBounce 2s ease-in-out infinite;
-        }
-
-        @keyframes trophyBounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-3px);
-            }
-            60% {
-                transform: translateY(-1px);
+        
+        @media (max-width: 360px) {
+            .logo-gif {
+                width: 98vw;
+                max-width: 350px;
+                max-height: 175px;
+                border-radius: 10px;
             }
         }
         
-        /* Стили для основного приложения с ABC Oracle */
+        /* Основной контент приложения */
         .main-content {
-            font-family: 'ABC Oracle', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.6s ease-in;
+        }
+        
+        .main-content.loaded {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
-    <!-- LOADING SCREEN -->
+    <!-- LOADING SCREEN С ГИФКОЙ -->
     <div class="loading-screen" id="loadingScreen">
         <!-- CRT эффект -->
         <div class="crt-effect"></div>
@@ -524,9 +500,20 @@
         <!-- Сканлинии -->
         <div class="scanlines"></div>
         
-        <!-- Логотип -->
-        <div class="logo-container">
-            <div class="logo-title" data-text="PLASTICBOY">PLASTICBOY</div>
+        <!-- КОНТЕЙНЕР ДЛЯ ГИФКИ ЛОГОТИПА -->
+        <div class="logo-gif-container">
+            <!-- КАСТОМНАЯ ГИФКА -->
+            <img 
+                src="./assets/plasticboy-logo.gif" 
+                alt="PlasticBoy Loading" 
+                class="logo-gif"
+                id="logoGif"
+                onerror="showFallbackLogo()"
+                onload="console.log('✅ Logo GIF loaded successfully')"
+            >
+            
+            <!-- FALLBACK ТЕКСТ (если гифка не загрузилась) -->
+            <div class="logo-fallback" id="logoFallback" data-text="PLASTICBOY">PLASTICBOY</div>
             <div class="logo-subtitle">Almighty Edition</div>
         </div>
         
@@ -542,7 +529,7 @@
         <!-- Статус загрузки -->
         <div class="loading-status" id="loadingStatus">INITIALIZING...</div>
         
-        <!-- Прогресс бар -->
+        <!-- Progress bar (БЕЗ ИЗМЕНЕНИЙ) -->
         <div class="progress-container">
             <div class="progress-bar" id="progressBar"></div>
             <div class="progress-text" id="progressText">0%</div>
@@ -582,7 +569,6 @@
                 </div>
             </div>
 
-           <!-- CONTROL BUTTONS - SEPARATED -->
             <!-- Location button -->
             <div class="map-controls">
                 <button class="control-btn location-btn" onclick="getCurrentLocation()">
@@ -611,8 +597,7 @@
 
     <!-- Loading system script -->
     <script>
-        // SIMPLE AND RELIABLE LOADING SYSTEM
-        console.log('🎯 PlasticBoy - Starting system');
+        console.log('🎯 PlasticBoy - Starting system with custom GIF');
         
         let loadingSteps = [
             "INITIALIZING...",
@@ -627,6 +612,13 @@
         let isMapReady = false;
         let arePointsLoaded = false;
         let isLeafletReady = false;
+
+        // Fallback функция если гифка не загрузилась
+        function showFallbackLogo() {
+            console.log('⚠️ Logo GIF failed to load, showing fallback');
+            document.getElementById('logoGif').style.display = 'none';
+            document.getElementById('logoFallback').style.display = 'block';
+        }
 
         // Create simple matrix background
         function createMatrix() {
@@ -716,6 +708,15 @@
         // Initialization
         document.addEventListener('DOMContentLoaded', function() {
             createMatrix();
+            
+            // Preload GIF для лучшей производительности
+            const gifPreloader = new Image();
+            gifPreloader.src = './assets/plasticboy-logo.gif';
+            gifPreloader.onload = () => console.log('✅ GIF preloaded successfully (2000x1000, 5s@30fps)');
+            gifPreloader.onerror = () => {
+                console.log('⚠️ GIF preload failed');
+                showFallbackLogo();
+            };
             
             // Main loading loop
             const loaderInterval = setInterval(() => {
