@@ -18,7 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* Стили для загрузочного экрана - МИНИМАЛИСТИЧНЫЕ С CRT ЭФФЕКТОМ */
+        /* Стили для загрузочного экрана - МИНИМАЛИСТИЧНЫЕ С СИЛЬНЫМ CRT ЭФФЕКТОМ */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -433,7 +433,19 @@
             }
         }
 
-        /* Стили для кнопки рейтинга с ABC Oracle */
+        /* Стили для кнопки рейтинга и локации */
+        .location-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2) !important;
+        }
+
+        .location-btn:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40) !important;
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4) !important;
+            transform: translateY(-3px);
+        }
+
         .leaderboard-btn {
             background: #000000 !important;
             border: 2px solid #333333 !important;
