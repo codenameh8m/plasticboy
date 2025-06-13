@@ -135,7 +135,7 @@
             100% { transform: translate(0, 0); }
         }
         
-        /* Матричный фон в аркадном стиле */
+        /* Матричный фон в серых тонах */
         .matrix-bg {
             position: absolute;
             top: 0;
@@ -143,14 +143,14 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            opacity: 0.2;
+            opacity: 0.1;
         }
         
         .matrix-dot {
             position: absolute;
             width: 2px;
             height: 2px;
-            background: #00ff41;
+            background: #999999;
             border-radius: 50%;
             animation: matrixFall 3s linear infinite;
         }
@@ -172,7 +172,7 @@
             }
         }
         
-        /* Логотип в стиле аркадного автомата */
+        /* Логотип в минималистичном стиле */
         .logo-container {
             text-align: center;
             margin-bottom: 40px;
@@ -183,17 +183,16 @@
         
         .logo-title {
             font-size: 2.5rem;
-            color: #00ff41;
+            color: #333333;
             text-shadow: 
-                0 0 3px #00ff41,
-                0 0 6px #00ff41,
-                0 0 12px #00ff41;
+                0 0 3px #666666,
+                0 0 6px #666666;
             margin-bottom: 15px;
             letter-spacing: 3px;
             position: relative;
         }
         
-        /* RGB смещение для текста в аркадном стиле */
+        /* RGB смещение для текста в серых тонах */
         .logo-title::before,
         .logo-title::after {
             content: attr(data-text);
@@ -205,25 +204,25 @@
         }
         
         .logo-title::before {
-            color: #ff0000;
+            color: rgba(0, 0, 0, 0.2);
             z-index: -1;
-            animation: chromaShiftRed 2s infinite;
+            animation: chromaShiftGray1 2s infinite;
         }
         
         .logo-title::after {
-            color: #0000ff;
+            color: rgba(0, 0, 0, 0.1);
             z-index: -2;
-            animation: chromaShiftBlue 2s infinite;
+            animation: chromaShiftGray2 2s infinite;
         }
         
-        @keyframes chromaShiftRed {
+        @keyframes chromaShiftGray1 {
             0%, 100% { transform: translate(0px, 0px); }
             25% { transform: translate(0.5px, 0px); }
             50% { transform: translate(-0.5px, 0px); }
             75% { transform: translate(0.5px, 0px); }
         }
         
-        @keyframes chromaShiftBlue {
+        @keyframes chromaShiftGray2 {
             0%, 100% { transform: translate(0px, 0px); }
             25% { transform: translate(-0.5px, 0px); }
             50% { transform: translate(0.5px, 0px); }
@@ -232,38 +231,36 @@
         
         .logo-subtitle {
             font-size: 0.8rem;
-            color: #00cccc;
-            text-shadow: 0 0 5px #00cccc;
-            opacity: 0.9;
+            color: #666666;
+            text-shadow: 0 0 3px #999999;
+            opacity: 0.8;
             letter-spacing: 2px;
         }
         
         @keyframes logoGlow {
             0% {
                 text-shadow: 
-                    0 0 5px #00ff41,
-                    0 0 10px #00ff41,
-                    0 0 15px #00ff41;
+                    0 0 3px #666666,
+                    0 0 6px #666666;
             }
             100% {
                 text-shadow: 
-                    0 0 8px #00ff41,
-                    0 0 16px #00ff41,
-                    0 0 24px #00ff41,
-                    0 0 32px #00ff41;
+                    0 0 5px #666666,
+                    0 0 10px #666666,
+                    0 0 15px #999999;
             }
         }
         
-        /* Прогресс бар в стиле аркадного автомата */
+        /* Прогресс бар в минималистичном стиле */
         .progress-container {
             width: 320px;
-            background: #000;
-            border: 2px solid #00ff41;
+            background: #ffffff;
+            border: 2px solid #333333;
             border-radius: 0;
             padding: 4px;
             box-shadow: 
-                inset 0 0 8px rgba(0, 255, 65, 0.3),
-                0 0 16px rgba(0, 255, 65, 0.2);
+                inset 0 0 8px rgba(0, 0, 0, 0.1),
+                0 0 16px rgba(0, 0, 0, 0.05);
             margin-bottom: 30px;
             position: relative;
             z-index: 10;
@@ -271,7 +268,7 @@
         
         .progress-bar {
             height: 16px;
-            background: linear-gradient(90deg, #003300 0%, #00ff41 100%);
+            background: linear-gradient(90deg, #f0f0f0 0%, #333333 100%);
             width: 0%;
             transition: width 0.3s ease;
             position: relative;
@@ -303,16 +300,16 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 0.6rem;
-            color: #ffffff;
-            text-shadow: 1px 1px 0px #000;
+            color: #333333;
+            text-shadow: 1px 1px 0px #ffffff;
             z-index: 1;
             letter-spacing: 1px;
         }
         
-        /* Статус загрузки в стиле терминала */
+        /* Статус загрузки в серых тонах */
         .loading-status {
             font-size: 0.8rem;
-            color: #00cccc;
+            color: #666666;
             margin-bottom: 20px;
             text-align: center;
             min-height: 20px;
@@ -327,7 +324,7 @@
             71%, 100% { opacity: 0.6; }
         }
         
-        /* Пиксельная анимация в зеленой гамме */
+        /* Пиксельная анимация в серой гамме */
         .pixel-loader {
             display: flex;
             gap: 3px;
@@ -339,7 +336,7 @@
         .pixel-dot {
             width: 6px;
             height: 6px;
-            background: #00ff41;
+            background: #333333;
             border-radius: 0;
             animation: pixelPulse 1.2s infinite;
         }
@@ -351,12 +348,12 @@
         
         @keyframes pixelPulse {
             0%, 80%, 100% {
-                background: #003300;
+                background: #cccccc;
                 box-shadow: none;
             }
             40% {
-                background: #00ff41;
-                box-shadow: 0 0 6px #00ff41;
+                background: #333333;
+                box-shadow: 0 0 6px #333333;
             }
         }
         
