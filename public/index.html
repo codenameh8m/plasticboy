@@ -18,14 +18,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* Стили для загрузочного экрана */
+        /* Стили для загрузочного экрана - МИНИМАЛИСТИЧНЫЕ С CRT ЭФФЕКТОМ */
         .loading-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            background: #ffffff;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -33,7 +33,7 @@
             z-index: 10000;
             transition: opacity 0.6s ease-out;
             font-family: 'Press Start 2P', 'ABC Oracle', monospace;
-            color: #00ff00;
+            color: #000000;
             overflow: hidden;
             animation: crtFlicker 0.15s infinite alternate;
         }
@@ -65,7 +65,7 @@
             background: radial-gradient(
                 ellipse at center,
                 transparent 70%,
-                rgba(0, 255, 0, 0.1) 100%
+                rgba(0, 0, 0, 0.1) 100%
             );
             border-radius: 15px;
         }
@@ -82,8 +82,8 @@
                 90deg,
                 transparent,
                 transparent 2px,
-                rgba(0, 255, 0, 0.02) 2px,
-                rgba(0, 255, 0, 0.02) 4px
+                rgba(0, 0, 0, 0.02) 2px,
+                rgba(0, 0, 0, 0.02) 4px
             );
         }
         
@@ -116,7 +116,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.03;
+            opacity: 0.02;
             background: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
             animation: staticMove 0.1s infinite;
         }
@@ -143,14 +143,14 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            opacity: 0.2;
+            opacity: 0.1;
         }
         
         .matrix-dot {
             position: absolute;
             width: 2px;
             height: 2px;
-            background: #00ff00;
+            background: #333333;
             border-radius: 50%;
             animation: matrixFall 3s linear infinite;
         }
@@ -183,10 +183,10 @@
         
         .logo-title {
             font-size: 2.5rem;
-            color: #00ff00;
+            color: #000000;
             text-shadow: 
-                0 0 3px #00ff00,
-                0 0 6px #00ff00;
+                0 0 3px #000000,
+                0 0 6px #000000;
             margin-bottom: 15px;
             letter-spacing: 3px;
             position: relative;
@@ -204,25 +204,25 @@
         }
         
         .logo-title::before {
-            color: #ff0000;
+            color: rgba(0, 0, 0, 0.3);
             z-index: -1;
-            animation: chromaShiftRed 2s infinite;
+            animation: chromaShiftGray1 2s infinite;
         }
         
         .logo-title::after {
-            color: #0000ff;
+            color: rgba(0, 0, 0, 0.2);
             z-index: -2;
-            animation: chromaShiftBlue 2s infinite;
+            animation: chromaShiftGray2 2s infinite;
         }
         
-        @keyframes chromaShiftRed {
+        @keyframes chromaShiftGray1 {
             0%, 100% { transform: translate(0px, 0px); }
             25% { transform: translate(0.5px, 0px); }
             50% { transform: translate(-0.5px, 0px); }
             75% { transform: translate(0.5px, 0px); }
         }
         
-        @keyframes chromaShiftBlue {
+        @keyframes chromaShiftGray2 {
             0%, 100% { transform: translate(0px, 0px); }
             25% { transform: translate(-0.5px, 0px); }
             50% { transform: translate(0.5px, 0px); }
@@ -231,8 +231,8 @@
         
         .logo-subtitle {
             font-size: 0.8rem;
-            color: #00cccc;
-            text-shadow: 0 0 5px #00cccc;
+            color: #666666;
+            text-shadow: 0 0 5px #666666;
             opacity: 0.8;
             letter-spacing: 2px;
         }
@@ -240,28 +240,28 @@
         @keyframes logoGlow {
             0% {
                 text-shadow: 
-                    0 0 5px #00ff00,
-                    0 0 10px #00ff00,
-                    0 0 15px #00ff00;
+                    0 0 5px #000000,
+                    0 0 10px #000000,
+                    0 0 15px #000000;
             }
             100% {
                 text-shadow: 
-                    0 0 8px #00ff00,
-                    0 0 16px #00ff00,
-                    0 0 24px #00ff00;
+                    0 0 8px #000000,
+                    0 0 16px #000000,
+                    0 0 24px #000000;
             }
         }
         
         /* Прогресс бар */
         .progress-container {
             width: 320px;
-            background: #000;
-            border: 2px solid #00ff00;
+            background: #ffffff;
+            border: 2px solid #000000;
             border-radius: 0;
             padding: 4px;
             box-shadow: 
-                inset 0 0 8px rgba(0, 255, 0, 0.3),
-                0 0 16px rgba(0, 255, 0, 0.2);
+                inset 0 0 8px rgba(0, 0, 0, 0.1),
+                0 0 16px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
             position: relative;
             z-index: 10;
@@ -269,7 +269,7 @@
         
         .progress-bar {
             height: 16px;
-            background: linear-gradient(90deg, #003300 0%, #00ff00 100%);
+            background: linear-gradient(90deg, #f0f0f0 0%, #000000 100%);
             width: 0%;
             transition: width 0.3s ease;
             position: relative;
@@ -301,8 +301,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 0.6rem;
-            color: #ffffff;
-            text-shadow: 1px 1px 0px #000;
+            color: #333333;
+            text-shadow: 1px 1px 0px #ffffff;
             z-index: 1;
             letter-spacing: 1px;
         }
@@ -310,7 +310,7 @@
         /* Статус загрузки */
         .loading-status {
             font-size: 0.8rem;
-            color: #00cccc;
+            color: #333333;
             margin-bottom: 20px;
             text-align: center;
             min-height: 20px;
@@ -337,7 +337,7 @@
         .pixel-dot {
             width: 6px;
             height: 6px;
-            background: #00ff00;
+            background: #000000;
             border-radius: 0;
             animation: pixelPulse 1.2s infinite;
         }
@@ -349,12 +349,12 @@
         
         @keyframes pixelPulse {
             0%, 80%, 100% {
-                background: #003300;
+                background: #cccccc;
                 box-shadow: none;
             }
             40% {
-                background: #00ff00;
-                box-shadow: 0 0 6px #00ff00;
+                background: #000000;
+                box-shadow: 0 0 6px #000000;
             }
         }
         
@@ -367,7 +367,7 @@
             height: 100%;
             background: linear-gradient(
                 transparent 50%, 
-                rgba(0, 255, 0, 0.03) 50%
+                rgba(0, 0, 0, 0.02) 50%
             );
             background-size: 100% 4px;
             pointer-events: none;
@@ -435,9 +435,9 @@
 
         /* Стили для кнопки рейтинга с ABC Oracle */
         .leaderboard-btn {
-            background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
-            border: 2px solid rgba(0, 136, 204, 0.3) !important;
-            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+            background: #000000 !important;
+            border: 2px solid #333333 !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
             margin-top: 15px;
             text-decoration: none;
             display: flex;
@@ -464,9 +464,9 @@
         }
 
         .leaderboard-btn:hover {
-            background: linear-gradient(45deg, #006699, #0088cc) !important;
-            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4) !important;
-            border-color: rgba(0, 136, 204, 0.5) !important;
+            background: #333333 !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+            border-color: #000000 !important;
             transform: translateY(-3px);
         }
 
