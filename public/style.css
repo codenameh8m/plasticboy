@@ -447,16 +447,18 @@ body {
     transform: translateY(-3px);
 }
 
-/* ЧЕРНАЯ КНОПКА ЛИДЕРБОРДА */
+/* ГОЛУБАЯ КНОПКА ЛИДЕРБОРДА */
 .leaderboard-btn {
-    background: #000000 !important;
+    background: linear-gradient(45deg, #0088cc, #00a0ff) !important;
     color: white !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2) !important;
+    border: 2px solid rgba(0, 136, 204, 0.3) !important;
 }
 
 .leaderboard-btn:hover {
-    background: #333333 !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+    background: linear-gradient(45deg, #006699, #0088cc) !important;
+    box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4) !important;
+    border-color: rgba(0, 136, 204, 0.5) !important;
     transform: translateY(-3px);
 }
 
